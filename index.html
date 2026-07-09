@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OmniTrade AI - Workspace Quantitativo</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script type="module" src="app.js"></script>
+<style>
+    * { box-sizing: border-box; }
+    body { background-color: #0b0e11; color: #eaecef; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 0; display: flex; height: 100vh; height: 100dvh; overflow: hidden; animation: appFade .4s ease; }
+
+    /* MOBILE TOP BAR (visibile solo sotto i 768px) */
+    .mobile-topbar { display: none; }
+    @media (max-width: 768px) {
+        .mobile-topbar { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background-color: #161a1e; border-bottom: 1px solid #2b2f36; position: relative; z-index: 2; flex-shrink: 0; }
+        .mobile-topbar .brand-mobile { color: #00ffa3; font-weight: bold; font-size: 17px; }
+        .hamburger-btn { width: auto; padding: 8px 10px; background: #1e2329; border: 1px solid #2b2f36; color: #00ffa3; font-size: 18px; line-height: 1; border-radius: 6px; }
+        body { flex-direction: column; }
+    }
+    @keyframes appFade { from{opacity:0;} to{opacity:1;} }
+
+    #particleCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    /* SIDEBAR */
+    .sidebar { position: relative; z-index: 1; width: 260px; background-color: #161a1e; border-right: 1px solid #2b2f36; display: flex; flex-direction: column; padding: 20px 0; flex-shrink: 0; transition: transform .25s ease; }
+    .sidebar-overlay { display: none; }
+    @media (max-width: 768px) {
+        .sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; transform: translateX(-100%); box-shadow: 20px 0 40px rgba(0,0,0,0.5); }
+        .sidebar.open { transform: translateX(0); }
+        .sidebar-overlay.open { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; }
+    }
+    .sidebar .brand { font-size: 22px; font-weight: bold; color: #00ffa3; padding: 0 25px 25px 25px; border-bottom: 1px solid #2b2f36; margin-bottom: 20px; text-shadow: 0 0 18px rgba(0,255,163,0.35); }
+    .sidebar-menu { display: flex; flex-direction: column; gap: 5px; flex: 1; padding: 0 10px; }
+    .menu-item { padding: 14px 15px; color: #929aa5; text-decoration: none; font-weight: 600; border-radius: 6px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: 0.2s; user-select: none; }
+    .menu-item:hover, .menu-item.active { background-color: #1e2329; color: #00ffa3; }
+    .menu-item:focus-visible { outline: 2px solid #00ffa3; outline-offset: 2px; }
+    .sidebar-foot { padding: 15px 25px 0 25px; font-size: 11px; color: #55606c; border-top: 1px solid #2b2f36; margin-top: 10px; line-height: 1.6; }
+
+    /* WORKSPACE */
+    .workspace { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; min-width: 0; }
+    @media (max-width: 768px) { .workspace { height: auto; flex: 1; } .view-content { padding: 18px; } }
+
+    .ticker-tape-wrap { border-bottom: 1px solid #2b2f36; background-color: #131722; flex-shrink: 0; }
+
+    .view-content { flex: 1; padding: 30px; overflow-y: auto; display: none; }
+    .view-content.active { display: block; animation: viewFade .3s ease; }
+    @keyframes viewFade { from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+    .dashboard-grid { display: grid; grid-template-columns: 1fr 1.6fr; gap: 25px; }
+    @media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr; } }
+
+    .panel { position: relative; overflow: hidden; background: linear-gradient(180deg, rgba(22,26,30,0.95), rgba(22,26,30,0.85)); border: 1px solid #2b2f36; border-radius: 8px; padding: 25px; height: fit-content; }
+    .panel::before { content:''; position:absolute; top:-60px; right:-60px; width:220px; height:220px; background: radial-gradient(circle, rgba(0,255,163,0.08), transparent 70%); pointer-events:none; }
+    h2 { position: relative; font-size: 16px; color: #ffffff; margin-top: 0; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #2b2f36; padding-bottom: 12px; margin-bottom: 20px; }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
+    .kpi-grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; margin-top: 20px; }
+    @media (max-width: 1200px) { .kpi-grid-6 { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 600px) { .kpi-grid-6 { grid-template-columns: repeat(2, 1fr); } }
+    .kpi-card { background-color: #1e2329; border: 1px solid #2b2f36; border-radius: 6px; padding: 15px; text-align: center; transition: 0.2s; }
+    .kpi-card:hover { border-color: #00ffa3; box-shadow: 0 0 0 1px rgba(0,255,163,0.3), 0 8px 20px rgba(0,255,163,0.06); transform: translateY(-2px); }
+    .kpi-label { font-size: 11px; color: #929aa5; text-transform: uppercase; margin-bottom: 5px; font-weight: bold; }
+    .kpi-value { font-size: 20px; font-weight: bold; color: #ffffff; }
+    .kpi-value.anomaly { color: #ff4d4d; animation: flash 1.5s infinite; }
+    @media (prefers-reduced-motion: reduce) { .kpi-value.anomaly, .view-content.active, body { animation: none; } }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+    .form-group { margin-bottom: 18px; }
+    label { display: block; margin-bottom: 6px; color: #b7bdc6; font-size: 13px; font-weight: 500; }
+    input, select { width: 100%; padding: 12px; background-color: #1e2329; border: 1px solid #474d57; border-radius: 4px; color: white; font-size: 14px; }
+    input:focus, select:focus, button:focus-visible { border-color: #00ffa3; outline: none; box-shadow: 0 0 0 1px #00ffa3; }
+
+    .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+    button { width: 100%; padding: 14px; border: none; border-radius: 4px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; font-family: inherit; }
+    .btn-main { background-color: #00ffa3; color: #0b0e11; }
+    .btn-main:hover { background-color: #00db8b; }
+    .btn-sec { background-color: #2b2f36; color: white; border: 1px solid #474d57; }
+    .btn-sec:hover { background-color: #373d46; }
+    .btn-save { background-color: transparent; color: #00ffa3; border: 1px solid #00ffa3; }
+    .btn-save:hover { background-color: rgba(0, 255, 163, 0.05); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .output-box { background-color: #1e2329; border: 1px solid #2b2f36; border-radius: 6px; padding: 20px; min-height: 400px; font-size: 14px; line-height: 1.6; }
+    .report-section { margin-bottom: 20px; }
+    .report-title { font-weight: bold; color: #00ffa3; text-transform: uppercase; font-size: 13px; margin-bottom: 8px; }
+    .report-item { background-color: #161a1e; padding: 12px 15px; border-left: 4px solid #474d57; margin-bottom: 8px; border-radius: 0 4px 4px 0; font-size: 13.5px; }
+    .report-item.danger { border-left-color: #ff4d4d; background-color: rgba(255, 77, 77, 0.05); }
+    .report-item.success { border-left-color: #00ffa3; background-color: rgba(0, 255, 163, 0.05); }
+    .placeholder-text { color: #55606c; font-size: 13.5px; }
+
+    /* SEGMENTED TOGGLE */
+    .segmented { display: inline-flex; background: #1e2329; border: 1px solid #2b2f36; border-radius: 8px; padding: 4px; gap: 4px; height: fit-content; }
+    .segmented button { width: auto; padding: 10px 22px; border-radius: 6px; background: transparent; color: #929aa5; font-weight: 700; }
+    .segmented button.active { background: #00ffa3; color: #0b0e11; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+
+    /* CHAT */
+    .chat-layout { max-width: 900px; margin: 0 auto; background-color: #161a1e; border: 1px solid #2b2f36; border-radius: 8px; display: flex; flex-direction: column; height: 78vh; }
+    .chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+    .msg { max-width: 75%; padding: 12px 16px; border-radius: 8px; font-size: 14.5px; line-height: 1.5; }
+    .msg.user { background-color: #2b2f36; align-self: flex-end; color: white; }
+    .msg.ai { background-color: #1e2329; border: 1px solid #2b2f36; align-self: flex-start; }
+    .chat-input-area { padding: 15px; border-top: 1px solid #2b2f36; display: flex; gap: 10px; }
+    .chat-input-area input { flex: 1; }
+    .chat-input-area button { width: auto; padding: 12px 22px; }
+
+    /* TABLES */
+    table { width: 100%; border-collapse: collapse; background-color: #161a1e; border: 1px solid #2b2f36; border-radius: 6px; overflow: hidden; }
+    th, td { padding: 14px 20px; text-align: left; border-bottom: 1px solid #2b2f36; font-size: 14px; }
+    th { background-color: #1e2329; color: #929aa5; font-weight: 600; }
+    tr:hover { background-color: #1f252c; }
+    .badge-emotion { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background-color: #2b2f36; color: #00ffa3; }
+    .badge-long { background-color: rgba(0,255,163,0.15); color: #00ffa3; border: 1px solid #00ffa3; }
+    .badge-short { background-color: rgba(255,77,77,0.15); color: #ff4d4d; border: 1px solid #ff4d4d; }
+    .dev-pos { color: #00ffa3; } .dev-neg { color: #ff4d4d; }
+    .btn-refresh { width: auto; padding: 10px 18px; background-color: #2b2f36; color: #00ffa3; border: 1px solid #2b2f36; }
+
+    /* GLOSSARY */
+    .glossary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    @media (max-width: 900px) { .glossary-grid { grid-template-columns: 1fr; } }
+    .card { background-color: #161a1e; border: 1px solid #2b2f36; border-radius: 6px; padding: 20px; }
+    .card-title { font-size: 17px; color: #00ffa3; font-weight: bold; margin-bottom: 6px; }
+    .card-cat { display: inline-block; font-size: 11px; background-color: #1e2329; color: #929aa5; padding: 3px 8px; border-radius: 4px; margin-bottom: 12px; }
+    .card-def { color: #b7bdc6; font-size: 13.5px; line-height: 1.6; }
+
+    /* TRADINGVIEW CONTAINERS */
+    .tv-chart-wrap { height: 560px; border: 1px solid #2b2f36; border-radius: 8px; overflow: hidden; }
+    @media (max-width: 768px) { .tv-chart-wrap { height: 380px; } .tv-watchlist-wrap { height: 320px; } }
+    .tv-watchlist-wrap { height: 420px; border: 1px solid #2b2f36; border-radius: 8px; overflow: hidden; margin-top: 20px; }
+
+    /* SKELETON */
+    .skeleton { background: linear-gradient(90deg, #1e2329 25%, #262c33 37%, #1e2329 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; border-radius: 6px; }
+    @keyframes shimmer { 0%{background-position:100% 50%;} 100%{background-position:0 50%;} }
+
+    /* TOASTS */
+    #toastContainer { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 3000; pointer-events: none; }
+    .toast { pointer-events: auto; min-width: 280px; max-width: 380px; background-color: #161a1e; border: 1px solid #2b2f36; border-left: 4px solid #00ffa3; border-radius: 6px; padding: 14px 16px; font-size: 13.5px; box-shadow: 0 10px 30px rgba(0,0,0,0.45); animation: toastIn .25s ease; }
+    .toast.error { border-left-color: #ff4d4d; }
+    .toast.info { border-left-color: #474d57; }
+    .toast.fadeout { animation: toastOut .25s ease forwards; }
+    @keyframes toastIn { from{transform:translateX(30px); opacity:0;} to{transform:translateX(0); opacity:1;} }
+    @keyframes toastOut { from{opacity:1;} to{opacity:0; transform:translateX(30px);} }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(5,7,9,0.7); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; z-index: 4000; animation: fadeIn .2s ease; }
+    .modal-box { background-color: #161a1e; border: 1px solid #2b2f36; border-radius: 10px; padding: 26px; width: 380px; max-width: 92vw; box-shadow: 0 20px 60px rgba(0,0,0,0.55); }
+    .modal-box h3 { margin-top: 0; color: #fff; font-size: 16px; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .modal-actions button { width: auto; flex: 1; padding: 12px; }
+    @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+
+    @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+</style>
+</head>
+<body>
+
+<canvas id="particleCanvas"></canvas>
+
+<div class="mobile-topbar">
+    <button class="hamburger-btn" onclick="toggleSidebar()" aria-label="Apri menu">☰</button>
+    <span class="brand-mobile">OmniTrade AI</span>
+</div>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
+
+<div class="sidebar" id="sidebarEl">
+    <div class="brand">OmniTrade AI</div>
+    <div class="sidebar-menu">
+        <div class="menu-item active" tabindex="0" onclick="switchView('portafoglio', this)">💼 Portafoglio</div>
+        <div class="menu-item" tabindex="0" onclick="switchView('grafici', this)">📈 Grafici Live</div>
+        <div class="menu-item" tabindex="0" onclick="switchView('dashboard', this)">📊 Analisi VWAP</div>
+        <div class="menu-item" tabindex="0" onclick="switchView('chat', this)">💬 AI Copilot Chat</div>
+        <div class="menu-item" tabindex="0" onclick="switchView('diario', this)">🗂️ Diario Cloud</div>
+        <div class="menu-item" tabindex="0" onclick="switchView('glossario', this)">🧠 Glossario Cimi</div>
+    </div>
+    <div class="sidebar-foot">Connesso a Supabase<br>qtwidsfqzfjapwiiuywq<br>Grafici: TradingView (dati live)</div>
+</div>
+
+<div class="workspace">
+    <div class="ticker-tape-wrap">
+        <div class="tradingview-widget-container">
+            <div class="tradingview-widget-container__widget" id="tickerTapeInner"></div>
+        </div>
+    </div>
+
+    <!-- PORTAFOGLIO -->
+    <div id="view-portafoglio" class="view-content active">
+        <div class="toolbar">
+            <div>
+                <h2 style="border:none; padding:0; margin:0 0 6px 0;">💼 Portafoglio</h2>
+                <p class="placeholder-text" style="margin:0;">Modalità Reale: il tuo registro personale di depositi, prelievi e posizioni. Modalità Demo: saldo virtuale per testare strategie senza rischio.</p>
+            </div>
+            <div class="segmented" id="segmentedModalita">
+                <button class="active" onclick="impostaModalita('reale', this)">🟢 Reale</button>
+                <button onclick="impostaModalita('demo', this)">🧪 Demo</button>
+            </div>
+        </div>
+
+        <div class="kpi-grid-6">
+            <div class="kpi-card"><div class="kpi-label">Saldo</div><div class="kpi-value" id="kpiSaldo">$0.00</div></div>
+            <div class="kpi-card"><div class="kpi-label">P&amp;L Realizzato</div><div class="kpi-value" id="kpiPnl">$0.00</div></div>
+            <div class="kpi-card"><div class="kpi-label">Win Rate</div><div class="kpi-value" id="kpiWinrate">0.0%</div></div>
+            <div class="kpi-card"><div class="kpi-label">Profit Factor</div><div class="kpi-value" id="kpiProfitFactor">-</div></div>
+            <div class="kpi-card"><div class="kpi-label">R/R Realizzato</div><div class="kpi-value" id="kpiRR">-</div></div>
+            <div class="kpi-card"><div class="kpi-label">Posizioni Aperte</div><div class="kpi-value" id="kpiAperte">0</div></div>
+        </div>
+
+        <div class="panel" style="margin-top:20px;">
+            <h2>Curva Equity</h2>
+            <div style="height:260px;"><canvas id="equityCanvas"></canvas></div>
+        </div>
+
+        <div class="dashboard-grid" style="margin-top:20px;">
+            <div class="panel">
+                <h2>Nuovo Movimento</h2>
+                <div class="form-group">
+                    <label for="movTipo">Tipo</label>
+                    <select id="movTipo"><option value="deposito">Deposito</option><option value="prelievo">Prelievo</option></select>
+                </div>
+                <div class="form-group">
+                    <label for="movImporto">Importo ($)</label>
+                    <input type="number" id="movImporto" step="0.01" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="movNota">Nota (opzionale)</label>
+                    <input type="text" id="movNota" placeholder="es. Bonifico da banca">
+                </div>
+                <button class="btn-main" onclick="registraMovimento()">Registra Movimento</button>
+            </div>
+
+            <div class="panel">
+                <h2>Apri Posizione</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="posTicker">Ticker</label>
+                        <input type="text" id="posTicker" list="tickerSuggestions" value="BTC-USD">
+                    </div>
+                    <div class="form-group">
+                        <label for="posDirezione">Direzione</label>
+                        <select id="posDirezione"><option value="long">Long</option><option value="short">Short</option></select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="posQuantita">Quantità</label>
+                        <input type="number" id="posQuantita" step="any" min="0" placeholder="es. 0.5">
+                    </div>
+                    <div class="form-group">
+                        <label for="posRR">RR Pianificato (opz.)</label>
+                        <input type="number" id="posRR" step="0.1" min="0" placeholder="es. 2.0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="posPrezzo">Prezzo di Ingresso</label>
+                    <div style="display:flex; gap:8px;">
+                        <input type="number" id="posPrezzo" step="any" min="0" placeholder="0.00" style="flex:1;">
+                        <button class="btn-sec" style="width:auto; padding:12px 16px;" onclick="prendiPrezzoLive('posPrezzo','posTicker')" title="Prendi prezzo live">📡</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="posNota">Nota (opzionale)</label>
+                    <input type="text" id="posNota" placeholder="Setup, motivazione dell'ingresso...">
+                </div>
+                <button class="btn-main" onclick="registraApertura()">Apri Posizione</button>
+            </div>
+        </div>
+
+        <div class="panel" style="margin-top:20px;">
+            <h2>Posizioni Aperte</h2>
+            <div id="posizioniAperteWrap"><div class="skeleton" style="height:100px;"></div></div>
+        </div>
+
+        <div class="panel" style="margin-top:20px;">
+            <h2>Storico</h2>
+            <div id="storicoWrap"><div class="skeleton" style="height:140px;"></div></div>
+        </div>
+    </div>
+
+    <!-- GRAFICI LIVE -->
+    <div id="view-grafici" class="view-content">
+        <div class="panel" style="margin-bottom:20px;">
+            <h2>Ricerca Simbolo</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="chartTicker">Ticker (formato libero: BTC-USD, AAPL, EURUSD=X, ^GSPC...)</label>
+                    <input type="text" id="chartTicker" list="tickerSuggestions" value="BTC-USD">
+                </div>
+                <div class="form-group">
+                    <label for="chartInterval">Intervallo</label>
+                    <select id="chartInterval">
+                        <option value="5m">5 Minuti</option>
+                        <option value="15m">15 Minuti</option>
+                        <option value="60m" selected>1 Ora</option>
+                        <option value="1d">1 Giorno</option>
+                        <option value="1wk">1 Settimana</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn-main" onclick="caricaGraficoLive()">📡 Carica Grafico Live</button>
+        </div>
+        <div class="tv-chart-wrap" id="tvAdvancedChart"><div class="tradingview-widget-container__widget"></div></div>
+        <h2 style="margin-top:30px; border:none;">Watchlist Rapida</h2>
+        <div class="tv-watchlist-wrap" id="tvWatchlistInner"></div>
+    </div>
+
+    <!-- DASHBOARD ANALISI VWAP -->
+    <div id="view-dashboard" class="view-content">
+        <div class="dashboard-grid">
+            <div class="panel">
+                <h2>Configurazione Strategia</h2>
+                <div class="form-group">
+                    <label for="ticker">Asset (ticker Yahoo Finance, es. BTC-USD, AAPL, ^GSPC, EURUSD=X)</label>
+                    <input type="text" id="ticker" list="tickerSuggestions" value="BTC-USD" placeholder="Scrivi un ticker qualsiasi..." autocomplete="off">
+                    <datalist id="tickerSuggestions">
+                        <option value="BTC-USD"><option value="ETH-USD"><option value="^GSPC">
+                        <option value="^DJI"><option value="^IXIC"><option value="^NDX">
+                        <option value="AAPL"><option value="MSFT"><option value="NVDA"><option value="TSLA">
+                        <option value="GC=F"><option value="CL=F"><option value="DX-Y.NYB">
+                        <option value="EURUSD=X"><option value="GBPUSD=X"><option value="USDJPY=X">
+                    </datalist>
+                </div>
+                <div class="form-group">
+                    <label for="timeframe">Timeframe Operativo (qualsiasi intervallo Yahoo Finance)</label>
+                    <select id="timeframe">
+                        <option value="1m">1 Minuto (Tick/Scalping estremo)</option>
+                        <option value="2m">2 Minuti</option>
+                        <option value="5m">5 Minuti (Scalping)</option>
+                        <option value="15m">15 Minuti (Day Trading)</option>
+                        <option value="30m">30 Minuti</option>
+                        <option value="60m">60 Minuti</option>
+                        <option value="1h" selected>1 Ora (Swing Trading)</option>
+                        <option value="90m">90 Minuti</option>
+                        <option value="1d">1 Giorno (Analisi Macro)</option>
+                        <option value="5d">5 Giorni</option>
+                        <option value="1wk">1 Settimana</option>
+                        <option value="1mo">1 Mese</option>
+                        <option value="3mo">3 Mesi</option>
+                    </select>
+                    <input type="text" id="timeframeCustom" placeholder="...oppure scrivi un intervallo custom (es. 4h)" autocomplete="off" style="margin-top:8px;">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="soglia">Soglia VWAP (%) — valore libero</label>
+                        <input type="number" id="soglia" value="1.5" step="0.1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="rr">Risk/Reward — valore libero</label>
+                        <input type="number" id="rr" value="2.0" step="0.1" min="0.1">
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn-main" onclick="lanciaAzione('analisi')">⚡ GENERA ANALISI COMPLETA</button>
+                    <button class="btn-sec" onclick="lanciaAzione('backtest')">📊 AVVIA BACKTEST MATEMATICO</button>
+                    <button class="btn-save" id="btnSalva" onclick="lanciaAzione('salva')" disabled>💾 ARCHIVIA NEL DIARIO CLOUD</button>
+                </div>
+                <p class="placeholder-text" style="margin-top:14px; font-size:12px;">Il Backtest usa i dati reali di <code>optimizer_v3_multiasset.csv</code> quando disponibili; altrimenti cerca la combinazione più vicina o segnala che serve rilanciare l'optimizer Python per quell'asset.</p>
+            </div>
+
+            <div class="panel">
+                <h2>Monitor Metriche &amp; Responso Quantitativo</h2>
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Ultimo Prezzo</div>
+                        <div class="kpi-value" id="kpiPrezzo">$-</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Deviazione VWAP</div>
+                        <div class="kpi-value" id="kpiDeviazione">-</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Stato Volume</div>
+                        <div class="kpi-value" id="kpiVolume">-</div>
+                    </div>
+                </div>
+                <div class="output-box" id="outputConsole">
+                    <div class="placeholder-text">⚠️ STATO CONSOLE — In attesa dell'operatore. Seleziona i parametri e premi un pulsante d'azione per caricare la matrice dei flussi d'asta.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHAT -->
+    <div id="view-chat" class="view-content">
+        <div class="chat-layout">
+            <div class="chat-box" id="chatBox">
+                <div class="msg ai">Benvenuto nella console di comunicazione diretta di OmniTrade AI. Qui puoi farmi domande di approfondimento sui grafici, chiarire dubbi operativi o analizzare le notizie fondamentali. Chiedimi qualsiasi cosa!</div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chatInput" placeholder="Scrivi un messaggio..." onkeydown="if(event.key==='Enter') inviaInChat()">
+                <button class="btn-main" onclick="inviaInChat()">Invia</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DIARIO -->
+    <div id="view-diario" class="view-content">
+        <div class="toolbar">
+            <h2 style="border:none; margin:0; padding:0;">📚 Trading Journal Cloud (Sincronizzato con Supabase)</h2>
+            <button class="btn-refresh" onclick="caricaDiario()">↻ Aggiorna</button>
+        </div>
+        <div id="diarioWrap">
+            <p class="placeholder-text">Caricamento cronologia dal Diario Cloud...</p>
+        </div>
+    </div>
+
+    <!-- GLOSSARIO -->
+    <div id="view-glossario" class="view-content">
+        <h2 style="border:none;">🧠 Glossario di Teoria dell'Asta e Meccanica dei Volumi</h2>
+        <p class="placeholder-text" style="margin-bottom:20px;">Integrazione delle regole e dei parametri dell'Order Flow istituzionale del mentore Andrea Cimi.</p>
+        <div class="glossary-grid" id="glossarioGrid">
+            <p class="placeholder-text">Caricamento glossario dal cloud...</p>
+        </div>
+    </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script>
+/* ============ CONFIG SUPABASE ============ */
+const SUPABASE_URL = "https://qtwidsfqzfjapwiiuywq.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0d2lkc2ZxemZqYXB3aWl1eXdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NTMwODksImV4cCI6MjA5OTAyOTA4OX0.p4hryHTNzcjVRj1JkE_tu_H84fK0hPclrZC6FKTAFf4";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ============ UTILITY: ESCAPE HTML ============ */
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+}
+
+/* ============ TOAST NOTIFICATIONS ============ */
+function toast(messaggio, tipo) {
+    tipo = tipo || 'success';
+    const container = document.getElementById('toastContainer');
+    const el = document.createElement('div');
+    el.className = 'toast ' + tipo;
+    el.textContent = messaggio;
+    container.appendChild(el);
+    setTimeout(() => {
+        el.classList.add('fadeout');
+        setTimeout(() => el.remove(), 260);
+    }, 4200);
+}
+
+/* ============ MODAL DIALOG GENERICO ============ */
+function apriModale(cfg) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const box = document.createElement('div');
+    box.className = 'modal-box';
+    const campiHtml = (cfg.campi || []).map(c => {
+        if (c.tipo === 'select') {
+            const opts = c.opzioni.map(o => `<option value="${escapeHtml(o)}" ${o === c.valore ? 'selected' : ''}>${escapeHtml(o)}</option>`).join('');
+            return `<div class="form-group"><label>${escapeHtml(c.label)}</label><select id="modale_${c.id}">${opts}</select></div>`;
+        }
+        return `<div class="form-group"><label>${escapeHtml(c.label)}</label><input type="${c.tipo || 'text'}" id="modale_${c.id}" value="${c.valore != null ? escapeHtml(c.valore) : ''}" placeholder="${escapeHtml(c.placeholder || '')}" ${c.step ? 'step="' + c.step + '"' : ''}></div>`;
+    }).join('');
+    box.innerHTML = `<h3>${escapeHtml(cfg.titolo)}</h3>${campiHtml}<div class="modal-actions"><button class="btn-sec" id="modaleAnnulla">${escapeHtml(cfg.testoAnnulla || 'Annulla')}</button><button class="btn-main" id="modaleConferma">${escapeHtml(cfg.testoConferma || 'Conferma')}</button></div>`;
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    const chiudi = () => overlay.remove();
+    box.querySelector('#modaleAnnulla').onclick = chiudi;
+    overlay.onclick = (e) => { if (e.target === overlay) chiudi(); };
+    box.querySelector('#modaleConferma').onclick = () => {
+        const valori = {};
+        (cfg.campi || []).forEach(c => { valori[c.id] = document.getElementById('modale_' + c.id).value; });
+        chiudi();
+        cfg.onConferma(valori);
+    };
+}
+
+/* ============ CONTATORE ANIMATO ============ */
+function animaContatore(id, valoreFinale, opts) {
+    opts = opts || {};
+    const el = document.getElementById(id);
+    if (!el) return;
+    const prefisso = opts.prefisso || '';
+    const suffisso = opts.suffisso || '';
+    const decimali = opts.decimali != null ? opts.decimali : 0;
+    const durata = 700;
+    const t0 = performance.now();
+    if (el._rafId) cancelAnimationFrame(el._rafId);
+    function step(t) {
+        const p = Math.min(1, (t - t0) / durata);
+        const eased = 1 - Math.pow(1 - p, 3);
+        const valore = valoreFinale * eased;
+        el.innerText = prefisso + valore.toLocaleString('en-US', { minimumFractionDigits: decimali, maximumFractionDigits: decimali }) + suffisso;
+        if (p < 1) el._rafId = requestAnimationFrame(step);
+    }
+    el._rafId = requestAnimationFrame(step);
+}
+
+/* ============ SFONDO A PARTICELLE ============ */
+function initParticles() {
+    const canvas = document.getElementById('particleCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const motionRidotto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let w, h, punti;
+    function ridimensiona() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+    function creaPunti() {
+        const n = motionRidotto ? 0 : Math.min(70, Math.floor((w * h) / 18000));
+        punti = Array.from({ length: n }, () => ({ x: Math.random() * w, y: Math.random() * h, vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25 }));
+    }
+    ridimensiona(); creaPunti();
+    window.addEventListener('resize', () => { ridimensiona(); creaPunti(); });
+    function disegnaFrame() {
+        ctx.clearRect(0, 0, w, h);
+        punti.forEach(p => { p.x += p.vx; p.y += p.vy; if (p.x < 0 || p.x > w) p.vx *= -1; if (p.y < 0 || p.y > h) p.vy *= -1; });
+        ctx.fillStyle = 'rgba(0,255,163,0.5)';
+        punti.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2); ctx.fill(); });
+        ctx.strokeStyle = 'rgba(0,255,163,0.08)';
+        for (let i = 0; i < punti.length; i++) {
+            for (let j = i + 1; j < punti.length; j++) {
+                const dx = punti[i].x - punti[j].x, dy = punti[i].y - punti[j].y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 120) {
+                    ctx.globalAlpha = 1 - dist / 120;
+                    ctx.beginPath(); ctx.moveTo(punti[i].x, punti[i].y); ctx.lineTo(punti[j].x, punti[j].y); ctx.stroke();
+                }
+            }
+        }
+        ctx.globalAlpha = 1;
+        if (!motionRidotto) requestAnimationFrame(disegnaFrame);
+    }
+    disegnaFrame();
+}
+
+/* ============ NAVIGAZIONE SPA ============ */
+function switchView(viewId, element) {
+    document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+    document.getElementById('view-' + viewId).classList.add('active');
+    element.classList.add('active');
+    if (viewId === 'diario') caricaDiario();
+    if (viewId === 'glossario') caricaGlossario();
+    if (viewId === 'portafoglio') ricalcolaPortafoglio();
+    if (viewId === 'grafici') { caricaGraficoLive(); caricaWatchlist(); }
+    if (window.innerWidth <= 768) toggleSidebar(false);
+}
+
+/* ============ MENU MOBILE (HAMBURGER) ============ */
+function toggleSidebar(forza) {
+    const sidebar = document.getElementById('sidebarEl');
+    const overlay = document.getElementById('sidebarOverlay');
+    const apri = forza !== undefined ? forza : !sidebar.classList.contains('open');
+    sidebar.classList.toggle('open', apri);
+    overlay.classList.toggle('open', apri);
+}
+
+/* ============ DATI REALI EMBEDDED (dai CSV forniti) ============ */
+const ULTIMO_CAMPIONE_MERCATO = { prezzo: 63110.34, volume: 46661632, vwap: 63253.32 };
+
+const OPTIMIZER_MULTIASSET = [
+["BTC-USD",0.5,1.5,811,432,379,53.27,1.71,0.332],["BTC-USD",0.5,2.0,787,370,417,47.01,1.775,0.41],
+["BTC-USD",0.5,2.5,754,311,443,41.25,1.755,0.444],["BTC-USD",0.5,3.0,719,261,458,36.3,1.71,0.452],
+["BTC-USD",1.0,1.5,792,416,376,52.53,1.66,0.313],["BTC-USD",1.0,2.0,768,357,411,46.48,1.737,0.395],
+["BTC-USD",1.0,2.5,735,298,437,40.54,1.705,0.419],["BTC-USD",1.0,3.0,701,249,452,35.52,1.653,0.421],
+["BTC-USD",1.5,1.5,776,410,366,52.84,1.68,0.321],["BTC-USD",1.5,2.0,752,351,401,46.68,1.751,0.4],
+["BTC-USD",1.5,2.5,719,292,427,40.61,1.71,0.421],["BTC-USD",1.5,3.0,685,243,442,35.47,1.649,0.419],
+["BTC-USD",2.0,1.5,764,404,360,52.88,1.683,0.322],["BTC-USD",2.0,2.0,740,345,395,46.62,1.747,0.399],
+["BTC-USD",2.0,2.5,707,287,420,40.59,1.708,0.421],["BTC-USD",2.0,3.0,673,238,435,35.36,1.641,0.415],
+["BTC-USD",2.5,1.5,752,397,355,52.79,1.677,0.32],["BTC-USD",2.5,2.0,728,339,389,46.57,1.743,0.397],
+["BTC-USD",2.5,2.5,695,281,414,40.43,1.697,0.415],["BTC-USD",2.5,3.0,661,232,429,35.1,1.622,0.404],
+["ETH-USD",0.5,1.5,938,493,445,52.56,1.662,0.314],["ETH-USD",0.5,2.0,930,437,493,46.99,1.773,0.41],
+["ETH-USD",0.5,2.5,924,393,531,42.53,1.85,0.489],["ETH-USD",0.5,3.0,907,351,556,38.7,1.894,0.548],
+["ETH-USD",1.0,1.5,914,480,434,52.52,1.659,0.313],["ETH-USD",1.0,2.0,906,425,481,46.91,1.767,0.407],
+["ETH-USD",1.0,2.5,901,382,519,42.4,1.84,0.484],["ETH-USD",1.0,3.0,884,341,543,38.57,1.884,0.543],
+["ETH-USD",1.5,1.5,898,474,424,52.78,1.677,0.32],["ETH-USD",1.5,2.0,890,421,469,47.3,1.795,0.419],
+["ETH-USD",1.5,2.5,885,378,507,42.71,1.864,0.495],["ETH-USD",1.5,3.0,869,339,530,39.01,1.919,0.56],
+["ETH-USD",2.0,1.5,865,461,404,53.29,1.712,0.332],["ETH-USD",2.0,2.0,858,410,448,47.79,1.83,0.434],
+["ETH-USD",2.0,2.5,853,367,486,43.02,1.888,0.506],["ETH-USD",2.0,3.0,838,329,509,39.26,1.939,0.57],
+["ETH-USD",2.5,1.5,837,447,390,53.41,1.719,0.335],["ETH-USD",2.5,2.0,830,396,434,47.71,1.825,0.431],
+["ETH-USD",2.5,2.5,825,353,472,42.79,1.87,0.498],["ETH-USD",2.5,3.0,811,316,495,38.96,1.915,0.559],
+["^GSPC",0.5,1.5,195,64,131,32.82,0.733,-0.179],["^GSPC",0.5,2.0,189,52,137,27.51,0.759,-0.175],
+["^GSPC",0.5,2.5,167,29,138,17.37,0.525,-0.392],["^GSPC",0.5,3.0,160,21,139,13.12,0.453,-0.475],
+["^GSPC",1.0,1.5,191,63,128,32.98,0.738,-0.175],["^GSPC",1.0,2.0,186,52,134,27.96,0.776,-0.161],
+["^GSPC",1.0,2.5,164,29,135,17.68,0.537,-0.381],["^GSPC",1.0,3.0,157,21,136,13.38,0.463,-0.465],
+["^GSPC",1.5,1.5,190,62,128,32.63,0.727,-0.184],["^GSPC",1.5,2.0,185,51,134,27.57,0.761,-0.173],
+["^GSPC",1.5,2.5,163,28,135,17.18,0.519,-0.399],["^GSPC",1.5,3.0,156,20,136,12.82,0.441,-0.487],
+["^GSPC",2.0,1.5,189,62,127,32.8,0.732,-0.18],["^GSPC",2.0,2.0,184,51,133,27.72,0.767,-0.168],
+["^GSPC",2.0,2.5,162,28,134,17.28,0.522,-0.395],["^GSPC",2.0,3.0,155,20,135,12.9,0.444,-0.484],
+["^GSPC",2.5,1.5,187,61,126,32.62,0.726,-0.184],["^GSPC",2.5,2.0,182,50,132,27.47,0.758,-0.176],
+["^GSPC",2.5,2.5,160,27,133,16.88,0.508,-0.409],["^GSPC",2.5,3.0,153,19,134,12.42,0.425,-0.503]
+];
+
+const GLOSSARIO_FALLBACK = [
+    { termine: "Liquidity Auction Theory", categoria: "Liquidity Auction Theory", definizione: "Modello che analizza il mercato come un'asta continua a doppia via (Double Auction System) in cui il prezzo si muove unicamente per trovare la liquidità necessaria ad incrociare domanda e offerta." },
+    { termine: "Order Flow", categoria: "Liquidity Auction Theory", definizione: "Il flusso continuo di ordini eseguiti a mercato in tempo reale. È l'unico vero indicatore anticipatore oggettivo delle intenzioni degli operatori istituzionali." },
+    { termine: "Assorbimento", categoria: "Liquidity Auction Theory", definizione: "Fenomeno in cui gli ordini aggressivi a mercato vengono bloccati e assorbiti da massicci ordini limite passivi posizionati dalle istituzioni su livelli chiave." },
+    { termine: "Aggressione", categoria: "Liquidity Auction Theory", definizione: "La spinta dei partecipanti al mercato che utilizzano ordini a mercato per entrare immediatamente a spread, generando l'effettivo sbilanciamento del prezzo." },
+    { termine: "Volume Tick", categoria: "Liquidity Auction Theory", definizione: "Il conteggio esatto del numero di transazioni eseguite per ogni variazione di prezzo (tick), indicatore puro di intensità istituzionale rispetto al volume a tempo." },
+    { termine: "VWAP", categoria: "Liquidity Auction Theory", definizione: "Volume Weighted Average Price. Rappresenta il 'Fair Value' istituzionale della sessione. Deviazioni estreme indicano opportunità di Mean Reversion." },
+    { termine: "Intermarket Analysis", categoria: "Struttura di Mercato", definizione: "Analisi comparata dei flussi finanziari tra i mercati Azionario, Obbligazionario, Valutario e Materie Prime per individuare la rotazione globale del denaro." },
+    { termine: "Smart Money", categoria: "Struttura di Mercato", definizione: "Istituzioni finanziarie informate, banche d'affari e Hedge Fund che detengono il capitale pesante e guidano le tendenze volumetriche di lungo periodo." },
+    { termine: "Market Makers", categoria: "Struttura di Mercato", definizione: "Fornitori istituzionali di liquidità bidirezionale sul book d'ordine. Traggono profitto dallo spread e gestiscono l'inventario senza prendere posizioni direzionali." },
+    { termine: "Vantaggio Statistico", categoria: "Statistica & Mindset", definizione: "Edge matematico oggettivo, formalizzato a piano di trading, che garantisce un'aspettativa di profitto positiva su un ampio campione di trade (es. Profit Factor > 1.1)." },
+    { termine: "Backtesting", categoria: "Statistica & Mindset", definizione: "Validazione matematica di una strategia applicata a una serie storica del passato su un campione di almeno 200 operazioni per dimostrarne l'Edge storico." },
+    { termine: "Process-Oriented Mindset", categoria: "Statistica & Mindset", definizione: "Approccio psicologico focalizzato esclusivamente sulla precisione esecutiva del piano e sulla gestione del rischio, ignorando l'emotività legata al profitto o alla perdita immediata." }
+];
+
+let ultimaAnalisi = null;
+
+/* ============ DASHBOARD: ANALISI / BACKTEST / SALVATAGGIO ============ */
+function leggiParametri() {
+    const tickerRaw = document.getElementById('ticker').value.trim().toUpperCase();
+    const tfCustom = document.getElementById('timeframeCustom').value.trim();
+    const tf = tfCustom !== '' ? tfCustom : document.getElementById('timeframe').value;
+    const soglia = parseFloat(document.getElementById('soglia').value);
+    const rr = parseFloat(document.getElementById('rr').value);
+    return { ticker: tickerRaw || 'BTC-USD', tf, soglia: isNaN(soglia) ? 0 : soglia, rr: isNaN(rr) ? 1 : rr };
+}
+
+function rangePerTimeframe(tf) {
+    const mappa = { "1m":"1d","2m":"5d","5m":"5d","15m":"5d","30m":"1mo","60m":"1mo","1h":"1mo","90m":"1mo","1d":"6mo","5d":"1y","1wk":"2y","1mo":"5y","3mo":"5y" };
+    return mappa[tf] || "1mo";
+}
+
+async function ottieniUltimoPrezzo(ticker) {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const json = await resp.json();
+    const result = json && json.chart && json.chart.result ? json.chart.result[0] : null;
+    if (!result) throw new Error("Ticker non trovato");
+    const closes = result.indicators.quote[0].close.filter(v => v != null);
+    if (!closes.length) throw new Error("Nessun prezzo disponibile");
+    return closes[closes.length - 1];
+}
+
+async function tentaDatiLive(ticker, tf) {
+    const range = rangePerTimeframe(tf);
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=${encodeURIComponent(tf)}&range=${range}`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const json = await resp.json();
+    const result = json && json.chart && json.chart.result ? json.chart.result[0] : null;
+    if (!result) throw new Error((json.chart.error && json.chart.error.description) || "Ticker non trovato");
+    const closes = result.indicators.quote[0].close.filter(v => v != null);
+    const highs = result.indicators.quote[0].high.filter(v => v != null);
+    const lows = result.indicators.quote[0].low.filter(v => v != null);
+    const volumes = result.indicators.quote[0].volume.filter(v => v != null);
+    if (closes.length === 0) throw new Error("Nessuna candela valida restituita");
+
+    let cumPV = 0, cumV = 0;
+    for (let i = 0; i < closes.length; i++) {
+        const tipico = (highs[i] + lows[i] + closes[i]) / 3;
+        const v = volumes[i] || 1;
+        cumPV += tipico * v;
+        cumV += v;
+    }
+    const vwap = cumPV / cumV;
+    const prezzo = closes[closes.length - 1];
+    const volume = volumes[volumes.length - 1] || 0;
+    return { prezzo, vwap, volume, fonte: "LIVE — Yahoo Finance" };
+}
+
+async function lanciaAzione(tipo) {
+    const { ticker, tf, soglia, rr } = leggiParametri();
+    const consoleBox = document.getElementById('outputConsole');
+
+    if (tipo === 'analisi') {
+        consoleBox.innerHTML = '<p class="placeholder-text">Sincronizzazione dati in corso per ' + escapeHtml(ticker) + ' [' + escapeHtml(tf) + ']...</p>';
+
+        let campione;
+        try {
+            campione = await tentaDatiLive(ticker, tf);
+        } catch (e) {
+            campione = Object.assign({}, ULTIMO_CAMPIONE_MERCATO, { fonte: "CACHE LOCALE (dati_mercato.csv, BTC-USD) — live non raggiungibile: " + e.message });
+        }
+
+        const prezzo = campione.prezzo, vwap = campione.vwap, volume = campione.volume, fonte = campione.fonte;
+        const deviazione = ((prezzo - vwap) / vwap) * 100;
+
+        document.getElementById('kpiPrezzo').innerText = "$" + prezzo.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('kpiDeviazione').innerText = (deviazione >= 0 ? "+" : "") + deviazione.toFixed(2) + "%";
+        document.getElementById('kpiDeviazione').style.color = deviazione < 0 ? "#ff4d4d" : "#00ffa3";
+        const kpiVol = document.getElementById('kpiVolume');
+        const volumeAnomalo = volume > 100000000;
+        kpiVol.innerText = volumeAnomalo ? "ANOMALO" : "REGOLARE";
+        kpiVol.className = volumeAnomalo ? "kpi-value anomaly" : "kpi-value";
+
+        const direzione = deviazione < 0 ? "sotto" : "sopra";
+        const bias = deviazione < 0 ? "un ritorno alla media equa del VWAP (Mean Reversion Long)" : "una compressione verso il VWAP (Mean Reversion Short)";
+
+        consoleBox.innerHTML = `
+            <div class="report-section">
+                <div class="report-title">🛑 VALIDAZIONE STRATEGICA MEAN REVERSION (VWAP)</div>
+                <div class="report-item" style="border-left-color:#474d57;"><strong>Fonte dati:</strong> ${escapeHtml(fonte)}</div>
+                <div class="report-item ${Math.abs(deviazione) > soglia ? 'danger' : ''}">
+                    <strong>Estensione:</strong> Il prezzo di ${escapeHtml(ticker)} si trova ${direzione} il VWAP del timeframe [${escapeHtml(tf)}].
+                    Estensione pari a ${deviazione.toFixed(2)}%, ${Math.abs(deviazione) > soglia ? 'oltre la soglia impostata (' + soglia + '%): anomalia statistica presente.' : 'entro la soglia impostata (' + soglia + '%): nessun segnale attivo.'}
+                </div>
+                <div class="report-item success">
+                    <strong>Struttura Volumi:</strong> Volume rilevato: ${volume.toLocaleString('en-US')}. ${volumeAnomalo ? 'Picco anomalo, coerente con assorbimento istituzionale.' : 'Volume nella norma.'}
+                </div>
+            </div>
+            <div class="report-section">
+                <div class="report-title">🎯 VERDETTO CONFLUENZA INTERMARKET</div>
+                <div class="report-item">Il bias è favorevole per ${bias}. R/R impostato: 1:${rr}. Attendere inversione dei volumi aggressivi sul book prima di procedere.</div>
+            </div>`;
+
+        ultimaAnalisi = { ticker, timeframe: tf, prezzo, deviazione, volume };
+        document.getElementById('btnSalva').disabled = false;
+
+    } else if (tipo === 'backtest') {
+        const righeAsset = OPTIMIZER_MULTIASSET.filter(r => r[0] === ticker);
+
+        if (righeAsset.length === 0) {
+            consoleBox.innerHTML = `
+                <div class="report-item danger">Nessun backtest storico presente per <strong>${escapeHtml(ticker)}</strong> in <code>optimizer_v3_multiasset.csv</code> (contiene solo BTC-USD, ETH-USD, ^GSPC).</div>
+                <div class="report-item">Per ottenere risultati reali su questo asset, rilancia l'optimizer Python impostando ticker=${escapeHtml(ticker)}, soglia=${soglia}, rr=${rr}, e importa il CSV risultante qui.</div>`;
+            return;
+        }
+
+        let riga = righeAsset.find(r => r[1] === soglia && r[2] === rr);
+        let approssimato = false;
+        if (!riga) {
+            approssimato = true;
+            riga = righeAsset.reduce((migliore, r) => {
+                const dist = Math.abs(r[1] - soglia) + Math.abs(r[2] - rr);
+                const distMigliore = Math.abs(migliore[1] - soglia) + Math.abs(migliore[2] - rr);
+                return dist < distMigliore ? r : migliore;
+            }, righeAsset[0]);
+        }
+
+        const sogliaRiga = riga[1], rrRiga = riga[2], totale = riga[3], vincite = riga[4], perdite = riga[5], winrate = riga[6], profitFactor = riga[7], expectancy = riga[8];
+        const valida = profitFactor > 1.1 && totale >= 200;
+        consoleBox.innerHTML = `
+            <div class="report-section">
+                <div class="report-title">📊 METRICHE BACKTEST (dati reali optimizer_v3_multiasset.csv)</div>
+                ${approssimato ? `<div class="report-item" style="border-left-color:#474d57;">Nessuna riga esatta per soglia=${soglia}/rr=${rr}: mostro la combinazione più vicina disponibile → soglia=${sogliaRiga}, rr=${rrRiga}.</div>` : ''}
+                <div class="report-item"><strong>Asset:</strong> ${escapeHtml(ticker)} | <strong>Timeframe:</strong> ${escapeHtml(tf)} | <strong>Soglia:</strong> ${sogliaRiga}% | <strong>R/R:</strong> 1:${rrRiga}</div>
+                <div class="report-item"><strong>Trade totali:</strong> ${totale} (${vincite} vincite / ${perdite} perdite)</div>
+                <div class="report-item ${winrate >= 50 ? 'success' : ''}"><strong>Win Rate:</strong> ${winrate.toFixed(2)}%</div>
+                <div class="report-item ${profitFactor > 1.1 ? 'success' : 'danger'}"><strong>Profit Factor:</strong> ${profitFactor} | <strong>Expectancy:</strong> ${expectancy >= 0 ? '+' : ''}${expectancy}R per operazione.
+                    <strong>${valida ? '[EDGE STATISTICO VALIDO]' : '[CAMPIONE INSUFFICIENTE O EDGE DEBOLE]'}</strong>
+                </div>
+            </div>`;
+    } else if (tipo === 'salva') {
+        salvaNelDiario();
+    }
+}
+
+function salvaNelDiario() {
+    if (!ultimaAnalisi) { toast("Genera prima un'Analisi Completa.", 'error'); return; }
+    apriModale({
+        titolo: 'Come ti senti rispetto a questo mercato?',
+        campi: [{ id: 'stato', label: 'Stato Emotivo', tipo: 'select', valore: 'Non Specificato', opzioni: ['Disciplinato', 'Calmo', 'Ansioso', 'FOMO', 'Euforico', 'Frustrato', 'Non Specificato'] }],
+        testoConferma: 'Archivia',
+        onConferma: (v) => eseguiSalvataggioDiario(v.stato)
+    });
+}
+
+async function eseguiSalvataggioDiario(statoEmotivo) {
+    const consoleBox = document.getElementById('outputConsole');
+    try {
+        const { error } = await sb.from('diario_trading').insert({
+            ticker: ultimaAnalisi.ticker, timeframe: ultimaAnalisi.timeframe,
+            prezzo_ingresso: ultimaAnalisi.prezzo, distanza_vwap: ultimaAnalisi.deviazione,
+            volume_tick: ultimaAnalisi.volume, stato_emotivo: statoEmotivo, report_ai: consoleBox.innerText
+        });
+        if (error) throw error;
+        toast('Report per ' + ultimaAnalisi.ticker + ' archiviato su Supabase!', 'success');
+    } catch (e) {
+        toast('Impossibile salvare su Supabase: ' + e.message, 'error');
+    }
+}
+
+/* ============ DIARIO CLOUD ============ */
+async function caricaDiario() {
+    const wrap = document.getElementById('diarioWrap');
+    wrap.innerHTML = '<div class="skeleton" style="height:140px;"></div>';
+    try {
+        const { data, error } = await sb.from('diario_trading')
+            .select('data_ora, ticker, timeframe, prezzo_ingresso, distanza_vwap, volume_tick, stato_emotivo')
+            .order('data_ora', { ascending: false })
+            .limit(25);
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            wrap.innerHTML = '<p class="placeholder-text">Nessun report salvato ancora. Genera un\'analisi in Dashboard e archiviala per vederla qui.</p>';
+            return;
+        }
+
+        const rows = data.map(r => {
+            const dev = Number(r.distanza_vwap);
+            const dataPulita = (r.data_ora || '').split('.')[0].replace('T', ' ');
+            return `<tr>
+                <td>${escapeHtml(dataPulita)}</td>
+                <td>${escapeHtml(r.ticker || '-')}</td>
+                <td>${escapeHtml(r.timeframe || '-')}</td>
+                <td>${r.prezzo_ingresso != null ? '$' + Number(r.prezzo_ingresso).toLocaleString('en-US') : '-'}</td>
+                <td class="${dev < 0 ? 'dev-neg' : 'dev-pos'}">${dev >= 0 ? '+' : ''}${dev.toFixed(2)}%</td>
+                <td><span class="badge-emotion">${escapeHtml(r.stato_emotivo || 'Non Specificato')}</span></td>
+            </tr>`;
+        }).join('');
+
+        wrap.innerHTML = `<table><thead><tr><th>Data</th><th>Ticker</th><th>TF</th><th>Prezzo</th><th>Dev. VWAP</th><th>Sentiment</th></tr></thead><tbody>${rows}</tbody></table>`;
+    } catch (e) {
+        wrap.innerHTML = `<p class="placeholder-text">Impossibile caricare il Diario da Supabase (${escapeHtml(e.message)}). Verifica che la tabella 'diario_trading' esista e che le policy RLS permettano la lettura.</p>`;
+    }
+}
+
+/* ============ GLOSSARIO ============ */
+async function caricaGlossario() {
+    const grid = document.getElementById('glossarioGrid');
+    grid.innerHTML = '<div class="skeleton" style="height:200px; grid-column:1/-1;"></div>';
+    let termini = GLOSSARIO_FALLBACK;
+    try {
+        const { data, error } = await sb.from('glossario_macro').select('termine, categoria, definizione').order('termine');
+        if (error) throw error;
+        if (data && data.length > 0) termini = data;
+    } catch (e) { /* fallback silenzioso */ }
+    grid.innerHTML = termini.map(t => `
+        <div class="card">
+            <div class="card-title">${escapeHtml(t.termine)}</div>
+            <div class="card-cat">${escapeHtml(t.categoria)}</div>
+            <div class="card-def">${escapeHtml(t.definizione)}</div>
+        </div>`).join('');
+}
+
+/* ============ CHAT ============ */
+function inviaInChat() {
+    const input = document.getElementById('chatInput');
+    if (input.value.trim() === "") return;
+    const chatBox = document.getElementById('chatBox');
+    const userText = input.value;
+    chatBox.innerHTML += `<div class="msg user">${escapeHtml(userText)}</div>`;
+    input.value = "";
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    setTimeout(() => {
+        chatBox.innerHTML += `<div class="msg ai">Ricevuto. Sto analizzando la tua domanda: "<em>${escapeHtml(userText)}</em>". Secondo la teoria dell'asta di Cimi, i flussi di volume e la deviazione dal VWAP vanno confrontati con il cruscotto intermarket prima di validare questo scenario. Nota: questa è una risposta dimostrativa — per l'AI reale collega un backend che interroghi omnitrade_numerical_ai.py senza esporre la chiave API nel browser.</div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }, 800);
+}
+
+/* ============ PORTAFOGLIO: STATO E AZIONI ============ */
+let modalitaCorrente = 'reale';
+let equityChart = null;
+
+function impostaModalita(m, el) {
+    modalitaCorrente = m;
+    document.querySelectorAll('#segmentedModalita button').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    ricalcolaPortafoglio();
+}
+
+async function prendiPrezzoLive(inputId, tickerSourceId) {
+    const ticker = document.getElementById(tickerSourceId).value.trim().toUpperCase();
+    if (!ticker) { toast('Scrivi prima un ticker.', 'error'); return; }
+    try {
+        const p = await ottieniUltimoPrezzo(ticker);
+        document.getElementById(inputId).value = p;
+        toast('Prezzo live recuperato per ' + ticker + '.', 'success');
+    } catch (e) {
+        toast('Live non disponibile (' + e.message + '). Inseriscilo manualmente.', 'error');
+    }
+}
+
+async function registraMovimento() {
+    const tipo = document.getElementById('movTipo').value;
+    const importo = parseFloat(document.getElementById('movImporto').value);
+    const nota = document.getElementById('movNota').value.trim();
+    if (!importo || importo <= 0) { toast('Inserisci un importo valido.', 'error'); return; }
+    try {
+        const { error } = await sb.from('wallet_movimenti').insert({ modalita: modalitaCorrente, tipo, importo, nota: nota || null });
+        if (error) throw error;
+        toast((tipo === 'deposito' ? 'Deposito' : 'Prelievo') + ' registrato con successo.', 'success');
+        document.getElementById('movImporto').value = '';
+        document.getElementById('movNota').value = '';
+        ricalcolaPortafoglio();
+    } catch (e) {
+        toast('Errore nel salvataggio: ' + e.message + ' — hai eseguito schema_wallet_supabase.sql su Supabase?', 'error');
+    }
+}
+
+async function registraApertura() {
+    const ticker = document.getElementById('posTicker').value.trim().toUpperCase();
+    const direzione = document.getElementById('posDirezione').value;
+    const quantita = parseFloat(document.getElementById('posQuantita').value);
+    const prezzo = parseFloat(document.getElementById('posPrezzo').value);
+    const rrValRaw = document.getElementById('posRR').value;
+    const rr = rrValRaw ? parseFloat(rrValRaw) : null;
+    const nota = document.getElementById('posNota').value.trim();
+    if (!ticker || !quantita || quantita <= 0 || !prezzo || prezzo <= 0) { toast("Compila ticker, quantità e prezzo d'ingresso.", 'error'); return; }
+    try {
+        const { error } = await sb.from('wallet_posizioni').insert({ modalita: modalitaCorrente, ticker, direzione, quantita, prezzo_ingresso: prezzo, rr_pianificato: rr, stato: 'aperta', nota: nota || null });
+        if (error) throw error;
+        toast('Posizione ' + ticker + ' aperta.', 'success');
+        ['posQuantita', 'posPrezzo', 'posRR', 'posNota'].forEach(id => document.getElementById(id).value = '');
+        ricalcolaPortafoglio();
+    } catch (e) {
+        toast('Errore apertura posizione: ' + e.message + ' — hai eseguito schema_wallet_supabase.sql su Supabase?', 'error');
+    }
+}
+
+async function chiediChiusura(id, ticker) {
+    let suggerito = '';
+    try { suggerito = String(await ottieniUltimoPrezzo(ticker)); } catch (e) { /* manuale */ }
+    apriModale({
+        titolo: 'Chiudi posizione — ' + ticker,
+        campi: [{ id: 'prezzoUscita', label: 'Prezzo di uscita' + (suggerito ? ' (suggerito dal mercato live)' : ' (inseriscilo manualmente)'), tipo: 'number', valore: suggerito, placeholder: 'Prezzo di chiusura' }],
+        testoConferma: 'Chiudi posizione',
+        onConferma: (v) => eseguiChiusura(id, parseFloat(v.prezzoUscita))
+    });
+}
+
+async function eseguiChiusura(id, prezzoUscita) {
+    if (!prezzoUscita || prezzoUscita <= 0) { toast('Prezzo di uscita non valido.', 'error'); return; }
+    try {
+        const { data, error } = await sb.from('wallet_posizioni').select('*').eq('id', id).single();
+        if (error) throw error;
+        const pnl = (data.direzione === 'long' ? (prezzoUscita - data.prezzo_ingresso) : (data.prezzo_ingresso - prezzoUscita)) * data.quantita;
+        const esito = pnl > 0 ? 'vincita' : (pnl < 0 ? 'perdita' : null);
+        const { error: err2 } = await sb.from('wallet_posizioni').update({ prezzo_uscita: prezzoUscita, stato: 'chiusa', chiusa_il: new Date().toISOString(), pnl, esito }).eq('id', id);
+        if (err2) throw err2;
+        toast('Posizione chiusa — PnL: ' + (pnl >= 0 ? '+' : '') + pnl.toFixed(2), pnl >= 0 ? 'success' : 'error');
+        ricalcolaPortafoglio();
+    } catch (e) {
+        toast('Errore chiusura: ' + e.message, 'error');
+    }
+}
+
+function disegnaEquity(labels, valori) {
+    const canvas = document.getElementById('equityCanvas');
+    if (!canvas || typeof Chart === 'undefined') return;
+    if (equityChart) equityChart.destroy();
+    equityChart = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: { labels, datasets: [{ label: 'Equity', data: valori, borderColor: '#00ffa3', backgroundColor: 'rgba(0,255,163,0.08)', borderWidth: 2, pointRadius: 0, tension: 0.25, fill: true }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: '#929aa5', maxTicksLimit: 6 }, grid: { color: '#2b2f36' } },
+                y: { ticks: { color: '#929aa5', callback: (v) => '$' + v }, grid: { color: '#2b2f36' } }
+            }
+        }
+    });
+}
+
+async function ricalcolaPortafoglio() {
+    const wrapAperte = document.getElementById('posizioniAperteWrap');
+    const wrapStorico = document.getElementById('storicoWrap');
+    wrapAperte.innerHTML = '<div class="skeleton" style="height:100px;"></div>';
+    wrapStorico.innerHTML = '<div class="skeleton" style="height:140px;"></div>';
+    try {
+        const [rMov, rPos] = await Promise.all([
+            sb.from('wallet_movimenti').select('*').eq('modalita', modalitaCorrente).order('creato_il'),
+            sb.from('wallet_posizioni').select('*').eq('modalita', modalitaCorrente).order('aperta_il')
+        ]);
+        if (rMov.error) throw rMov.error;
+        if (rPos.error) throw rPos.error;
+        const movimenti = rMov.data || [];
+        const posizioni = rPos.data || [];
+
+        const chiuse = posizioni.filter(p => p.stato === 'chiusa');
+        const aperte = posizioni.filter(p => p.stato === 'aperta');
+
+        const depTot = movimenti.filter(m => m.tipo === 'deposito').reduce((s, m) => s + Number(m.importo), 0);
+        const prelTot = movimenti.filter(m => m.tipo === 'prelievo').reduce((s, m) => s + Number(m.importo), 0);
+        const pnlTot = chiuse.reduce((s, p) => s + Number(p.pnl || 0), 0);
+        const saldo = depTot - prelTot + pnlTot;
+
+        const vincite = chiuse.filter(p => Number(p.pnl) > 0);
+        const perdite = chiuse.filter(p => Number(p.pnl) < 0);
+        const winrate = (vincite.length + perdite.length) > 0 ? (vincite.length / (vincite.length + perdite.length) * 100) : 0;
+        const sommaVincite = vincite.reduce((s, p) => s + Number(p.pnl), 0);
+        const sommaPerditeAbs = Math.abs(perdite.reduce((s, p) => s + Number(p.pnl), 0));
+        const profitFactor = sommaPerditeAbs > 0 ? (sommaVincite / sommaPerditeAbs) : (sommaVincite > 0 ? Infinity : 0);
+        const rrConRR = posizioni.filter(p => p.rr_pianificato != null);
+        const rrMedioPianificato = rrConRR.length > 0 ? rrConRR.reduce((s, p) => s + Number(p.rr_pianificato), 0) / rrConRR.length : null;
+        const mediaVincita = vincite.length > 0 ? sommaVincite / vincite.length : 0;
+        const mediaPerdita = perdite.length > 0 ? sommaPerditeAbs / perdite.length : 0;
+        const rrRealizzato = mediaPerdita > 0 ? (mediaVincita / mediaPerdita) : null;
+
+        animaContatore('kpiSaldo', saldo, { prefisso: '$', decimali: 2 });
+        const segnoPnl = pnlTot >= 0 ? '+$' : '-$';
+        animaContatore('kpiPnl', Math.abs(pnlTot), { prefisso: segnoPnl, decimali: 2 });
+        document.getElementById('kpiPnl').style.color = pnlTot >= 0 ? '#00ffa3' : '#ff4d4d';
+        animaContatore('kpiWinrate', winrate, { suffisso: '%', decimali: 1 });
+        document.getElementById('kpiProfitFactor').innerText = isFinite(profitFactor) ? profitFactor.toFixed(2) : '∞';
+        document.getElementById('kpiRR').innerText = rrRealizzato != null ? ('1:' + rrRealizzato.toFixed(2)) : (rrMedioPianificato != null ? ('~1:' + rrMedioPianificato.toFixed(2) + ' (piano)') : '-');
+        animaContatore('kpiAperte', aperte.length, { decimali: 0 });
+
+        if (aperte.length === 0) {
+            wrapAperte.innerHTML = '<p class="placeholder-text">Nessuna posizione aperta in modalità ' + modalitaCorrente + '.</p>';
+        } else {
+            const righe = aperte.map(p => `<tr>
+                <td>${new Date(p.aperta_il).toLocaleString('it-IT')}</td>
+                <td>${escapeHtml(p.ticker)}</td>
+                <td><span class="badge-emotion ${p.direzione === 'long' ? 'badge-long' : 'badge-short'}">${p.direzione.toUpperCase()}</span></td>
+                <td>${Number(p.quantita)}</td>
+                <td>$${Number(p.prezzo_ingresso).toLocaleString('en-US')}</td>
+                <td>${p.rr_pianificato != null ? '1:' + p.rr_pianificato : '-'}</td>
+                <td><button class="btn-sec" style="width:auto;padding:8px 14px;" onclick="chiediChiusura('${p.id}','${escapeHtml(p.ticker)}')">Chiudi</button></td>
+            </tr>`).join('');
+            wrapAperte.innerHTML = `<table><thead><tr><th>Apertura</th><th>Ticker</th><th>Direzione</th><th>Qtà</th><th>Ingresso</th><th>RR Piano</th><th></th></tr></thead><tbody>${righe}</tbody></table>`;
+        }
+
+        const eventiStorico = movimenti.map(m => ({ data: m.creato_il, tipo: m.tipo === 'deposito' ? 'Deposito' : 'Prelievo', dettaglio: m.nota || '-', valore: (m.tipo === 'deposito' ? 1 : -1) * Number(m.importo) }))
+            .concat(chiuse.map(p => ({ data: p.chiusa_il, tipo: 'Posizione Chiusa', dettaglio: p.ticker + ' ' + p.direzione.toUpperCase(), valore: Number(p.pnl) })))
+            .sort((a, b) => new Date(b.data) - new Date(a.data)).slice(0, 40);
+
+        if (eventiStorico.length === 0) {
+            wrapStorico.innerHTML = '<p class="placeholder-text">Ancora nessun movimento o posizione chiusa in questa modalità.</p>';
+        } else {
+            const righeStorico = eventiStorico.map(ev => `<tr>
+                <td>${new Date(ev.data).toLocaleString('it-IT')}</td>
+                <td>${escapeHtml(ev.tipo)}</td>
+                <td>${escapeHtml(ev.dettaglio)}</td>
+                <td class="${ev.valore >= 0 ? 'dev-pos' : 'dev-neg'}">${ev.valore >= 0 ? '+' : ''}$${ev.valore.toFixed(2)}</td>
+            </tr>`).join('');
+            wrapStorico.innerHTML = `<table><thead><tr><th>Data</th><th>Tipo</th><th>Dettaglio</th><th>Importo</th></tr></thead><tbody>${righeStorico}</tbody></table>`;
+        }
+
+        const eventiOrdinati = movimenti.map(m => ({ data: new Date(m.creato_il), valore: (m.tipo === 'deposito' ? 1 : -1) * Number(m.importo) }))
+            .concat(chiuse.map(p => ({ data: new Date(p.chiusa_il), valore: Number(p.pnl) })))
+            .sort((a, b) => a.data - b.data);
+        let cum = 0;
+        const labels = ['Inizio'];
+        const valori = [0];
+        eventiOrdinati.forEach(ev => { cum += ev.valore; labels.push(ev.data.toLocaleDateString('it-IT')); valori.push(Number(cum.toFixed(2))); });
+        if (eventiOrdinati.length === 0) { labels.push('Oggi'); valori.push(0); }
+        disegnaEquity(labels, valori);
+
+    } catch (e) {
+        toast('Errore nel caricamento del portafoglio: ' + e.message, 'error');
+        wrapAperte.innerHTML = '<p class="placeholder-text">Impossibile caricare — hai eseguito schema_wallet_supabase.sql nel SQL Editor di Supabase?</p>';
+        wrapStorico.innerHTML = '';
+    }
+}
+
+/* ============ GRAFICI LIVE: TRADINGVIEW ============ */
+function convertiTickerTradingView(tickerInput) {
+    const t = tickerInput.trim().toUpperCase();
+    if (t.endsWith('-USD')) return 'BINANCE:' + t.replace('-USD', '') + 'USDT';
+    if (t.endsWith('=X')) return 'FX:' + t.replace('=X', '');
+    if (t === '^GSPC') return 'SP:SPX';
+    if (t === '^DJI') return 'TVC:DJI';
+    if (t === '^IXIC') return 'NASDAQ:IXIC';
+    if (t === '^NDX') return 'NASDAQ:NDX';
+    if (t === '^VIX') return 'TVC:VIX';
+    if (t === 'GC=F') return 'TVC:GOLD';
+    if (t === 'CL=F') return 'TVC:USOIL';
+    if (t === 'DX-Y.NYB') return 'TVC:DXY';
+    if (t.startsWith('^')) return 'TVC:' + t.slice(1);
+    return t;
+}
+
+function intervalloTradingView(tf) {
+    const mappa = { "1m":"1","2m":"2","5m":"5","15m":"15","30m":"30","60m":"60","1h":"60","90m":"120","1d":"D","5d":"D","1wk":"W","1mo":"M","3mo":"M" };
+    return mappa[tf] || "60";
+}
+
+function caricaGraficoLive() {
+    const tickerInput = document.getElementById('chartTicker').value.trim() || 'BTC-USD';
+    const tf = document.getElementById('chartInterval').value;
+    const symbol = convertiTickerTradingView(tickerInput);
+    const interval = intervalloTradingView(tf);
+    const container = document.getElementById('tvAdvancedChart');
+    container.innerHTML = '<div class="tradingview-widget-container__widget"></div>';
+    const script = document.createElement('script');
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+        autosize: true, symbol: symbol, interval: interval, timezone: "Etc/UTC", theme: "dark", style: "1",
+        locale: "it", backgroundColor: "rgba(11, 14, 17, 1)", gridColor: "rgba(43, 47, 54, 0.5)",
+        hide_top_toolbar: false, allow_symbol_change: true, support_host: "https://www.tradingview.com"
+    });
+    container.appendChild(script);
+    toast('Grafico caricato per ' + symbol, 'success');
+}
+
+function caricaWatchlist() {
+    const container = document.getElementById('tvWatchlistInner');
+    container.innerHTML = '';
+    const script = document.createElement('script');
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js";
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+        symbols: [["BTC/USDT", "BINANCE:BTCUSDT|1D"], ["ETH/USDT", "BINANCE:ETHUSDT|1D"], ["S&P 500", "SP:SPX|1D"], ["Gold", "TVC:GOLD|1D"], ["EUR/USD", "FX:EURUSD|1D"]],
+        chartOnly: false, width: "100%", height: "100%", locale: "it", colorTheme: "dark", autosize: true,
+        showVolume: false, showMA: false, gridLineColor: "rgba(43,47,54,0.5)", fontColor: "#929aa5",
+        underLineColor: "rgba(0,255,163,0.3)", trendLineColor: "#00ffa3", backgroundColor: "rgba(11,14,17,1)"
+    });
+    container.appendChild(script);
+}
+
+function caricaTickerTapeGlobale() {
+    const container = document.getElementById('tickerTapeInner');
+    const script = document.createElement('script');
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+        symbols: [
+            { proName: "BINANCE:BTCUSDT", title: "BTC" }, { proName: "BINANCE:ETHUSDT", title: "ETH" },
+            { proName: "SP:SPX", title: "S&P 500" }, { proName: "TVC:DXY", title: "DXY" },
+            { proName: "TVC:US10Y", title: "US10Y" }, { proName: "TVC:VIX", title: "VIX" },
+            { proName: "TVC:GOLD", title: "Gold" }, { proName: "FX:EURUSD", title: "EUR/USD" }
+        ],
+        colorTheme: "dark", isTransparent: true, displayMode: "adaptive", locale: "it"
+    });
+    container.appendChild(script);
+}
+
+/* ============ AVVIO ============ */
+initParticles();
+caricaTickerTapeGlobale();
+ricalcolaPortafoglio();
+</script>
+</body>
+</html>

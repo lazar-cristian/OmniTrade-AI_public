@@ -1,1 +1,1 @@
-# OmniTrade-AI_public
+# OmniTrade-AI
