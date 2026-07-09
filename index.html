@@ -71,27 +71,27 @@
                     </div>
                 </div>
 
-                <div class="dashboard-charts-layout">
-                    <div class="chart-wrapper">
-                        <h3>Serie storica CSV</h3>
-                        <div class="canvas-container">
-                            <canvas id="market-historical-chart"></canvas>
+                <div class="dashboard-main-grid">
+                    <div class="left-column">
+                        <div class="chart-wrapper">
+                            <h3>Serie storica CSV</h3>
+                            <div class="canvas-container">
+                                <canvas id="market-historical-chart"></canvas>
+                            </div>
                         </div>
-                    </div>
-                    <div class="open-positions-wrapper">
-                        <h3>Widget live TradingView</h3>
-                        <div class="tv-container-box" id="tradingview_widget"></div>
-                    </div>
-                </div>
-
-                <div class="dashboard-charts-layout" style="margin-top:24px;">
-                    <div class="card-action">
-                        <h3>Confluenza e segnali</h3>
+                        <div class="card-action" style="margin-top:24px;">
+                            <h3>Confluenza e segnali</h3>
                         <p style="color:var(--text-muted); line-height:1.6;">Il workspace carica automaticamente il dataset locale, il ticker selezionato e i widget live per fornire una vista operativa completa.</p>
                     </div>
-                    <div class="card-history">
-                        <h3>Ultime posizioni</h3>
-                        <div class="table-responsive">
+                    </div>
+                    <div class="right-column">
+                        <div class="open-positions-wrapper">
+                            <h3>Widget live TradingView</h3>
+                            <div class="tv-container-box" id="tradingview_widget"></div>
+                        </div>
+                        <div class="card-history" style="margin-top:24px;">
+                            <h3>Ultime posizioni</h3>
+                            <div class="table-responsive">
                             <table class="custom-table">
                                 <thead>
                                     <tr><th>Asset</th><th>Direzione</th><th>Valore</th><th>Profit</th></tr>
@@ -101,6 +101,7 @@
                         </div>
                     </div>
                 </div>
+                </div>
             </section>
 
             <section id="portfolio" class="app-section">
@@ -109,8 +110,7 @@
                         <button type="button" class="toggle-btn active" id="btn-mode-real">Reale</button>
                         <button type="button" class="toggle-btn" id="btn-mode-demo">Demo</button>
                     </div>
-                </div>
-
+                    </div>
                 <div class="portfolio-grid">
                     <div class="card-action">
                         <h3>Gestione portafoglio</h3>
@@ -133,7 +133,6 @@
                             <button type="submit" class="btn-submit">Registra operazione</button>
                         </form>
                     </div>
-
                     <div class="card-history">
                         <h3>Curva equity e storico</h3>
                         <div class="canvas-container" style="height:240px; margin-bottom:20px;">
@@ -146,8 +145,8 @@
                                 </thead>
                                 <tbody id="portfolio-history-tbody"></tbody>
                             </table>
-                        </div>
                     </div>
+                </div>
                 </div>
             </section>
 
