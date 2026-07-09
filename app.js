@@ -5,9 +5,13 @@
  * =========================================================================
  */
 
-// CONFIGURAZIONE CLIENT SUPABASE (Sicura tramite Variabili d'Ambiente Vite)
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// CONFIGURAZIONE CLIENT SUPABASE (Supporta sia Vite sia caricamento statico in browser)
+const SUPABASE_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_SUPABASE_URL)
+    ? import.meta.env.VITE_SUPABASE_URL
+    : (window.__SUPABASE_URL__ || '');
+const SUPABASE_ANON_KEY = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_SUPABASE_ANON_KEY)
+    ? import.meta.env.VITE_SUPABASE_ANON_KEY
+    : (window.__SUPABASE_ANON_KEY__ || '');
 
 let supabase = null;
 if (typeof window.supabase !== 'undefined' && SUPABASE_URL) {

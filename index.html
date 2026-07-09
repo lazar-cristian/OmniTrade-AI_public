@@ -1,403 +1,229 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OmniTrade AI - Workspace Quantitativo</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-<style>
-    :root {
-        --bg-dark-base: #080b10;
-        --bg-sidebar: #0e121a;
-        --bg-cards: #131924;
-        --bg-inputs: #0b0e14;
-        --accent-clean: #00ffa3;
-        --text-primary: #f3f4f6;
-        --text-muted: #6b7280;
-        --border-color: #1e293b;
-        --crypto-green: #10b981;
-        --crypto-red: #ef4444;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background-color: var(--bg-dark-base); color: var(--text-primary); font-family: system-ui, -apple-system, sans-serif; display: flex; height: 100vh; overflow: hidden; }
-
-    /* SIDEBAR */
-    .sidebar { width: 240px; background-color: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 10; }
-    .brand-area { padding: 24px; font-weight: 800; font-size: 18px; letter-spacing: 0.5px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); }
-    .brand-area span { color: var(--accent-clean); }
-    .sidebar-menu { display: flex; flex-direction: column; gap: 4px; padding: 16px; flex: 1; }
-    .menu-item { padding: 12px 14px; color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
-    .menu-item:hover, .menu-item.active { background-color: var(--bg-cards); color: var(--accent-clean); }
-    
-    /* WORKSPACE */
-    .workspace { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-    
-    /* TOP UTILITY BAR: DESIGN MINIMAL CON SEZIONE AUTH */
-    .top-utility-bar { height: 65px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; background: rgba(14, 18, 26, 0.5); }
-    .auth-status-container { display: flex; align-items: center; gap: 12px; font-size: 13px; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--text-muted); }
-    .status-dot.authenticated { background-color: var(--crypto-green); box-shadow: 0 0 8px var(--crypto-green); }
-    .btn-auth { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; transition: 0.2s; }
-    .btn-auth:hover { border-color: var(--accent-clean); color: var(--accent-clean); }
-
-    /* VIEWS */
-    .view-content { flex: 1; padding: 32px; overflow-y: auto; display: none; }
-    .view-content.active { display: block; animation: fadeIn 0.2s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-
-    /* Scrollbar Minimalista */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: var(--bg-dark-base); }
-    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
-
-    /* PANELS & GRIDS */
-    .panel { background-color: var(--bg-cards); border: 1px solid var(--border-color); border-radius: 8px; padding: 24px; margin-bottom: 24px; position: relative; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-    h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 16px; font-weight: 600; }
-    
-    /* BLOCCATO SE NON AUTENTICATO */
-    .auth-lock-overlay {
-        position: absolute; inset: 0; background: rgba(8, 11, 16, 0.88); backdrop-filter: blur(6px);
-        display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5; border-radius: 8px;
-        opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
-    }
-    .panel.locked .auth-lock-overlay { opacity: 1; pointer-events: auto; }
-    .lock-msg { font-size: 13px; color: var(--text-muted); text-align: center; margin-bottom: 12px; }
-
-    /* SEZIONE COMPONENTI INPUT */
-    .form-group { margin-bottom: 16px; }
-    label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
-    input, select, button { width: 100%; padding: 10px 14px; background-color: var(--bg-inputs); border: 1px solid var(--border-color); color: white; border-radius: 6px; font-size: 13px; outline: none; }
-    input, select { transition: border-color 0.15s ease, box-shadow 0.15s ease; }
-    input:focus, select:focus { border-color: var(--accent-clean); box-shadow: 0 0 0 1px rgba(0, 255, 163, 0.15); }
-    button { background-color: var(--bg-sidebar); border-color: var(--border-color); cursor: pointer; font-weight: 600; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-    button:hover:not(:disabled) { border-color: var(--accent-clean); color: var(--accent-clean); }
-    button:active { transform: scale(0.98); }
-    button.btn-accent { background-color: var(--accent-clean); color: var(--bg-dark-base); border: none; }
-    button.btn-accent:hover:not(:disabled) { background-color: #00db8b; color: var(--bg-dark-base); }
-    button:disabled { opacity: 0.3; cursor: not-allowed; }
-
-    /* KPI METRICS */
-    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-    .kpi-mini { background: var(--bg-cards); border: 1px solid var(--border-color); padding: 16px; border-radius: 6px; text-align: center; }
-    .kpi-mini-val { font-size: 20px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-
-    /* TABLES */
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-    th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
-    th { color: var(--text-muted); font-weight: 500; }
-    td { font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    tr:hover { background-color: rgba(255,255,255,0.02); }
-
-    .txt-up { color: var(--crypto-green); background: rgba(16, 185, 129, 0.06); padding: 2px 6px; border-radius: 4px; font-weight: 600; }
-    .txt-down { color: var(--crypto-red); background: rgba(239, 68, 68, 0.06); padding: 2px 6px; border-radius: 4px; font-weight: 600; }
-
-    /* OUTPUT CONSOLE */
-    .output-box { background-color: var(--bg-inputs); border: 1px solid var(--border-color); padding: 16px; border-radius: 6px; min-height: 180px; font-family: monospace; font-size: 12px; color: #a1a1aa; line-height: 1.5; }
-    .canvas-container { position: relative; width: 100%; height: 360px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniTrade AI - Workspace Quantitativo</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 </head>
 <body>
+    <canvas id="particle-canvas"></canvas>
 
-<div class="sidebar">
-    <div class="brand-area">OmniTrade <span>AI</span></div>
-    <div class="sidebar-menu">
-        <div class="menu-item active" onclick="switchView('dashboard', this)">📊 Dashboard VWAP</div>
-        <div class="menu-item" onclick="switchView('portafoglio', this)">💼 Portafoglio</div>
-        <div class="menu-item" onclick="switchView('diario', this)">🗂️ Diario Cloud</div>
-    </div>
-</div>
-
-<div class="workspace">
-    <!-- TOP BAR CON STATO TABELLE/AUTH -->
-    <div class="top-utility-bar">
-        <div class="view-title-context"><span id="current-view-title" style="font-weight: 600;">Dashboard VWAP</span></div>
-        <div class="auth-status-container">
-            <div class="status-dot" id="authDot"></div>
-            <span id="authStatusText" style="color: var(--text-muted);">Tabelle Non Autenticate</span>
-            <button class="btn-auth" id="authActionBtn" onclick="toggleSimulatedAuth()">Autentica Tabelle</button>
-        </div>
-    </div>
-
-    <!-- VIEW 1: DASHBOARD ANALISI -->
-    <div id="view-dashboard" class="view-content active">
-        <div class="grid-2">
-            <div class="panel">
-                <h2>Configurazione Analisi</h2>
-                <div class="form-group">
-                    <label>Asset Ticker</label>
-                    <input type="text" id="ticker" value="BTC-USD">
+    <div class="app-container">
+        <aside class="sidebar">
+            <div>
+                <div class="logo-area">
+                    <div class="logo-icon">◉</div>
+                    <div class="logo-text">OmniTrade <span>AI</span></div>
                 </div>
-                <div class="form-group">
-                    <label>Timeframe</label>
-                    <select id="timeframe">
-                        <option value="1h">1 Ora</option>
-                        <option value="1d">1 Giorno</option>
-                    </select>
+                <nav class="nav-menu">
+                    <a href="#" class="nav-item active" data-target="dashboard"><i>📊</i><span>Dashboard Realtime</span></a>
+                    <a href="#" class="nav-item" data-target="portfolio"><i>💼</i><span>Portafoglio</span></a>
+                    <a href="#" class="nav-item" data-target="diary"><i>📝</i><span>Diario & Cloud</span></a>
+                    <a href="#" class="nav-item" data-target="glossary"><i>📚</i><span>Glossario</span></a>
+                    <a href="#" class="nav-item" data-target="copilot"><i>🤖</i><span>Copilot AI</span></a>
+                </nav>
+            </div>
+            <div class="sidebar-footer">
+                <span class="status-indicator online"></span>
+                <span id="db-status-text">Cloud sync ready</span>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="ticker-selector-box">
+                    <i>⌕</i>
+                    <input id="ticker-input" type="text" value="NASDAQ:AAPL" placeholder="Inserisci ticker o simbolo">
                 </div>
-                <button class="btn-accent" onclick="lanciaAnalisi()">⚡ Elabora Flussi d'Asta</button>
-            </div>
+                <div class="timeframe-selector">
+                    <button class="tf-btn active" data-tf="15">15m</button>
+                    <button class="tf-btn" data-tf="60">1h</button>
+                    <button class="tf-btn" data-tf="240">4h</button>
+                    <button class="tf-btn" data-tf="D">1D</button>
+                </div>
+            </header>
 
-            <div class="panel">
-                <h2>Responso Quantitativo</h2>
-                <div class="output-box" id="outputConsole">In attesa dei parametri di input...</div>
-            </div>
-        </div>
+            <section id="dashboard" class="app-section active">
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <h3>Equity</h3>
+                        <div class="value" id="kpi-equity">€25,000.00</div>
+                        <span class="subtext">Portafoglio attivo</span>
+                    </div>
+                    <div class="kpi-card">
+                        <h3>P/L Netto</h3>
+                        <div class="value positive" id="kpi-pl">+€0.00</div>
+                        <span class="subtext">Ultime operazioni</span>
+                    </div>
+                    <div class="kpi-card">
+                        <h3>Win Rate</h3>
+                        <div class="value" id="kpi-winrate">0%</div>
+                        <span class="subtext">Performance storica</span>
+                    </div>
+                    <div class="kpi-card">
+                        <h3>RR</h3>
+                        <div class="value" id="kpi-rr">0.00</div>
+                        <span class="subtext">Profit factor</span>
+                    </div>
+                </div>
 
-        <div class="panel">
-            <h2>Serie Storica</h2>
-            <div class="canvas-container">
-                <canvas id="market-historical-chart"></canvas>
-            </div>
-        </div>
+                <div class="dashboard-charts-layout">
+                    <div class="chart-wrapper">
+                        <h3>Serie storica CSV</h3>
+                        <div class="canvas-container">
+                            <canvas id="market-historical-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="open-positions-wrapper">
+                        <h3>Widget live TradingView</h3>
+                        <div class="tv-container-box" id="tradingview_widget"></div>
+                    </div>
+                </div>
 
-        <div class="grid-2" style="margin-top: 24px;">
-            <div class="panel" style="height: 350px;">
-                <h2>Monitor di Confluenza Live (Yahoo/ICE Feed)</h2>
-                <div id="yahoo-live-chart" style="width: 100%; height: calc(100% - 30px);"></div>
-            </div>
+                <div class="dashboard-charts-layout" style="margin-top:24px;">
+                    <div class="card-action">
+                        <h3>Confluenza e segnali</h3>
+                        <p style="color:var(--text-muted); line-height:1.6;">Il workspace carica automaticamente il dataset locale, il ticker selezionato e i widget live per fornire una vista operativa completa.</p>
+                    </div>
+                    <div class="card-history">
+                        <h3>Ultime posizioni</h3>
+                        <div class="table-responsive">
+                            <table class="custom-table">
+                                <thead>
+                                    <tr><th>Asset</th><th>Direzione</th><th>Valore</th><th>Profit</th></tr>
+                                </thead>
+                                <tbody id="open-positions-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-            <div class="panel" style="height: 350px;">
-                <h2>Analisi Tecnica Algoritmica</h2>
-                <div id="yahoo-sentiment-gauge" style="width: 100%; height: calc(100% - 30px);"></div>
-            </div>
-        </div>
+            <section id="portfolio" class="app-section">
+                <div class="portfolio-header-actions">
+                    <div class="portfolio-toggle">
+                        <button type="button" class="toggle-btn active" id="btn-mode-real">Reale</button>
+                        <button type="button" class="toggle-btn" id="btn-mode-demo">Demo</button>
+                    </div>
+                </div>
 
-        <div class="grid-2" style="margin-top: 24px;">
-            <div class="panel" style="height: 400px;">
-                <h2>Screener Flussi di Mercato</h2>
-                <div id="tv-market-screener" style="height: calc(100% - 30px);"></div>
-            </div>
+                <div class="portfolio-grid">
+                    <div class="card-action">
+                        <h3>Gestione portafoglio</h3>
+                        <form id="portfolio-form">
+                            <div class="form-group">
+                                <label for="port-ticker">Ticker</label>
+                                <input id="port-ticker" name="port-ticker" type="text" placeholder="es. AAPL" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="port-type">Direzione</label>
+                                <select id="port-type" name="port-type">
+                                    <option value="BUY">BUY</option>
+                                    <option value="SELL">SELL</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="port-amount">Importo</label>
+                                <input id="port-amount" name="port-amount" type="number" step="0.01" placeholder="1000" required>
+                            </div>
+                            <button type="submit" class="btn-submit">Registra operazione</button>
+                        </form>
+                    </div>
 
-            <div class="panel" style="height: 400px;">
-                <h2>Calendario Macroeconomico (High Impact)</h2>
-                <div id="tv-economic-calendar" style="height: calc(100% - 30px);"></div>
-            </div>
-        </div>
+                    <div class="card-history">
+                        <h3>Curva equity e storico</h3>
+                        <div class="canvas-container" style="height:240px; margin-bottom:20px;">
+                            <canvas id="equityChart"></canvas>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="custom-table">
+                                <thead>
+                                    <tr><th>Data</th><th>Ticker</th><th>Tipo</th><th>Importo</th></tr>
+                                </thead>
+                                <tbody id="portfolio-history-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="diary" class="app-section">
+                <div class="diary-layout">
+                    <div class="diary-form-card">
+                        <h3>Nuova nota di trading</h3>
+                        <form id="diary-form">
+                            <div class="form-group">
+                                <label for="diary-title">Titolo</label>
+                                <input id="diary-title" name="diary-title" type="text" placeholder="Analisi di mercato" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="diary-tags">Tag</label>
+                                <input id="diary-tags" name="diary-tags" type="text" placeholder="macro, breakout, risk">
+                            </div>
+                            <div class="form-group">
+                                <label for="diary-content">Contenuto</label>
+                                <textarea id="diary-content" name="diary-content" rows="8" style="width:100%; min-height:180px; padding:12px 16px; background-color:var(--bg-inputs); border:1px solid var(--border-color); color:var(--text-primary); border-radius:8px; resize:vertical;"></textarea>
+                            </div>
+                            <button type="submit" class="btn-submit">Salva nota</button>
+                        </form>
+                    </div>
+                    <div class="diary-logs-wrapper">
+                        <h3>Log cloud</h3>
+                        <div class="diary-logs" id="diary-entries-container"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="glossary" class="app-section">
+                <div class="glossary-header">
+                    <div>
+                        <h2>Glossario tecnico</h2>
+                        <p>Concetti chiave per trading quantitativo e gestione del rischio.</p>
+                    </div>
+                    <div class="glossary-search-box">
+                        <i>🔍</i>
+                        <input id="glossary-search" type="text" placeholder="Cerca termine">
+                    </div>
+                </div>
+                <div class="glossary-grid" id="glossary-grid-box"></div>
+            </section>
+
+            <section id="copilot" class="app-section">
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <div class="chat-title-box">
+                            <i>🤖</i>
+                            <div>
+                                <h4>Copilot AI</h4>
+                                <span class="status">Online • risposta guidata</span>
+                            </div>
+                        </div>
+                        <span class="badge">Live assistance</span>
+                    </div>
+                    <div class="chat-messages" id="chat-messages-box">
+                        <div class="message system">Benvenuto in OmniTrade AI. Chiedi un'analisi, un piano di rischio o un riepilogo del portafoglio.</div>
+                    </div>
+                    <div class="chat-input-area">
+                        <input id="chat-input" type="text" placeholder="Scrivi una domanda per il Copilot...">
+                        <button id="chat-send-btn" type="button">➤</button>
+                    </div>
+                </div>
+            </section>
+        </main>
     </div>
 
-    <!-- VIEW 2: PORTAFOGLIO (MUTILE SE NON AUTH) -->
-    <div id="view-portafoglio" class="view-content">
-        <div class="panel" id="portfolioPanel">
-            <!-- LOCK OVERLAY AUTENTICAZIONE -->
-            <div class="auth-lock-overlay">
-                <div class="lock-msg">🔒 Questa tabella richiede l'autenticazione delle chiavi di sicurezza.</div>
-                <button class="btn-auth" style="width:auto;" onclick="toggleSimulatedAuth()">Esegui Autenticazione Rapida</button>
-            </div>
+    <div id="notification-container"></div>
 
-            <h2>Registro Posizioni Attive</h2>
-            <div class="kpi-row">
-                <div class="kpi-mini"><label>Saldo Corrente</label><div class="kpi-mini-val" id="kpiSaldo">$0.00</div></div>
-                <div class="kpi-mini"><label>P&L Attivo</label><div class="kpi-mini-val" id="kpiPnl">$0.00</div></div>
-                <div class="kpi-mini"><label>Win Rate</label><div class="kpi-mini-val">53.2%</div></div>
-                <div class="kpi-mini"><label>Ordini Totali</label><div class="kpi-mini-val">811</div></div>
-            </div>
-            
-            <table id="tablePosizioni">
-                <thead>
-                    <tr><th>Asset</th><th>Direzione</th><th>Prezzo Ingresso</th><th>Stato</th></tr>
-                </thead>
-                <tbody>
-                    <!-- Caricato dinamicamente -->
-                </tbody>
-            </table>
-        </div>
-    </div>
+    <script src="https://s3.tradingview.com/tv.js"></script>
+    <script src="charts.js"></script>
+    <script src="app.js" type="module"></script>
+</body>
+</html>
 
-    <!-- VIEW 3: DIARIO CLOUD (MUTILE SE NON AUTH) -->
-    <div id="view-diario" class="view-content">
-        <div class="panel" id="diarioPanel">
-            <div class="auth-lock-overlay">
-                <div class="lock-msg">🔒 Accesso al database Supabase crittografato. Fornire autorizzazione token.</div>
-                <button class="btn-auth" style="width:auto;" onclick="toggleSimulatedAuth()">Autentica Tabelle</button>
-            </div>
-            <h2>Sincronizzazione Trading Journal</h2>
-            <div class="output-box" id="diarioConsole">Esegui l'autenticazione delle tabelle per scaricare i registri di trading storici...</div>
-        </div>
-    </div>
-</div>
-
-<script>
-    // Stato di autenticazione dell'applicazione per le tabelle protette
-    let tabelleAutenticate = false;
-
-    function aggiornaInterfacciaAuth() {
-        const dot = document.getElementById('authDot');
-        const text = document.getElementById('authStatusText');
-        const btn = document.getElementById('authActionBtn');
-        const portfolio = document.getElementById('portfolioPanel');
-        const diario = document.getElementById('diarioPanel');
-
-        if (tabelleAutenticate) {
-            dot.classList.add('authenticated');
-            text.innerText = "Tabelle Sincronizzate (Supabase)";
-            text.style.color = "var(--crypto-green)";
-            btn.innerText = "Disconnetti";
-            
-            // Sblocca i moduli rimovendo la classe css .locked
-            portfolio.classList.remove('locked');
-            diario.classList.remove('locked');
-            caricaDatiProtetti();
-        } else {
-            dot.classList.remove('authenticated');
-            text.innerText = "Tabelle Non Autenticate";
-            text.style.color = "var(--text-muted)";
-            btn.innerText = "Autentica Tabelle";
-            
-            // Blocca i moduli aggiungendo la classe css .locked
-            portfolio.classList.add('locked');
-            diario.classList.add('locked');
-        }
-    }
-
-    function toggleSimulatedAuth() {
-        tabelleAutenticate = !tabelleAutenticate;
-        aggiornaInterfacciaAuth();
-    }
-
-    function switchView(viewId, element) {
-        document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
-        document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
-        document.getElementById('view-' + viewId).classList.add('active');
-        element.classList.add('active');
-        document.getElementById('current-view-title').innerText = element.innerText;
-    }
-
-    function lanciaAnalisi() {
-        const ticker = document.getElementById('ticker').value;
-        const consoleBox = document.getElementById('outputConsole');
-        consoleBox.innerHTML = `[ELABORAZIONE] Richiesta flussi d'asta per ${ticker}...\n[INFO] VWAP calcolato su deviazione standard logaritmica.\n[MARKET] Confluenza direzionale neutrale.`;
-    }
-
-    function caricaDatiProtetti() {
-        // Popola la tabella e le kpi solo se l'autenticazione ha successo
-        document.getElementById('kpiSaldo').innerText = "$14,850.00";
-        document.getElementById('kpiPnl').innerText = "+$432.10";
-        document.getElementById('kpiPnl').style.color = "var(--crypto-green)";
-        
-        const tbody = document.querySelector('#tablePosizioni tbody');
-        tbody.innerHTML = `
-            <tr><td>BTC-USD</td><td style="color:var(--crypto-green)">LONG</td><td>$63,110.00</td><td>In esecuzione</td></tr>
-            <tr><td>ETH-USD</td><td style="color:var(--crypto-red)">SHORT</td><td>$3,420.15</td><td>In esecuzione</td></tr>
-        `;
-        document.getElementById('diarioConsole').innerText = "[SUPABASE SUCCESS] 25 Record storici scaricati correttamente.\nUltima modifica: Oggi alle 14:22.";
-    }
-
-    function inizializzaModuliYahooFinance() {
-        const chartContainer = document.getElementById('yahoo-live-chart');
-        if (chartContainer) {
-            const scriptChart = document.createElement('script');
-            scriptChart.src = 'https://s3.tradingview.com/tv.js';
-            scriptChart.async = true;
-            scriptChart.onload = () => {
-                new TradingView.widget({
-                    autosize: true,
-                    symbol: 'BINANCE:BTCUSDT',
-                    interval: 'H',
-                    timezone: 'Etc/UTC',
-                    theme: 'dark',
-                    style: '1',
-                    locale: 'it',
-                    enable_publishing: false,
-                    hide_side_toolbar: true,
-                    allow_symbol_change: true,
-                    container_id: 'yahoo-live-chart'
-                });
-            };
-            document.head.appendChild(scriptChart);
-        }
-
-        const gaugeContainer = document.getElementById('yahoo-sentiment-gauge');
-        if (gaugeContainer) {
-            const scriptGauge = document.createElement('script');
-            scriptGauge.src = 'https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js';
-            scriptGauge.async = true;
-            scriptGauge.innerHTML = JSON.stringify({
-                interval: '1h',
-                width: '100%',
-                isTransparent: true,
-                height: '100%',
-                symbol: 'BINANCE:BTCUSDT',
-                showIntervalTabs: true,
-                displayMode: 'single',
-                locale: 'it',
-                colorTheme: 'dark'
-            });
-            gaugeContainer.appendChild(scriptGauge);
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        inizializzaModuliYahooFinance();
-    });
-
-    function caricaCalendarioEconomico() {
-        const container = document.getElementById('tv-economic-calendar');
-        if (!container) return;
-        const script = document.createElement('script');
-        script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-events.js';
-        script.async = true;
-        script.innerHTML = JSON.stringify({
-            colorTheme: 'dark',
-            isTransparent: true,
-            width: '100%',
-            height: '100%',
-            locale: 'it',
-            importanceFilter: '0',
-            currencyFilter: 'USD,EUR,GBP'
-        });
-        container.appendChild(script);
-    }
-
-    function caricaMarketScreener() {
-        const container = document.getElementById('tv-market-screener');
-        if (!container) return;
-        const script = document.createElement('script');
-        script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js';
-        script.async = true;
-        script.innerHTML = JSON.stringify({
-            width: '100%',
-            height: '100%',
-            symbolsGroups: [
-                {
-                    name: 'Crypto Confluenza',
-                    originalName: 'Indices',
-                    symbols: [
-                        { name: 'BINANCE:BTCUSDT', displayName: 'Bitcoin' },
-                        { name: 'BINANCE:ETHUSDT', displayName: 'Ethereum' },
-                        { name: 'BINANCE:SOLUSDT', displayName: 'Solana' }
-                    ]
-                },
-                {
-                    name: 'Macro Correlati',
-                    symbols: [
-                        { name: 'CAPITALCOM:DXY', displayName: 'Dollar Index' },
-                        { name: 'FOREXCOM:SPXUSD', displayName: 'S&P 500' },
-                        { name: 'TVC:GOLD', displayName: 'Oro' }
-                    ]
-                }
-            ],
-            showSymbolLogo: true,
-            colorTheme: 'dark',
-            isTransparent: true,
-            locale: 'it'
-        });
-        container.appendChild(script);
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        caricaCalendarioEconomico();
-        caricaMarketScreener();
-        inizializzaModuliYahooFinance();
-    });
-
-    // Inizializzazione al boot dell'app
-    aggiornaInterfacciaAuth();
-</script>
 <script src="charts.js"></script>
 </body>
 </html>
