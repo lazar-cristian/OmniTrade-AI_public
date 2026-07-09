@@ -7,28 +7,27 @@
 
 let marketChartInstance = null;
 
-// Sincronizzazione automatica al caricamento della sezione grafici
+// Si attiva automaticamente quando il DOM è pronto
 document.addEventListener('DOMContentLoaded', () => {
     inizializzaAnalisiStorica();
 });
 
 /**
- * Carica il file CSV locale ed estrae i vettori di dati
+ * Carica il file CSV locale ed estrae i vettori di dati tramite PapaParse
  */
 function inizializzaAnalisiStorica() {
-    console.log("[Chart Engine] Caricamento file dati_mercato.csv...");
-    
-    // PapaParse legge il file CSV direttamente dalla root del server locale
+    console.log('[Chart Engine] Caricamento file dati_mercato.csv...');
+
     Papa.parse('dati_mercato.csv', {
         download: true,
         header: true,
         skipEmptyLines: true,
         complete: function(results) {
-            console.log("[Chart Engine] CSV Parsato con successo. Righe:", results.data.length);
+            console.log('[Chart Engine] CSV Parsato con successo. Righe:', results.data.length);
             renderizzaGraficoMercato(results.data);
         },
         error: function(err) {
-            console.error("[Chart Engine Error] Impossibile caricare il CSV:", err.message);
+            console.error('[Chart Engine Error] Impossibile caricare il CSV:', err.message);
         }
     });
 }
@@ -43,18 +42,15 @@ function renderizzaGraficoMercato(dataRows) {
         return;
     }
 
-    // Mappatura e pulizia dei dati estratti dal CSV
     const labels = dataRows.map(row => row.Timestamp);
     const prezziChiusura = dataRows.map(row => parseFloat(row.Prezzo_Chiusura));
     const volumi = dataRows.map(row => parseFloat(row.Volume_Tick));
     const vwap = dataRows.map(row => parseFloat(row.VWAP));
 
-    // Distruggi un eventuale grafico precedente per evitare sovrapposizioni grafiche di hover
     if (marketChartInstance) {
         marketChartInstance.destroy();
     }
 
-    // Creazione del grafico avanzato multi-asse (Prezzo vs Volumi)
     marketChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
@@ -63,7 +59,7 @@ function renderizzaGraficoMercato(dataRows) {
                 {
                     label: 'Prezzo Chiusura (€)',
                     data: prezziChiusura,
-                    borderColor: '#3b82f6', // Blu Neon
+                    borderColor: '#3b82f6',
                     backgroundColor: 'rgba(59, 130, 246, 0.05)',
                     borderWidth: 2,
                     pointRadius: 0,
@@ -74,9 +70,9 @@ function renderizzaGraficoMercato(dataRows) {
                 {
                     label: 'VWAP (€)',
                     data: vwap,
-                    borderColor: '#10b981', // Verde Smeraldo
+                    borderColor: '#10b981',
                     borderWidth: 1.5,
-                    borderDash: [5, 5], // Linea tratteggiata per gli indicatori istituzionali
+                    borderDash: [5, 5],
                     pointRadius: 0,
                     fill: false,
                     yAxisID: 'y-prezzo'
@@ -85,7 +81,7 @@ function renderizzaGraficoMercato(dataRows) {
                     label: 'Volume Tick',
                     type: 'bar',
                     data: volumi,
-                    backgroundColor: 'rgba(239, 68, 68, 0.25)', // Rosso semitrasparente per l'istogramma
+                    backgroundColor: 'rgba(239, 68, 68, 0.25)',
                     hoverBackgroundColor: 'rgba(239, 68, 68, 0.45)',
                     yAxisID: 'y-volume',
                     barPercentage: 0.6
@@ -128,12 +124,12 @@ function renderizzaGraficoMercato(dataRows) {
                     type: 'linear',
                     display: true,
                     position: 'right',
-                    grid: { drawOnChartArea: false }, // Evita di sovrapporre le griglie dei volumi ai prezzi
+                    grid: { drawOnChartArea: false },
                     ticks: { color: '#ef4444', maxTicksLimit: 5 },
-                    // Forza i volumi a stare schiacciati sul fondo per non coprire le linee dei prezzi
-                    max: Math.max(...volumi) * 4 
+                    max: Math.max(...volumi) * 4
                 }
             }
         }
     });
 }
+
