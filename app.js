@@ -217,7 +217,7 @@ function loadTradingView(ticker, timeframe) {
             "interval": timeframe,
             "timezone": "Europe/Rome",
             "theme": "dark",
-            "style": "1",
+            "style": "1", // Candlestick style
             "locale": "it",
             "toolbar_bg": "#0e121a",
             "enable_publishing": false,
@@ -226,7 +226,29 @@ function loadTradingView(ticker, timeframe) {
             "container_id": "tradingview_widget",
             "studies": [
                 "RSI@tv-basicstudies",
-                "MASimple@tv-basicstudies"
+                "MASimple@tv-basicstudies",
+                // Explicitly adding volume study, though it's often default with style:1
+                "Volume@tv-basicstudies"
+            ],
+            "overrides": {
+                // Customize candlestick colors for minimalist aesthetic
+                "mainSeriesProperties.candleStyle.upColor": "#10b981",
+                "mainSeriesProperties.candleStyle.downColor": "#ef4444",
+                "mainSeriesProperties.candleStyle.borderUpColor": "#10b981",
+                "mainSeriesProperties.candleStyle.borderDownColor": "#ef4444",
+                "mainSeriesProperties.candleStyle.wickUpColor": "#10b981",
+                "mainSeriesProperties.candleStyle.wickDownColor": "#ef4444"
+            },
+            "time_frames": [ // Adding more detailed timeframes for selection
+                { "text": "1m", "resolution": "1" },
+                { "text": "5m", "resolution": "5" },
+                { "text": "15m", "resolution": "15" },
+                { "text": "30m", "resolution": "30" },
+                { "text": "1h", "resolution": "60" },
+                { "text": "4h", "resolution": "240" },
+                { "text": "1D", "resolution": "D" },
+                { "text": "1W", "resolution": "W" },
+                { "text": "1M", "resolution": "M" }
             ]
         });
     }
