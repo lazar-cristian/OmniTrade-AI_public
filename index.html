@@ -183,7 +183,7 @@
         <div class="tradingview-widget-container">
             <div class="tradingview-widget-container__widget" id="tickerTapeInner"></div>
         </div>
-        <p class="placeholder-text" style="font-size:11px; text-align:center; margin:4px 0 6px 0;">ⓘ Indici (S&amp;P 500, DXY, US10Y, VIX) possono mostrare dati leggermente ritardati sul piano gratuito di TradingView — è normale, non un errore.</p>
+        <p class="placeholder-text" style="font-size:11px; text-align:center; margin:4px 0 6px 0;">ⓘ DXY, VIX e US10Y sono mostrati tramite fonti equivalenti (Fed/CBOE proxy) perché i simboli indice originali di TradingView richiedono un'accettazione dati in tempo reale non disponibile nei widget embeddati.</p>
     </div>
 
     <!-- PORTAFOGLIO -->
@@ -317,6 +317,7 @@
         <div class="panel" id="orderBookPanel" style="margin-top:20px; display:none;">
             <h2>📖 Order Book Live (Binance) — <span id="orderBookSymbolLabel"></span></h2>
             <p class="placeholder-text" style="margin-bottom:10px;">Dati reali dalle API pubbliche di Binance, aggiornati ogni pochi secondi. Disponibile solo per coppie crypto quotate su Binance.</p>
+            <div class="kpi-grid" id="volumeStatsWrap" style="margin-bottom:16px;"></div>
             <div id="orderBookWrap"><div class="skeleton" style="height:180px;"></div></div>
         </div>
 
@@ -1126,7 +1127,8 @@ function caricaGraficoLive() {
     script.innerHTML = JSON.stringify({
         autosize: true, symbol: symbol, interval: interval, timezone: "Etc/UTC", theme: "dark", style: "1",
         locale: "it", backgroundColor: "rgba(11, 14, 17, 1)", gridColor: "rgba(43, 47, 54, 0.5)",
-        hide_top_toolbar: false, allow_symbol_change: true, support_host: "https://www.tradingview.com"
+        hide_top_toolbar: false, allow_symbol_change: true, support_host: "https://www.tradingview.com",
+        studies: ["Volume@tv-basicstudies"]
     });
     container.appendChild(script);
 
@@ -1178,6 +1180,24 @@ async function aggiornaOrderBook(tickerInput) {
     pannello.style.display = 'block';
     document.getElementById('orderBookSymbolLabel').innerText = simboloBinance;
 
+    async function caricaStatistiche24h() {
+        const statsWrap = document.getElementById('volumeStatsWrap');
+        try {
+            const resp = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${simboloBinance}`);
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const d = await resp.json();
+            const variazione = parseFloat(d.priceChangePercent);
+            statsWrap.innerHTML = `
+                <div class="kpi-card"><div class="kpi-label">Volume 24h (${simboloBinance.replace('USDT','')})</div><div class="kpi-value">${parseFloat(d.volume).toLocaleString('en-US', {maximumFractionDigits:2})}</div></div>
+                <div class="kpi-card"><div class="kpi-label">Volume 24h (USDT)</div><div class="kpi-value">$${parseFloat(d.quoteVolume).toLocaleString('en-US', {maximumFractionDigits:0})}</div></div>
+                <div class="kpi-card"><div class="kpi-label">Massimo 24h</div><div class="kpi-value">$${parseFloat(d.highPrice).toLocaleString('en-US')}</div></div>
+                <div class="kpi-card"><div class="kpi-label">Minimo 24h</div><div class="kpi-value">$${parseFloat(d.lowPrice).toLocaleString('en-US')}</div></div>
+                <div class="kpi-card"><div class="kpi-label">Variazione 24h</div><div class="kpi-value" style="color:${variazione >= 0 ? '#00ffa3' : '#ff4d4d'}">${variazione >= 0 ? '+' : ''}${variazione.toFixed(2)}%</div></div>`;
+        } catch (e) {
+            statsWrap.innerHTML = `<p class="placeholder-text">Statistiche 24h non disponibili (${escapeHtml(e.message)}).</p>`;
+        }
+    }
+
     async function caricaSnapshot() {
         const wrap = document.getElementById('orderBookWrap');
         try {
@@ -1197,8 +1217,9 @@ async function aggiornaOrderBook(tickerInput) {
             wrap.innerHTML = `<p class="placeholder-text">Order book non disponibile in questo momento (${escapeHtml(e.message)}).</p>`;
         }
     }
+    await caricaStatistiche24h();
     await caricaSnapshot();
-    orderBookInterval = setInterval(caricaSnapshot, 4000);
+    orderBookInterval = setInterval(() => { caricaSnapshot(); caricaStatistiche24h(); }, 4000);
 }
 
 function caricaWatchlist() {
@@ -1210,7 +1231,7 @@ function caricaWatchlist() {
     script.innerHTML = JSON.stringify({
         symbols: [["BTC/USDT", "BINANCE:BTCUSDT|1D"], ["ETH/USDT", "BINANCE:ETHUSDT|1D"], ["S&P 500", "FOREXCOM:SPXUSD|1D"], ["Gold", "TVC:GOLD|1D"], ["EUR/USD", "FX:EURUSD|1D"]],
         chartOnly: false, width: "100%", height: "100%", locale: "it", colorTheme: "dark", autosize: true,
-        showVolume: false, showMA: false, gridLineColor: "rgba(43,47,54,0.5)", fontColor: "#929aa5",
+        showVolume: true, showMA: false, gridLineColor: "rgba(43,47,54,0.5)", fontColor: "#929aa5",
         underLineColor: "rgba(0,255,163,0.3)", trendLineColor: "#00ffa3", backgroundColor: "rgba(11,14,17,1)"
     });
     container.appendChild(script);
@@ -1249,8 +1270,8 @@ function caricaTickerTapeGlobale() {
     script.innerHTML = JSON.stringify({
         symbols: [
             { proName: "BINANCE:BTCUSDT", title: "BTC" }, { proName: "BINANCE:ETHUSDT", title: "ETH" },
-            { proName: "FOREXCOM:SPXUSD", title: "S&P 500" }, { proName: "TVC:DXY", title: "DXY" },
-            { proName: "TVC:US10Y", title: "US10Y" }, { proName: "TVC:VIX", title: "VIX" },
+            { proName: "FOREXCOM:SPXUSD", title: "S&P 500" }, { proName: "FRED:DTWEXBGS", title: "USD Index (Fed)" },
+            { proName: "FRED:DGS10", title: "US10Y (rendimento)" }, { proName: "AMEX:VIXY", title: "VIX (proxy ETF)" },
             { proName: "TVC:GOLD", title: "Gold" }, { proName: "FX:EURUSD", title: "EUR/USD" }
         ],
         colorTheme: "dark", isTransparent: true, displayMode: "adaptive", locale: "it"
