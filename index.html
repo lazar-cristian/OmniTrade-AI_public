@@ -169,6 +169,7 @@
     <div class="sidebar-menu">
         <div class="menu-item active" tabindex="0" onclick="switchView('portafoglio', this)">💼 Portafoglio</div>
         <div class="menu-item" tabindex="0" onclick="switchView('grafici', this)">📈 Grafici Live</div>
+        <div class="menu-item" tabindex="0" onclick="switchView('news', this)">📰 News &amp; Calendario</div>
         <div class="menu-item" tabindex="0" onclick="switchView('dashboard', this)">📊 Analisi VWAP</div>
         <div class="menu-item" tabindex="0" onclick="switchView('chat', this)">💬 AI Copilot Chat</div>
         <div class="menu-item" tabindex="0" onclick="switchView('diario', this)">🗂️ Diario Cloud</div>
@@ -182,6 +183,7 @@
         <div class="tradingview-widget-container">
             <div class="tradingview-widget-container__widget" id="tickerTapeInner"></div>
         </div>
+        <p class="placeholder-text" style="font-size:11px; text-align:center; margin:4px 0 6px 0;">ⓘ Indici (S&amp;P 500, DXY, US10Y, VIX) possono mostrare dati leggermente ritardati sul piano gratuito di TradingView — è normale, non un errore.</p>
     </div>
 
     <!-- PORTAFOGLIO -->
@@ -300,8 +302,37 @@
             <button class="btn-main" onclick="caricaGraficoLive()">📡 Carica Grafico Live</button>
         </div>
         <div class="tv-chart-wrap" id="tvAdvancedChart"><div class="tradingview-widget-container__widget"></div></div>
+
+        <div class="dashboard-grid" style="margin-top:20px;">
+            <div class="panel" style="height:220px; padding:15px;">
+                <h2 style="font-size:13px;">Analisi Tecnica (TradingView)</h2>
+                <div id="tvTechAnalysis" style="height:150px;"></div>
+            </div>
+            <div class="panel" style="height:220px; padding:15px;">
+                <h2 style="font-size:13px;">Info Simbolo</h2>
+                <div id="tvSymbolInfo" style="height:150px;"></div>
+            </div>
+        </div>
+
+        <div class="panel" id="orderBookPanel" style="margin-top:20px; display:none;">
+            <h2>📖 Order Book Live (Binance) — <span id="orderBookSymbolLabel"></span></h2>
+            <p class="placeholder-text" style="margin-bottom:10px;">Dati reali dalle API pubbliche di Binance, aggiornati ogni pochi secondi. Disponibile solo per coppie crypto quotate su Binance.</p>
+            <div id="orderBookWrap"><div class="skeleton" style="height:180px;"></div></div>
+        </div>
+
         <h2 style="margin-top:30px; border:none;">Watchlist Rapida</h2>
         <div class="tv-watchlist-wrap" id="tvWatchlistInner"></div>
+    </div>
+
+    <!-- NEWS & CALENDARIO -->
+    <div id="view-news" class="view-content">
+        <h2 style="border:none;">📰 News di Mercato in Tempo Reale</h2>
+        <p class="placeholder-text" style="margin-bottom:16px;">Feed ufficiale TradingView, aggiornato automaticamente — stessa fonte dati usata da migliaia di siti finanziari.</p>
+        <div class="tv-chart-wrap" style="height:480px;" id="tvNewsTimeline"></div>
+
+        <h2 style="margin-top:30px; border:none;">🗓️ Calendario Economico</h2>
+        <p class="placeholder-text" style="margin-bottom:16px;">Eventi macro reali (tassi, inflazione, occupazione...) con impatto atteso sul mercato.</p>
+        <div class="tv-chart-wrap" style="height:480px;" id="tvEconCalendar"></div>
     </div>
 
     <!-- DASHBOARD ANALISI VWAP -->
@@ -562,6 +593,7 @@ function switchView(viewId, element) {
     if (viewId === 'glossario') caricaGlossario();
     if (viewId === 'portafoglio') ricalcolaPortafoglio();
     if (viewId === 'grafici') { caricaGraficoLive(); caricaWatchlist(); }
+    if (viewId === 'news') caricaNewsECalendario();
     if (window.innerWidth <= 768) toggleSidebar(false);
 }
 
@@ -1097,7 +1129,76 @@ function caricaGraficoLive() {
         hide_top_toolbar: false, allow_symbol_change: true, support_host: "https://www.tradingview.com"
     });
     container.appendChild(script);
+
+    caricaAnalisiTecnica(symbol);
+    caricaSymbolInfo(symbol);
+    aggiornaOrderBook(tickerInput);
+
     toast('Grafico caricato per ' + symbol, 'success');
+}
+
+function caricaAnalisiTecnica(symbol) {
+    const container = document.getElementById('tvTechAnalysis');
+    container.innerHTML = '<div class="tradingview-widget-container__widget"></div>';
+    const script = document.createElement('script');
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js";
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+        interval: "1h", width: "100%", height: "150", symbol: symbol, showIntervalTabs: true,
+        locale: "it", colorTheme: "dark", isTransparent: true
+    });
+    container.appendChild(script);
+}
+
+function caricaSymbolInfo(symbol) {
+    const container = document.getElementById('tvSymbolInfo');
+    container.innerHTML = '<div class="tradingview-widget-container__widget"></div>';
+    const script = document.createElement('script');
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-symbol-info.js";
+    script.async = true;
+    script.innerHTML = JSON.stringify({ symbol: symbol, width: "100%", locale: "it", colorTheme: "dark", isTransparent: true });
+    container.appendChild(script);
+}
+
+/* ============ ORDER BOOK LIVE (API pubbliche Binance, solo crypto) ============ */
+function tickerVersoSimboloBinance(tickerInput) {
+    const t = tickerInput.trim().toUpperCase();
+    if (t.endsWith('-USD')) return t.replace('-USD', '') + 'USDT';
+    if (t.endsWith('USDT')) return t;
+    return null; // non è una coppia crypto riconoscibile: niente order book
+}
+
+let orderBookInterval = null;
+async function aggiornaOrderBook(tickerInput) {
+    if (orderBookInterval) clearInterval(orderBookInterval);
+    const simboloBinance = tickerVersoSimboloBinance(tickerInput);
+    const pannello = document.getElementById('orderBookPanel');
+    if (!simboloBinance) { pannello.style.display = 'none'; return; }
+
+    pannello.style.display = 'block';
+    document.getElementById('orderBookSymbolLabel').innerText = simboloBinance;
+
+    async function caricaSnapshot() {
+        const wrap = document.getElementById('orderBookWrap');
+        try {
+            const resp = await fetch(`https://api.binance.com/api/v3/depth?symbol=${simboloBinance}&limit=8`);
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const data = await resp.json();
+            const righeVendita = data.asks.slice(0, 8).reverse().map(([prezzo, qta]) =>
+                `<tr><td class="dev-neg">${parseFloat(prezzo).toLocaleString('en-US', {maximumFractionDigits:2})}</td><td>${parseFloat(qta).toFixed(4)}</td></tr>`).join('');
+            const righeAcquisto = data.bids.slice(0, 8).map(([prezzo, qta]) =>
+                `<tr><td class="dev-pos">${parseFloat(prezzo).toLocaleString('en-US', {maximumFractionDigits:2})}</td><td>${parseFloat(qta).toFixed(4)}</td></tr>`).join('');
+            wrap.innerHTML = `
+                <div class="dashboard-grid">
+                    <div><h2 style="font-size:12px; color:#ff4d4d; border:none;">VENDITA (Ask)</h2><table><thead><tr><th>Prezzo</th><th>Quantità</th></tr></thead><tbody>${righeVendita}</tbody></table></div>
+                    <div><h2 style="font-size:12px; color:#00ffa3; border:none;">ACQUISTO (Bid)</h2><table><thead><tr><th>Prezzo</th><th>Quantità</th></tr></thead><tbody>${righeAcquisto}</tbody></table></div>
+                </div>`;
+        } catch (e) {
+            wrap.innerHTML = `<p class="placeholder-text">Order book non disponibile in questo momento (${escapeHtml(e.message)}).</p>`;
+        }
+    }
+    await caricaSnapshot();
+    orderBookInterval = setInterval(caricaSnapshot, 4000);
 }
 
 function caricaWatchlist() {
@@ -1107,12 +1208,37 @@ function caricaWatchlist() {
     script.src = "https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js";
     script.async = true;
     script.innerHTML = JSON.stringify({
-        symbols: [["BTC/USDT", "BINANCE:BTCUSDT|1D"], ["ETH/USDT", "BINANCE:ETHUSDT|1D"], ["S&P 500", "SP:SPX|1D"], ["Gold", "TVC:GOLD|1D"], ["EUR/USD", "FX:EURUSD|1D"]],
+        symbols: [["BTC/USDT", "BINANCE:BTCUSDT|1D"], ["ETH/USDT", "BINANCE:ETHUSDT|1D"], ["S&P 500", "FOREXCOM:SPXUSD|1D"], ["Gold", "TVC:GOLD|1D"], ["EUR/USD", "FX:EURUSD|1D"]],
         chartOnly: false, width: "100%", height: "100%", locale: "it", colorTheme: "dark", autosize: true,
         showVolume: false, showMA: false, gridLineColor: "rgba(43,47,54,0.5)", fontColor: "#929aa5",
         underLineColor: "rgba(0,255,163,0.3)", trendLineColor: "#00ffa3", backgroundColor: "rgba(11,14,17,1)"
     });
     container.appendChild(script);
+}
+
+/* ============ NEWS & CALENDARIO ECONOMICO ============ */
+function caricaNewsECalendario() {
+    const newsContainer = document.getElementById('tvNewsTimeline');
+    newsContainer.innerHTML = '<div class="tradingview-widget-container__widget"></div>';
+    const scriptNews = document.createElement('script');
+    scriptNews.src = "https://s3.tradingview.com/external-embedding/embed-widget-timeline.js";
+    scriptNews.async = true;
+    scriptNews.innerHTML = JSON.stringify({
+        feedMode: "all_symbols", isTransparent: true, displayMode: "regular", width: "100%", height: "100%",
+        colorTheme: "dark", locale: "it"
+    });
+    newsContainer.appendChild(scriptNews);
+
+    const calContainer = document.getElementById('tvEconCalendar');
+    calContainer.innerHTML = '<div class="tradingview-widget-container__widget"></div>';
+    const scriptCal = document.createElement('script');
+    scriptCal.src = "https://s3.tradingview.com/external-embedding/embed-widget-events.js";
+    scriptCal.async = true;
+    scriptCal.innerHTML = JSON.stringify({
+        width: "100%", height: "100%", colorTheme: "dark", isTransparent: true, locale: "it",
+        importanceFilter: "-1,0,1", countryFilter: "us,eu,gb,jp,cn"
+    });
+    calContainer.appendChild(scriptCal);
 }
 
 function caricaTickerTapeGlobale() {
@@ -1123,7 +1249,7 @@ function caricaTickerTapeGlobale() {
     script.innerHTML = JSON.stringify({
         symbols: [
             { proName: "BINANCE:BTCUSDT", title: "BTC" }, { proName: "BINANCE:ETHUSDT", title: "ETH" },
-            { proName: "SP:SPX", title: "S&P 500" }, { proName: "TVC:DXY", title: "DXY" },
+            { proName: "FOREXCOM:SPXUSD", title: "S&P 500" }, { proName: "TVC:DXY", title: "DXY" },
             { proName: "TVC:US10Y", title: "US10Y" }, { proName: "TVC:VIX", title: "VIX" },
             { proName: "TVC:GOLD", title: "Gold" }, { proName: "FX:EURUSD", title: "EUR/USD" }
         ],
