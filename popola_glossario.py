@@ -1,14 +1,23 @@
 import os
-from dotenv import load_dotenv
 from supabase import create_client, Client
 
-# Carica le variabili d'ambiente dal file .env
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
-# Prendi le credenziali in modo sicuro
+# Configura le tue credenziali Supabase leggendole da variabili d'ambiente
+# (vedi .env.example). L'anon key di Supabase non è un segreto critico come
+# una chiave API privata, ma tenerla fuori dal codice sorgente è comunque
+# buona pratica quando pubblichi il progetto su GitHub.
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
-# Usiamo la Secret Key (service_role) perché questo script deve scrivere nel glossario blindato
-SUPABASE_KEY = os.environ.get("SUPABASE_SECRET_KEY")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    print("[Errore Configurazione] SUPABASE_URL / SUPABASE_KEY mancanti. "
+          "Copia .env.example in .env e inserisci i tuoi valori.")
+    raise SystemExit(1)
 
 try:
     print("[Database Cloud] Inizializzazione client Supabase...")
@@ -82,7 +91,7 @@ try:
 
     # Ottimizzazione: Usiamo un singolo inserimento batch (upsert) invece di fare 12 richieste HTTP separate.
     # Questo velocizza il caricamento di circa 10 volte ed evita timeout.
-    risposta = supabase.table("glossary").upsert(termini_cimi, on_conflict="termine").execute()
+    risposta = supabase.table("glossario_macro").upsert(termini_cimi, on_conflict="termine").execute()
     
     print(f"\n[SUCCESS] Inseriti/Aggiornati con successo {len(risposta.data)} termini su Supabase!")
     print("\nEcco l'elenco dei termini configurati:")
@@ -91,4 +100,4 @@ try:
         
 except Exception as e:
     print(f"\n[Errore] Impossibile caricare il glossario su Supabase: {e}")
-    print("[Suggerimento] Assicurati di aver eseguito lo script SQL per creare la tabella 'glossary' nel pannello Supabase.")
+    print("[Suggerimento] Assicurati di aver eseguito lo script SQL per creare la tabella 'glossario_macro' nel pannello Supabase.")

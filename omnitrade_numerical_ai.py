@@ -1,26 +1,40 @@
 import sys
+import os
 import json
 import re
-import os
 import requests
 import pandas as pd
 import yfinance as yf
-from dotenv import load_dotenv
 from supabase import create_client, Client
 
-# Configura l'encoding del terminale
+try:
+    from dotenv import load_dotenv
+    load_dotenv()  # legge le variabili dal file .env nella stessa cartella (NON committato su Git)
+except ImportError:
+    print("[Avviso] python-dotenv non installato (pip install python-dotenv). "
+          "Le variabili dovranno essere già presenti nell'ambiente.")
+
 sys.stdout.reconfigure(encoding='utf-8')
 
-# Carica le variabili d'ambiente dal file .env
-load_dotenv()
-
-# Configurazione API OpenRouter letta in modo sicuro
+# ------------------------------------------------------------------
+# SICUREZZA: nessuna chiave è scritta qui nel codice.
+# Vengono lette da variabili d'ambiente (file .env locale, escluso
+# da Git tramite .gitignore). Guarda .env.example per il modello.
+# ------------------------------------------------------------------
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
-
-# CONFIGURAZIONE COMPLETA DI SUPABASE (letta in modo sicuro)
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
-# Usiamo la Secret Key (service_role) perché l'AI deve interagire con il database protetto
-SUPABASE_KEY = os.environ.get("SUPABASE_SECRET_KEY")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+
+_mancanti = [nome for nome, val in [
+    ("OPENROUTER_API_KEY", OPENROUTER_API_KEY),
+    ("SUPABASE_URL", SUPABASE_URL),
+    ("SUPABASE_KEY", SUPABASE_KEY),
+] if not val]
+if _mancanti:
+    print(f"[Errore Configurazione] Variabili d'ambiente mancanti: {', '.join(_mancanti)}.")
+    print("[Suggerimento] Copia .env.example in .env e inserisci i tuoi valori reali, "
+          "oppure impostali come variabili d'ambiente del sistema/CI.")
+    sys.exit(1)
 
 # Sessione personalizzata con User-Agent per bypassare il blocco di Yahoo Finance
 session = requests.Session()
@@ -238,7 +252,7 @@ def scarica_glossario():
     if not supabase_attivo or supabase is None:
         return []
     try:
-        res = supabase.table("glossary").select("termine, definizione, categoria").execute()
+        res = supabase.table("glossario_macro").select("termine, definizione, categoria").execute()
         return res.data if res.data else []
     except Exception:
         # Se la tabella non esiste ancora o c'e' un errore, fallisce silenziosamente senza bloccare lo script
@@ -394,10 +408,10 @@ print("       economia o sulla strategia. L'AI risponde tenendo")
 print("       conto dell'asset caricato e delle notizie live.")
 print()
 print("  [4]  SALVA DIARIO SU SUPABASE")
-print("       Carica l'ultimo report e dati nel tuo diary cloud.")
+print("       Carica l'ultimo report e dati nel tuo diario cloud.")
 print()
 print("  [5]  CLOUD EXPLORER")
-print("       Esplora lo storico del diary o gestisci il glossario.")
+print("       Esplora lo storico del diario o gestisci il glossario.")
 print()
 print("  [6]  ALPHA DASHBOARD (Intermarket)")
 print("       Cruscotto DXY + US10Y + VIX vs VWAP in tempo reale.")
@@ -553,7 +567,7 @@ while True:
             continue
 
         if ultima_analisi_generata is None:
-            print("\n[Errore] Devi prima generare un'Analisi Completa (Opzione 1) prima di poterla salvare nel diary!")
+            print("\n[Errore] Devi prima generare un'Analisi Completa (Opzione 1) prima di poterla salvare nel diario!")
             continue
 
         print("\n[Database] Connessione a Supabase in corso...")
@@ -562,7 +576,7 @@ while True:
         if not stato_emotivo_utente:
             stato_emotivo_utente = "Non Specificato"
 
-        dati_diary = {
+        dati_diario = {
             "ticker": ticker_scelto,
             "timeframe": tf_scelto,
             "prezzo_ingresso": float(riga_recente['Close']),
@@ -573,11 +587,11 @@ while True:
         }
 
         try:
-            supabase.table("diary_trading").insert(dati_diary).execute()
+            supabase.table("diario_trading").insert(dati_diario).execute()
             print("\n[SUCCESS] Report quantitativo-fondamentale salvato correttamente nel tuo Diario Cloud Supabase!")
         except Exception as db_err:
             print(f"\n[Errore Database] Impossibile salvare la riga su Supabase: {db_err}")
-            print("[Suggerimento] Assicurati di aver creato la tabella 'diary_trading' con lo schema corretto nel tuo SQL Editor.")
+            print("[Suggerimento] Assicurati di aver creato la tabella 'diario_trading' con lo schema corretto nel tuo SQL Editor.")
 
     elif scelta == "5":
         if not supabase_attivo or supabase is None:
@@ -597,20 +611,20 @@ while True:
 
         if sub_scelta == "1":
             try:
-                print("\n[Database] Download cronologia diary...")
-                res = supabase.table("diary_trading").select("data_ora, ticker, timeframe, prezzo_ingresso, distanza_vwap, stato_emotivo").order("data_ora", desc=True).limit(5).execute()
+                print("\n[Database] Download cronologia diario...")
+                res = supabase.table("diario_trading").select("data_ora, ticker, timeframe, prezzo_ingresso, distanza_vwap, stato_emotivo").order("data_ora", desc=True).limit(5).execute()
                 records = res.data
                 if not records:
                     print("Nessun report salvato trovato nel database.")
                 else:
-                    print("\n--- ULTIMI 5 SALVATAGGI NEL diary CLOUD ---")
+                    print("\n--- ULTIMI 5 SALVATAGGI NEL DIARIO CLOUD ---")
                     for idx, r in enumerate(records, 1):
                         data_pulita = r.get("data_ora", "").split(".")[0].replace("T", " ")
                         print(f" #{idx} | Data: {data_pulita} | Ticker: {r.get('ticker')} | TF: {r.get('timeframe')}")
                         print(f"    Prezzo: {r.get('prezzo_ingresso')} | Dev.VWAP: {r.get('distanza_vwap'):.2f}% | Sentiment: {r.get('stato_emotivo')}")
                         print("   " + "─" * 50)
             except Exception as e:
-                print(f"Errore nel recuperare la cronologia dal diary: {e}")
+                print(f"Errore nel recuperare la cronologia dal Diario: {e}")
 
         elif sub_scelta == "2":
             try:
@@ -648,7 +662,7 @@ while True:
                     "definizione": definizione,
                     "categoria": categoria
                 }
-                supabase.table("glossary").insert(dati_termine).execute()
+                supabase.table("glossario_macro").insert(dati_termine).execute()
                 print(f"\n[SUCCESS] Termine '{termine}' aggiunto correttamente al glossario di Supabase!")
             except Exception as e:
                 print(f"Errore durante l'inserimento del termine: {e}")

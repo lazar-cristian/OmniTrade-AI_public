@@ -1,1 +1,14 @@
+# Segreti — non committare mai
 .env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Sistema
+.DS_Store
+Thumbs.db
