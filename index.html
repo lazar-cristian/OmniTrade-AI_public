@@ -365,6 +365,15 @@
         </div>
         <div class="tv-chart-wrap" style="height:480px;" id="tvNewsTimeline"></div>
 
+        <div class="toolbar" style="margin-top:30px;">
+            <div>
+                <h2 style="border:none; padding:0; margin:0 0 6px 0;">🌐 Titoli da Investing.com</h2>
+                <p class="placeholder-text" style="margin:0;">Feed RSS ufficiale di Investing.com (titolo + link all'articolo originale) — si riaggancia ogni 60 secondi. Ultimo aggiornamento: <span id="investingUltimoAggiornamento">-</span></p>
+            </div>
+            <button class="btn-refresh" onclick="caricaHeadlineInvesting()">↻ Aggiorna ora</button>
+        </div>
+        <div class="panel" id="investingNewsWrap"><div class="skeleton" style="height:200px;"></div></div>
+
         <h2 style="margin-top:30px; border:none;">🗓️ Calendario Economico</h2>
         <p class="placeholder-text" style="margin-bottom:16px;">Eventi macro reali (tassi, inflazione, occupazione...) con impatto atteso sul mercato.</p>
         <div class="tv-chart-wrap" style="height:480px;" id="tvEconCalendar"></div>
@@ -1331,6 +1340,7 @@ function caricaNewsECalendario() {
 
     const etichettaOra = document.getElementById('newsUltimoAggiornamento');
     if (etichettaOra) etichettaOra.innerText = new Date().toLocaleTimeString('it-IT');
+    caricaHeadlineInvesting();
 
     // Forza un ricaricamento del widget ogni 60s: ricrea lo script così il
     // feed viene rieseguito da zero invece di restare fermo su uno snapshot vecchio.
@@ -1346,8 +1356,46 @@ function caricaNewsECalendario() {
             s.innerHTML = JSON.stringify({ feedMode: "all_symbols", isTransparent: true, displayMode: "regular", width: "100%", height: "100%", colorTheme: "dark", locale: "it" });
             newsContainer2.appendChild(s);
             if (etichettaOra) etichettaOra.innerText = new Date().toLocaleTimeString('it-IT');
+            caricaHeadlineInvesting();
         }
     }, 60000);
+}
+
+/* ============ TITOLI REALI DA INVESTING.COM (feed RSS ufficiale) ============
+   Gli RSS non sono richiamabili direttamente dal browser per via del CORS,
+   quindi passiamo attraverso un proxy CORS pubblico (allorigins.win) per
+   scaricare l'XML e lo interpretiamo con il parser XML nativo del browser.
+   Mostriamo solo titolo + data + link all'articolo originale (mai il testo
+   dell'articolo), esattamente come previsto dal formato RSS. */
+async function caricaHeadlineInvesting() {
+    const wrap = document.getElementById('investingNewsWrap');
+    const etichetta = document.getElementById('investingUltimoAggiornamento');
+    const feedUrl = 'https://www.investing.com/rss/news.rss';
+    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(feedUrl);
+    try {
+        const resp = await fetch(proxyUrl);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const testoXml = await resp.text();
+        const xml = new DOMParser().parseFromString(testoXml, 'text/xml');
+        if (xml.querySelector('parsererror')) throw new Error('XML non valido');
+        const items = Array.from(xml.querySelectorAll('item')).slice(0, 12);
+        if (items.length === 0) throw new Error('Nessuna notizia trovata nel feed');
+
+        const righe = items.map(item => {
+            const titolo = item.querySelector('title')?.textContent || 'Senza titolo';
+            const link = item.querySelector('link')?.textContent || '#';
+            const dataRaw = item.querySelector('pubDate')?.textContent;
+            const data = dataRaw ? new Date(dataRaw).toLocaleString('it-IT') : '';
+            return `<div class="report-item" style="border-left-color:#474d57;">
+                <a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" style="color:#eaecef; text-decoration:none; font-weight:600;">${escapeHtml(titolo)}</a>
+                <div class="placeholder-text" style="margin-top:4px; font-size:11.5px;">${escapeHtml(data)} · Investing.com</div>
+            </div>`;
+        }).join('');
+        wrap.innerHTML = righe;
+        if (etichetta) etichetta.innerText = new Date().toLocaleTimeString('it-IT');
+    } catch (e) {
+        wrap.innerHTML = `<p class="placeholder-text">Titoli Investing.com non disponibili al momento (${escapeHtml(e.message)}). Il feed TradingView qui sopra resta comunque attivo come fonte principale. Il proxy CORS pubblico usato per leggere l'RSS può occasionalmente essere lento o irraggiungibile.</p>`;
+    }
 }
 
 function caricaTickerTapeGlobale() {
