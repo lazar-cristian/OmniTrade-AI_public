@@ -1035,8 +1035,8 @@ async function caricaGlossario() {
         </div>`).join('');
 }
 
-/* ============ CHAT ============ */
-function inviaInChat() {
+/* ============ CHAT (AI reale via Supabase Edge Function "chat-ai") ============ */
+async function inviaInChat() {
     const input = document.getElementById('chatInput');
     if (input.value.trim() === "") return;
     const chatBox = document.getElementById('chatBox');
@@ -1045,10 +1045,29 @@ function inviaInChat() {
     input.value = "";
     chatBox.scrollTop = chatBox.scrollHeight;
 
-    setTimeout(() => {
-        chatBox.innerHTML += `<div class="msg ai">Ricevuto. Sto analizzando la tua domanda: "<em>${escapeHtml(userText)}</em>". Secondo la teoria dell'asta di Cimi, i flussi di volume e la deviazione dal VWAP vanno confrontati con il cruscotto intermarket prima di validare questo scenario. Nota: questa è una risposta dimostrativa — per l'AI reale collega un backend che interroghi omnitrade_numerical_ai.py senza esporre la chiave API nel browser.</div>`;
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }, 800);
+    const idAttesa = 'attesa-' + Date.now();
+    chatBox.innerHTML += `<div class="msg ai" id="${idAttesa}"><em>Sto pensando...</em></div>`;
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) throw new Error('sessione non attiva');
+
+        const resp = await fetch(`${SUPABASE_URL}/functions/v1/chat-ai`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+            body: JSON.stringify({ messaggio: userText })
+        });
+        const dati = await resp.json().catch(() => ({}));
+        if (!resp.ok || dati.errore) throw new Error(dati.errore || ('HTTP ' + resp.status));
+
+        document.getElementById(idAttesa).innerHTML = escapeHtml(dati.risposta).replace(/\n/g, '<br>');
+    } catch (e) {
+        const elAttesa = document.getElementById(idAttesa);
+        elAttesa.innerHTML = `<em>AI reale non raggiungibile (${escapeHtml(e.message)}).</em><br>Risposta dimostrativa: secondo la teoria dell'asta di Cimi, i flussi di volume e la deviazione dal VWAP vanno confrontati con il cruscotto intermarket prima di validare questo scenario.
+            <br><span class="placeholder-text" style="font-size:11px;">Per attivare l'AI reale, pubblica la funzione Supabase Edge "chat-ai" (vedi supabase/functions/chat-ai/index.ts).</span>`;
+    }
+    chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 /* ============ PORTAFOGLIO: STATO E AZIONI ============ */
