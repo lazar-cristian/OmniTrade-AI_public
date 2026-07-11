@@ -108,6 +108,10 @@
 
     /* TABLES */
     table { width: 100%; border-collapse: collapse; background-color: #161a1e; border: 1px solid #2b2f36; border-radius: 6px; overflow: hidden; }
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 6px; }
+    .table-scroll table { min-width: 560px; }
+    @media (max-width: 600px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 400px) { .kpi-grid { grid-template-columns: 1fr; } }
     th, td { padding: 14px 20px; text-align: left; border-bottom: 1px solid #2b2f36; font-size: 14px; }
     th { background-color: #1e2329; color: #929aa5; font-weight: 600; }
     tr:hover { background-color: #1f252c; }
@@ -135,8 +139,9 @@
     @keyframes shimmer { 0%{background-position:100% 50%;} 100%{background-position:0 50%;} }
 
     /* TOASTS */
-    #toastContainer { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 3000; pointer-events: none; }
-    .toast { pointer-events: auto; min-width: 280px; max-width: 380px; background-color: #161a1e; border: 1px solid #2b2f36; border-left: 4px solid #00ffa3; border-radius: 6px; padding: 14px 16px; font-size: 13.5px; box-shadow: 0 10px 30px rgba(0,0,0,0.45); animation: toastIn .25s ease; }
+    #toastContainer { position: fixed; bottom: 20px; right: 20px; left: 20px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; z-index: 3000; pointer-events: none; }
+    .toast { pointer-events: auto; min-width: 280px; max-width: 380px; width: 100%; background-color: #161a1e; border: 1px solid #2b2f36; border-left: 4px solid #00ffa3; border-radius: 6px; padding: 14px 16px; font-size: 13.5px; box-shadow: 0 10px 30px rgba(0,0,0,0.45); animation: toastIn .25s ease; }
+    @media (max-width: 480px) { #toastContainer { left: 10px; right: 10px; bottom: 10px; align-items: stretch; } .toast { min-width: 0; max-width: none; } }
     .toast.error { border-left-color: #ff4d4d; }
     .toast.info { border-left-color: #474d57; }
     .toast.fadeout { animation: toastOut .25s ease forwards; }
@@ -169,6 +174,7 @@
     <div class="sidebar-menu">
         <div class="menu-item active" tabindex="0" onclick="switchView('portafoglio', this)">💼 Portafoglio</div>
         <div class="menu-item" tabindex="0" onclick="switchView('grafici', this)">📈 Grafici Live</div>
+        <div class="menu-item" tabindex="0" onclick="switchView('volumetrica', this)">📊 Volumetrica</div>
         <div class="menu-item" tabindex="0" onclick="switchView('news', this)">📰 News &amp; Calendario</div>
         <div class="menu-item" tabindex="0" onclick="switchView('dashboard', this)">📊 Analisi VWAP</div>
         <div class="menu-item" tabindex="0" onclick="switchView('chat', this)">💬 AI Copilot Chat</div>
@@ -300,18 +306,43 @@
                 </div>
             </div>
             <button class="btn-main" onclick="caricaGraficoLive()">📡 Carica Grafico Live</button>
+            <p class="placeholder-text" style="margin-top:14px; font-size:12px;">Cerchi analisi tecnica, volumi e order book? Vai alla pagina <strong>📊 Volumetrica</strong> nel menu laterale.</p>
         </div>
         <div class="tv-chart-wrap" id="tvAdvancedChart"><div class="tradingview-widget-container__widget"></div></div>
 
-        <div class="dashboard-grid" style="margin-top:20px;">
-            <div class="panel" style="height:220px; padding:15px;">
-                <h2 style="font-size:13px;">Analisi Tecnica (TradingView)</h2>
-                <div id="tvTechAnalysis" style="height:150px;"></div>
+        <h2 style="margin-top:30px; border:none;">Watchlist Rapida</h2>
+        <div class="tv-watchlist-wrap" id="tvWatchlistInner"></div>
+    </div>
+
+    <!-- VOLUMETRICA -->
+    <div id="view-volumetrica" class="view-content">
+        <div class="panel" style="margin-bottom:20px;">
+            <h2>📊 Volumetrica &amp; Analisi Tecnica</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="volTicker">Ticker</label>
+                    <input type="text" id="volTicker" list="tickerSuggestions" value="BTC-USD">
+                </div>
+                <div class="form-group" style="display:flex; align-items:flex-end;">
+                    <button class="btn-main" onclick="caricaVolumetrica()" style="margin:0;">📡 Aggiorna Volumetrica</button>
+                </div>
             </div>
-            <div class="panel" style="height:220px; padding:15px;">
-                <h2 style="font-size:13px;">Info Simbolo</h2>
-                <div id="tvSymbolInfo" style="height:150px;"></div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="panel" style="min-height:460px;">
+                <h2>Analisi Tecnica (TradingView)</h2>
+                <div id="tvTechAnalysis" style="height:420px;"></div>
             </div>
+            <div class="panel" style="min-height:460px;">
+                <h2>Info Simbolo</h2>
+                <div id="tvSymbolInfo" style="height:420px;"></div>
+            </div>
+        </div>
+
+        <div class="panel" style="margin-top:20px;">
+            <h2>Volume Storico (grafico dedicato)</h2>
+            <div class="tv-chart-wrap" style="height:420px;" id="tvVolumeChart"></div>
         </div>
 
         <div class="panel" id="orderBookPanel" style="margin-top:20px; display:none;">
@@ -320,9 +351,7 @@
             <div class="kpi-grid" id="volumeStatsWrap" style="margin-bottom:16px;"></div>
             <div id="orderBookWrap"><div class="skeleton" style="height:180px;"></div></div>
         </div>
-
-        <h2 style="margin-top:30px; border:none;">Watchlist Rapida</h2>
-        <div class="tv-watchlist-wrap" id="tvWatchlistInner"></div>
+        <p class="placeholder-text" id="orderBookAssenteMsg" style="display:none; margin-top:20px;">L'order book live è disponibile solo per coppie crypto quotate su Binance (es. BTC-USD, ETH-USD). Per "<span id="orderBookAssenteTicker"></span>" non è disponibile — usa comunque i widget sopra per l'analisi.</p>
     </div>
 
     <!-- NEWS & CALENDARIO -->
@@ -594,6 +623,7 @@ function switchView(viewId, element) {
     if (viewId === 'glossario') caricaGlossario();
     if (viewId === 'portafoglio') ricalcolaPortafoglio();
     if (viewId === 'grafici') { caricaGraficoLive(); caricaWatchlist(); }
+    if (viewId === 'volumetrica') caricaVolumetrica();
     if (viewId === 'news') caricaNewsECalendario();
     if (window.innerWidth <= 768) toggleSidebar(false);
 }
@@ -855,7 +885,7 @@ async function caricaDiario() {
             </tr>`;
         }).join('');
 
-        wrap.innerHTML = `<table><thead><tr><th>Data</th><th>Ticker</th><th>TF</th><th>Prezzo</th><th>Dev. VWAP</th><th>Sentiment</th></tr></thead><tbody>${rows}</tbody></table>`;
+        wrap.innerHTML = `<div class="table-scroll"><table><thead><tr><th>Data</th><th>Ticker</th><th>TF</th><th>Prezzo</th><th>Dev. VWAP</th><th>Sentiment</th></tr></thead><tbody>${rows}</tbody></table></div>`;
     } catch (e) {
         wrap.innerHTML = `<p class="placeholder-text">Impossibile caricare il Diario da Supabase (${escapeHtml(e.message)}). Verifica che la tabella 'diario_trading' esista e che le policy RLS permettano la lettura.</p>`;
     }
@@ -1056,7 +1086,7 @@ async function ricalcolaPortafoglio() {
                 <td>${p.rr_pianificato != null ? '1:' + p.rr_pianificato : '-'}</td>
                 <td><button class="btn-sec" style="width:auto;padding:8px 14px;" onclick="chiediChiusura('${p.id}','${escapeHtml(p.ticker)}')">Chiudi</button></td>
             </tr>`).join('');
-            wrapAperte.innerHTML = `<table><thead><tr><th>Apertura</th><th>Ticker</th><th>Direzione</th><th>Qtà</th><th>Ingresso</th><th>RR Piano</th><th></th></tr></thead><tbody>${righe}</tbody></table>`;
+            wrapAperte.innerHTML = `<div class="table-scroll"><table><thead><tr><th>Apertura</th><th>Ticker</th><th>Direzione</th><th>Qtà</th><th>Ingresso</th><th>RR Piano</th><th></th></tr></thead><tbody>${righe}</tbody></table></div>`;
         }
 
         const eventiStorico = movimenti.map(m => ({ data: m.creato_il, tipo: m.tipo === 'deposito' ? 'Deposito' : 'Prelievo', dettaglio: m.nota || '-', valore: (m.tipo === 'deposito' ? 1 : -1) * Number(m.importo) }))
@@ -1072,7 +1102,7 @@ async function ricalcolaPortafoglio() {
                 <td>${escapeHtml(ev.dettaglio)}</td>
                 <td class="${ev.valore >= 0 ? 'dev-pos' : 'dev-neg'}">${ev.valore >= 0 ? '+' : ''}$${ev.valore.toFixed(2)}</td>
             </tr>`).join('');
-            wrapStorico.innerHTML = `<table><thead><tr><th>Data</th><th>Tipo</th><th>Dettaglio</th><th>Importo</th></tr></thead><tbody>${righeStorico}</tbody></table>`;
+            wrapStorico.innerHTML = `<div class="table-scroll"><table><thead><tr><th>Data</th><th>Tipo</th><th>Dettaglio</th><th>Importo</th></tr></thead><tbody>${righeStorico}</tbody></table></div>`;
         }
 
         const eventiOrdinati = movimenti.map(m => ({ data: new Date(m.creato_il), valore: (m.tipo === 'deposito' ? 1 : -1) * Number(m.importo) }))
@@ -1131,12 +1161,20 @@ function caricaGraficoLive() {
         studies: ["Volume@tv-basicstudies"]
     });
     container.appendChild(script);
+    toast('Grafico caricato per ' + symbol, 'success');
+}
+
+/* ============ VOLUMETRICA: pagina dedicata ============ */
+function caricaVolumetrica() {
+    const tickerInput = document.getElementById('volTicker').value.trim() || 'BTC-USD';
+    const symbol = convertiTickerTradingView(tickerInput);
 
     caricaAnalisiTecnica(symbol);
     caricaSymbolInfo(symbol);
+    caricaGraficoVolumeStorico(symbol);
     aggiornaOrderBook(tickerInput);
 
-    toast('Grafico caricato per ' + symbol, 'success');
+    toast('Volumetrica aggiornata per ' + symbol, 'success');
 }
 
 function caricaAnalisiTecnica(symbol) {
@@ -1146,7 +1184,7 @@ function caricaAnalisiTecnica(symbol) {
     script.src = "https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js";
     script.async = true;
     script.innerHTML = JSON.stringify({
-        interval: "1h", width: "100%", height: "150", symbol: symbol, showIntervalTabs: true,
+        interval: "1h", width: "100%", height: "420", symbol: symbol, showIntervalTabs: true,
         locale: "it", colorTheme: "dark", isTransparent: true
     });
     container.appendChild(script);
@@ -1158,7 +1196,23 @@ function caricaSymbolInfo(symbol) {
     const script = document.createElement('script');
     script.src = "https://s3.tradingview.com/external-embedding/embed-widget-symbol-info.js";
     script.async = true;
-    script.innerHTML = JSON.stringify({ symbol: symbol, width: "100%", locale: "it", colorTheme: "dark", isTransparent: true });
+    script.innerHTML = JSON.stringify({ symbol: symbol, width: "100%", height: "420", locale: "it", colorTheme: "dark", isTransparent: true });
+    container.appendChild(script);
+}
+
+function caricaGraficoVolumeStorico(symbol) {
+    const container = document.getElementById('tvVolumeChart');
+    container.innerHTML = '<div class="tradingview-widget-container__widget"></div>';
+    const script = document.createElement('script');
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+        autosize: true, symbol: symbol, interval: "D", timezone: "Etc/UTC", theme: "dark", style: "1",
+        locale: "it", backgroundColor: "rgba(11, 14, 17, 1)", gridColor: "rgba(43, 47, 54, 0.5)",
+        hide_top_toolbar: true, hide_side_toolbar: true, allow_symbol_change: false,
+        support_host: "https://www.tradingview.com",
+        studies: ["Volume@tv-basicstudies", "MACD@tv-basicstudies"]
+    });
     container.appendChild(script);
 }
 
@@ -1175,7 +1229,14 @@ async function aggiornaOrderBook(tickerInput) {
     if (orderBookInterval) clearInterval(orderBookInterval);
     const simboloBinance = tickerVersoSimboloBinance(tickerInput);
     const pannello = document.getElementById('orderBookPanel');
-    if (!simboloBinance) { pannello.style.display = 'none'; return; }
+    const msgAssente = document.getElementById('orderBookAssenteMsg');
+    if (!simboloBinance) {
+        pannello.style.display = 'none';
+        msgAssente.style.display = 'block';
+        document.getElementById('orderBookAssenteTicker').innerText = tickerInput;
+        return;
+    }
+    msgAssente.style.display = 'none';
 
     pannello.style.display = 'block';
     document.getElementById('orderBookSymbolLabel').innerText = simboloBinance;
