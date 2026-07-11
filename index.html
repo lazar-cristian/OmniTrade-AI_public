@@ -22,6 +22,12 @@
 
     #particleCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 
+    /* AUTH GATE (login/registrazione) */
+    .auth-gate { position: fixed; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center; background: rgba(11,14,17,0.94); backdrop-filter: blur(6px); }
+    .auth-card { width: 380px; max-width: 92vw; background-color: #161a1e; border: 1px solid #2b2f36; border-radius: 12px; padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.55); }
+    .auth-card .brand { font-size: 24px; font-weight: bold; color: #00ffa3; text-shadow: 0 0 18px rgba(0,255,163,0.35); }
+    body.app-hidden > .mobile-topbar, body.app-hidden > .sidebar-overlay, body.app-hidden > .sidebar, body.app-hidden > .workspace { display: none !important; }
+
     /* SIDEBAR */
     .sidebar { position: relative; z-index: 1; width: 260px; background-color: #161a1e; border-right: 1px solid #2b2f36; display: flex; flex-direction: column; padding: 20px 0; flex-shrink: 0; transition: transform .25s ease; }
     .sidebar-overlay { display: none; }
@@ -159,9 +165,30 @@
     @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 </style>
 </head>
-<body>
+<body class="app-hidden">
 
 <canvas id="particleCanvas"></canvas>
+
+<div class="auth-gate" id="authGate">
+    <div class="auth-card">
+        <div class="brand" style="text-align:center; margin-bottom:20px; border:none; padding:0;">OmniTrade AI</div>
+        <div class="segmented" id="authTabs" style="width:100%; margin-bottom:20px;">
+            <button class="active" style="flex:1;" onclick="mostraTabAuth('login', this)">Accedi</button>
+            <button style="flex:1;" onclick="mostraTabAuth('registrati', this)">Registrati</button>
+        </div>
+        <div class="form-group">
+            <label for="authEmail">Email</label>
+            <input type="email" id="authEmail" placeholder="tuaemail@esempio.com" autocomplete="username">
+        </div>
+        <div class="form-group">
+            <label for="authPassword">Password</label>
+            <input type="password" id="authPassword" placeholder="Almeno 6 caratteri" autocomplete="current-password" onkeydown="if(event.key==='Enter') eseguiAuth()">
+        </div>
+        <div id="authMessaggio" style="min-height:20px; font-size:13px; margin-bottom:10px;"></div>
+        <button class="btn-main" id="authSubmitBtn" onclick="eseguiAuth()">Accedi</button>
+        <p class="placeholder-text" style="text-align:center; margin-top:16px; font-size:12px; cursor:pointer; text-decoration:underline;" onclick="richiediResetPassword()">Password dimenticata?</p>
+    </div>
+</div>
 
 <div class="mobile-topbar">
     <button class="hamburger-btn" onclick="toggleSidebar()" aria-label="Apri menu">☰</button>
@@ -181,7 +208,10 @@
         <div class="menu-item" tabindex="0" onclick="switchView('diario', this)">🗂️ Diario Cloud</div>
         <div class="menu-item" tabindex="0" onclick="switchView('glossario', this)">🧠 Glossario Cimi</div>
     </div>
-    <div class="sidebar-foot">Connesso a Supabase<br>qtwidsfqzfjapwiiuywq<br>Grafici: TradingView (dati live)</div>
+    <div class="sidebar-foot">
+        👤 <span id="utenteEmailFoot">-</span><br>
+        <button class="btn-sec" style="margin-top:8px; padding:8px; font-size:11px;" onclick="effettuaLogout()">🚪 Esci</button>
+    </div>
 </div>
 
 <div class="workspace">
@@ -497,30 +527,112 @@ const SUPABASE_URL = "https://qtwidsfqzfjapwiiuywq.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0d2lkc2ZxemZqYXB3aWl1eXdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NTMwODksImV4cCI6MjA5OTAyOTA4OX0.p4hryHTNzcjVRj1JkE_tu_H84fK0hPclrZC6FKTAFf4";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* ============ SICUREZZA: SESSIONE ANONIMA ============
-   Ogni visitatore riceve automaticamente una sessione Supabase
-   anonima univoca. Da questo momento, grazie alle policy RLS
-   scoped su auth.uid(), può leggere/scrivere SOLO i propri dati
-   (portafoglio, diario) — mai quelli di un altro visitatore.
-   Nota: la sessione viene mantenuta da supabase-js tramite
-   localStorage del browser, così i tuoi dati restano collegati
-   a te anche se chiudi e riapri la pagina. Questo funziona
-   normalmente quando il sito è pubblicato (es. GitHub Pages) o
-   aperto in un browser reale; nell'anteprima integrata di
-   Claude.ai la sessione potrebbe invece non persistere tra un
-   ricaricamento e l'altro, per via delle restrizioni sullo
-   storage di quel contesto sandbox. */
-async function assicuraSessioneSicura() {
+/* ============ AUTENTICAZIONE: LOGIN / REGISTRAZIONE REALE ============
+   Sostituisce le sessioni anonime con un vero account email+password
+   tramite Supabase Auth. Ogni riga di wallet_movimenti/wallet_posizioni/
+   diario_trading resta legata al tuo user_id (= auth.uid()) grazie alle
+   stesse policy RLS già impostate — nessuna modifica al database serve,
+   funzionano identiche sia con utenti anonimi che con account veri.
+   Nota: Supabase-js salva la sessione in localStorage del browser, così
+   restando loggato anche dopo un refresh o la chiusura della pagina.
+   Questo è normale e sicuro su un sito pubblicato (es. GitHub Pages) o
+   in un browser reale; nell'anteprima integrata di Claude.ai potrebbe
+   invece non persistere tra un ricaricamento e l'altro. */
+let modalitaAuth = 'login';
+
+function mostraTabAuth(tab, el) {
+    modalitaAuth = tab;
+    document.querySelectorAll('#authTabs button').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('authSubmitBtn').innerText = tab === 'login' ? 'Accedi' : 'Crea Account';
+    document.getElementById('authMessaggio').innerText = '';
+}
+
+function traduciErroreAuth(msg) {
+    if (/already registered|already exists/i.test(msg)) return 'Questa email è già registrata: prova ad accedere invece.';
+    if (/invalid login credentials/i.test(msg)) return 'Email o password errati.';
+    if (/password should be at least/i.test(msg)) return 'La password deve avere almeno 6 caratteri.';
+    if (/anonymous sign/i.test(msg)) return 'Sessioni anonime disabilitate — usa Accedi/Registrati con email e password.';
+    if (/email not confirmed/i.test(msg)) return 'Devi prima confermare la tua email: controlla la posta (anche lo spam).';
+    if (/rate limit/i.test(msg)) return 'Troppi tentativi, riprova tra qualche minuto.';
+    return msg;
+}
+
+async function eseguiAuth() {
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    const msg = document.getElementById('authMessaggio');
+    const btn = document.getElementById('authSubmitBtn');
+    if (!email || !password) { msg.style.color = '#ff4d4d'; msg.innerText = 'Inserisci email e password.'; return; }
+
+    btn.disabled = true;
+    msg.style.color = '#929aa5'; msg.innerText = 'Attendere...';
     try {
-        const { data: { session } } = await sb.auth.getSession();
-        if (!session) {
-            const { error } = await sb.auth.signInAnonymously();
+        if (modalitaAuth === 'login') {
+            const { error } = await sb.auth.signInWithPassword({ email, password });
             if (error) throw error;
+            msg.style.color = '#00ffa3'; msg.innerText = 'Accesso effettuato!';
+            // Il resto lo gestisce onAuthStateChange
+        } else {
+            const { data, error } = await sb.auth.signUp({ email, password });
+            if (error) throw error;
+            if (data.session) {
+                msg.style.color = '#00ffa3'; msg.innerText = 'Account creato con successo!';
+            } else {
+                msg.style.color = '#00ffa3';
+                msg.innerText = 'Registrazione avvenuta! Controlla la tua email per confermare l\'account prima di accedere (anche nello spam).';
+            }
         }
     } catch (e) {
-        toast('Sessione sicura non avviata: ' + e.message + ' — verifica di aver attivato "Allow anonymous sign-ins" su Supabase.', 'error');
+        msg.style.color = '#ff4d4d';
+        msg.innerText = traduciErroreAuth(e.message);
+    } finally {
+        btn.disabled = false;
     }
 }
+
+async function richiediResetPassword() {
+    const email = document.getElementById('authEmail').value.trim();
+    const msg = document.getElementById('authMessaggio');
+    if (!email) { msg.style.color = '#ff4d4d'; msg.innerText = 'Scrivi la tua email qui sopra, poi premi di nuovo "Password dimenticata?".'; return; }
+    try {
+        const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.href });
+        if (error) throw error;
+        msg.style.color = '#00ffa3';
+        msg.innerText = 'Email per reimpostare la password inviata: controlla la posta.';
+    } catch (e) {
+        msg.style.color = '#ff4d4d';
+        msg.innerText = traduciErroreAuth(e.message);
+    }
+}
+
+async function effettuaLogout() {
+    await sb.auth.signOut();
+    toast('Disconnesso.', 'info');
+}
+
+let appGiaAvviata = false;
+function gestisciCambioSessione(session) {
+    const gate = document.getElementById('authGate');
+    if (session && session.user) {
+        gate.style.display = 'none';
+        document.body.classList.remove('app-hidden');
+        const etichettaEmail = document.getElementById('utenteEmailFoot');
+        if (etichettaEmail) etichettaEmail.innerText = session.user.is_anonymous ? 'Utente anonimo' : (session.user.email || 'Utente');
+        if (!appGiaAvviata) {
+            appGiaAvviata = true;
+            avviaApp();
+        }
+    } else {
+        gate.style.display = 'flex';
+        document.body.classList.add('app-hidden');
+        appGiaAvviata = false;
+    }
+}
+
+sb.auth.onAuthStateChange((_evento, session) => {
+    gestisciCambioSessione(session);
+});
 
 /* ============ UTILITY: ESCAPE HTML ============ */
 function escapeHtml(str) {
@@ -1416,12 +1528,16 @@ function caricaTickerTapeGlobale() {
 }
 
 /* ============ AVVIO ============ */
-(async () => {
-    await assicuraSessioneSicura();
+function avviaApp() {
     initParticles();
     caricaTickerTapeGlobale();
     ricalcolaPortafoglio();
-})();
+}
+
+// Controllo iniziale della sessione già esistente (utente già loggato in precedenza)
+sb.auth.getSession().then(({ data: { session } }) => {
+    gestisciCambioSessione(session);
+});
 </script>
 </body>
 </html>
