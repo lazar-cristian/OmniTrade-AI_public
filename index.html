@@ -831,11 +831,104 @@ function rangePerTimeframe(tf) {
     return mappa[tf] || "1mo";
 }
 
+/* ============ BACKTEST LIVE (per qualunque ticker, calcolato su dati storici reali) ============
+   Metodologia: scarica ~2 anni di candele giornaliere da Yahoo Finance, calcola
+   un VWAP "rolling" a 20 giorni (media dei prezzi tipici pesata per il volume
+   sulla finestra mobile — un'approssimazione della VWAP intraday, dato che i
+   dati giornalieri non contengono il VWAP nativo). Simula un trade ogni volta
+   che il prezzo si allontana dal VWAP rolling oltre la soglia impostata:
+   rischio = distanza dal VWAP (1R), target = rischio * RR nella direzione del
+   ritorno alla media, stop = rischio nella direzione opposta. Verifica nei
+   10 giorni successivi quale livello viene toccato per primo.
+   È una semplificazione statistica, utile per un'indicazione reale sui dati
+   di mercato effettivi — non è identica all'optimizer Python originale a
+   granularità intraday, e lo dichiariamo sempre esplicitamente nel report. */
+async function eseguiBacktestLive(ticker, soglia, rr) {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=2y`;
+    const json = await fetchConEventualeProxy(url);
+    const result = json && json.chart && json.chart.result ? json.chart.result[0] : null;
+    if (!result) throw new Error((json.chart && json.chart.error && json.chart.error.description) || "Ticker non trovato su Yahoo Finance");
+
+    const q = result.indicators.quote[0];
+    const n = result.timestamp.length;
+    const closes = q.close, highs = q.high, lows = q.low, volumes = q.volume;
+
+    const FINESTRA = 20, ORIZZONTE = 10;
+    if (n < FINESTRA + ORIZZONTE + 5) throw new Error("Storico insufficiente per questo ticker (servono almeno " + (FINESTRA + ORIZZONTE + 5) + " candele giornaliere)");
+
+    let vincite = 0, perdite = 0, sommaR_vinte = 0, sommaR_perse = 0;
+    let i = FINESTRA;
+    while (i < n - ORIZZONTE) {
+        if (closes[i] == null || highs[i] == null || lows[i] == null) { i++; continue; }
+
+        // VWAP rolling sulla finestra [i-FINESTRA, i)
+        let cumPV = 0, cumV = 0, datiValidi = true;
+        for (let k = i - FINESTRA; k < i; k++) {
+            if (closes[k] == null || highs[k] == null || lows[k] == null) { datiValidi = false; break; }
+            const tipico = (highs[k] + lows[k] + closes[k]) / 3;
+            const v = volumes[k] || 1;
+            cumPV += tipico * v; cumV += v;
+        }
+        if (!datiValidi || cumV === 0) { i++; continue; }
+        const vwapRolling = cumPV / cumV;
+        const prezzo = closes[i];
+        const deviazionePct = ((prezzo - vwapRolling) / vwapRolling) * 100;
+
+        if (Math.abs(deviazionePct) > soglia) {
+            const long = deviazionePct < 0; // sotto la media -> long verso la media
+            const rischio = Math.abs(prezzo - vwapRolling);
+            if (rischio <= 0) { i++; continue; }
+            const target = long ? prezzo + rischio * rr : prezzo - rischio * rr;
+            const stop = long ? prezzo - rischio : prezzo + rischio;
+
+            let esito = null;
+            for (let j = i + 1; j <= Math.min(i + ORIZZONTE, n - 1); j++) {
+                if (highs[j] == null || lows[j] == null) continue;
+                if (long) {
+                    if (lows[j] <= stop) { esito = 'perdita'; break; }
+                    if (highs[j] >= target) { esito = 'vincita'; break; }
+                } else {
+                    if (highs[j] >= stop) { esito = 'perdita'; break; }
+                    if (lows[j] <= target) { esito = 'vincita'; break; }
+                }
+            }
+            if (esito === 'vincita') { vincite++; sommaR_vinte += rr; }
+            else if (esito === 'perdita') { perdite++; sommaR_perse += 1; }
+            // se nessun livello toccato entro l'orizzonte, il trade non viene contato (né vinto né perso)
+
+            i += ORIZZONTE; // evita segnali sovrapposti sullo stesso trade
+        } else {
+            i++;
+        }
+    }
+
+    const totale = vincite + perdite;
+    const winrate = totale > 0 ? (vincite / totale * 100) : 0;
+    const profitFactor = sommaR_perse > 0 ? (sommaR_vinte / sommaR_perse) : (sommaR_vinte > 0 ? Infinity : 0);
+    const expectancy = totale > 0 ? ((sommaR_vinte - sommaR_perse) / totale) : 0;
+
+    return { totale, vincite, perdite, winrate, profitFactor, expectancy };
+}
+async function fetchConEventualeProxy(url) {
+    try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        return await resp.json();
+    } catch (eDiretto) {
+        try {
+            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+            const resp2 = await fetch(proxyUrl);
+            if (!resp2.ok) throw new Error("HTTP " + resp2.status);
+            return await resp2.json();
+        } catch (eProxy) {
+            throw new Error(eDiretto.message + " (anche il tentativo via proxy è fallito: " + eProxy.message + ")");
+        }
+    }
+}
+
 async function ottieniUltimoPrezzo(ticker) {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error("HTTP " + resp.status);
-    const json = await resp.json();
+    const json = await fetchConEventualeProxy(url);
     const result = json && json.chart && json.chart.result ? json.chart.result[0] : null;
     if (!result) throw new Error("Ticker non trovato");
     const closes = result.indicators.quote[0].close.filter(v => v != null);
@@ -846,9 +939,7 @@ async function ottieniUltimoPrezzo(ticker) {
 async function tentaDatiLive(ticker, tf) {
     const range = rangePerTimeframe(tf);
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=${encodeURIComponent(tf)}&range=${range}`;
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error("HTTP " + resp.status);
-    const json = await resp.json();
+    const json = await fetchConEventualeProxy(url);
     const result = json && json.chart && json.chart.result ? json.chart.result[0] : null;
     if (!result) throw new Error((json.chart.error && json.chart.error.description) || "Ticker non trovato");
     const closes = result.indicators.quote[0].close.filter(v => v != null);
@@ -877,11 +968,33 @@ async function lanciaAzione(tipo) {
     if (tipo === 'analisi') {
         consoleBox.innerHTML = '<p class="placeholder-text">Sincronizzazione dati in corso per ' + escapeHtml(ticker) + ' [' + escapeHtml(tf) + ']...</p>';
 
-        let campione;
+        let campione = null;
+        let erroreLive = null;
         try {
             campione = await tentaDatiLive(ticker, tf);
         } catch (e) {
-            campione = Object.assign({}, ULTIMO_CAMPIONE_MERCATO, { fonte: "CACHE LOCALE (dati_mercato.csv, BTC-USD) — live non raggiungibile: " + e.message });
+            erroreLive = e.message;
+            // Usiamo il campione cache SOLO se il ticker richiesto è davvero BTC-USD:
+            // mai spacciare dati di un altro asset per quello cercato dall'utente.
+            if (ticker === 'BTC-USD') {
+                campione = Object.assign({}, ULTIMO_CAMPIONE_MERCATO, { fonte: "CACHE LOCALE (dati_mercato.csv, BTC-USD) — live non raggiungibile: " + e.message });
+            }
+        }
+
+        if (!campione) {
+            consoleBox.innerHTML = `
+                <div class="report-item danger">
+                    <strong>Dati non disponibili per ${escapeHtml(ticker)}.</strong> Il recupero live da Yahoo Finance è fallito (${escapeHtml(erroreLive)}) e non ho un campione locale di riserva per questo asset specifico — solo BTC-USD ha dati di esempio da <code>dati_mercato.csv</code>.
+                </div>
+                <div class="report-item">Riprova tra qualche secondo, controlla che il ticker sia scritto in formato Yahoo Finance corretto, oppure verifica il prezzo direttamente su <a href="https://finance.yahoo.com/quote/${encodeURIComponent(ticker)}" target="_blank" rel="noopener noreferrer" style="color:#00ffa3;">Yahoo Finance ↗</a>.</div>`;
+            document.getElementById('kpiPrezzo').innerText = "$-";
+            document.getElementById('kpiDeviazione').innerText = "-";
+            document.getElementById('kpiDeviazione').style.color = "";
+            const kpiVolVuoto = document.getElementById('kpiVolume');
+            kpiVolVuoto.innerText = "-";
+            kpiVolVuoto.className = "kpi-value";
+            document.getElementById('btnSalva').disabled = true;
+            return;
         }
 
         const prezzo = campione.prezzo, vwap = campione.vwap, volume = campione.volume, fonte = campione.fonte;
@@ -922,9 +1035,30 @@ async function lanciaAzione(tipo) {
         const righeAsset = OPTIMIZER_MULTIASSET.filter(r => r[0] === ticker);
 
         if (righeAsset.length === 0) {
-            consoleBox.innerHTML = `
-                <div class="report-item danger">Nessun backtest storico presente per <strong>${escapeHtml(ticker)}</strong> in <code>optimizer_v3_multiasset.csv</code> (contiene solo BTC-USD, ETH-USD, ^GSPC).</div>
-                <div class="report-item">Per ottenere risultati reali su questo asset, rilancia l'optimizer Python impostando ticker=${escapeHtml(ticker)}, soglia=${soglia}, rr=${rr}, e importa il CSV risultante qui.</div>`;
+            consoleBox.innerHTML = '<p class="placeholder-text">Nessun backtest pre-calcolato per ' + escapeHtml(ticker) + '. Calcolo un backtest live sui dati storici reali di Yahoo Finance (~2 anni)...</p>';
+            try {
+                const r = await eseguiBacktestLive(ticker, soglia, rr);
+                if (r.totale === 0) {
+                    consoleBox.innerHTML = `<div class="report-item" style="border-left-color:#474d57;">Nessun segnale generato per ${escapeHtml(ticker)} con soglia=${soglia}% negli ultimi ~2 anni di storico giornaliero. Prova una soglia più bassa.</div>`;
+                    return;
+                }
+                const valida = r.profitFactor > 1.1 && r.totale >= 30;
+                consoleBox.innerHTML = `
+                    <div class="report-section">
+                        <div class="report-title">📊 BACKTEST LIVE — calcolato ora su dati reali (non l'optimizer Python)</div>
+                        <div class="report-item" style="border-left-color:#474d57;">Metodologia semplificata: VWAP rolling a 20 giorni su candele giornaliere reali di Yahoo Finance, non identica all'optimizer Python a granularità intraday. Vedi nota metodologica nel codice per i dettagli.</div>
+                        <div class="report-item"><strong>Asset:</strong> ${escapeHtml(ticker)} | <strong>Soglia:</strong> ${soglia}% | <strong>R/R:</strong> 1:${rr}</div>
+                        <div class="report-item"><strong>Trade rilevati:</strong> ${r.totale} (${r.vincite} vincite / ${r.perdite} perdite)</div>
+                        <div class="report-item ${r.winrate >= 50 ? 'success' : ''}"><strong>Win Rate:</strong> ${r.winrate.toFixed(2)}%</div>
+                        <div class="report-item ${r.profitFactor > 1.1 ? 'success' : 'danger'}"><strong>Profit Factor:</strong> ${isFinite(r.profitFactor) ? r.profitFactor.toFixed(2) : '∞'} | <strong>Expectancy:</strong> ${r.expectancy >= 0 ? '+' : ''}${r.expectancy.toFixed(3)}R per operazione.
+                            <strong>${valida ? '[EDGE STATISTICO POSITIVO SU QUESTO CAMPIONE]' : '[CAMPIONE PICCOLO O EDGE DEBOLE — VALUTA CON CAUTELA]'}</strong>
+                        </div>
+                    </div>`;
+            } catch (e) {
+                consoleBox.innerHTML = `
+                    <div class="report-item danger"><strong>Impossibile calcolare un backtest per ${escapeHtml(ticker)}:</strong> ${escapeHtml(e.message)}.</div>
+                    <div class="report-item">Verifica che il ticker sia scritto in formato Yahoo Finance corretto, o riprova tra qualche secondo.</div>`;
+            }
             return;
         }
 
