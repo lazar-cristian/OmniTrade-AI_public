@@ -844,8 +844,7 @@ function rangePerTimeframe(tf) {
    di mercato effettivi — non è identica all'optimizer Python originale a
    granularità intraday, e lo dichiariamo sempre esplicitamente nel report. */
 async function eseguiBacktestLive(ticker, soglia, rr) {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=2y`;
-    const json = await fetchConEventualeProxy(url);
+    const json = await chiamaYahooViaEdge(ticker, '1d', '2y');
     const result = json && json.chart && json.chart.result ? json.chart.result[0] : null;
     if (!result) throw new Error((json.chart && json.chart.error && json.chart.error.description) || "Ticker non trovato su Yahoo Finance");
 
@@ -909,26 +908,27 @@ async function eseguiBacktestLive(ticker, soglia, rr) {
 
     return { totale, vincite, perdite, winrate, profitFactor, expectancy };
 }
-async function fetchConEventualeProxy(url) {
+/* ============ DATI YAHOO FINANCE tramite la nostra Edge Function "external-data" ============
+   Niente più proxy pubblici di terzi: il fetch verso Yahoo Finance avviene
+   lato server dentro la Edge Function (nessun problema di CORS, perché le
+   restrizioni CORS valgono solo per le chiamate dal browser). Se la funzione
+   non è ancora stata pubblicata, l'errore lo dice chiaramente invece di
+   restare generico. */
+async function chiamaYahooViaEdge(ticker, interval, range) {
+    const url = `${SUPABASE_URL}/functions/v1/external-data?tipo=yahoo&ticker=${encodeURIComponent(ticker)}&interval=${encodeURIComponent(interval)}&range=${encodeURIComponent(range)}`;
+    let resp;
     try {
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error("HTTP " + resp.status);
-        return await resp.json();
-    } catch (eDiretto) {
-        try {
-            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-            const resp2 = await fetch(proxyUrl);
-            if (!resp2.ok) throw new Error("HTTP " + resp2.status);
-            return await resp2.json();
-        } catch (eProxy) {
-            throw new Error(eDiretto.message + " (anche il tentativo via proxy è fallito: " + eProxy.message + ")");
-        }
+        resp = await fetch(url);
+    } catch (e) {
+        throw new Error("Edge Function 'external-data' non raggiungibile — è stata pubblicata? (supabase functions deploy external-data --no-verify-jwt)");
     }
+    const dati = await resp.json().catch(() => null);
+    if (!resp.ok) throw new Error((dati && dati.errore) || ('HTTP ' + resp.status));
+    return dati;
 }
 
 async function ottieniUltimoPrezzo(ticker) {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
-    const json = await fetchConEventualeProxy(url);
+    const json = await chiamaYahooViaEdge(ticker, '1d', '5d');
     const result = json && json.chart && json.chart.result ? json.chart.result[0] : null;
     if (!result) throw new Error("Ticker non trovato");
     const closes = result.indicators.quote[0].close.filter(v => v != null);
@@ -938,10 +938,9 @@ async function ottieniUltimoPrezzo(ticker) {
 
 async function tentaDatiLive(ticker, tf) {
     const range = rangePerTimeframe(tf);
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=${encodeURIComponent(tf)}&range=${range}`;
-    const json = await fetchConEventualeProxy(url);
+    const json = await chiamaYahooViaEdge(ticker, tf, range);
     const result = json && json.chart && json.chart.result ? json.chart.result[0] : null;
-    if (!result) throw new Error((json.chart.error && json.chart.error.description) || "Ticker non trovato");
+    if (!result) throw new Error((json.chart && json.chart.error && json.chart.error.description) || "Ticker non trovato");
     const closes = result.indicators.quote[0].close.filter(v => v != null);
     const highs = result.indicators.quote[0].high.filter(v => v != null);
     const lows = result.indicators.quote[0].low.filter(v => v != null);
@@ -1628,18 +1627,21 @@ function caricaNewsECalendario() {
 
 /* ============ TITOLI REALI DA INVESTING.COM (feed RSS ufficiale) ============
    Gli RSS non sono richiamabili direttamente dal browser per via del CORS,
-   quindi passiamo attraverso un proxy CORS pubblico (allorigins.win) per
-   scaricare l'XML e lo interpretiamo con il parser XML nativo del browser.
-   Mostriamo solo titolo + data + link all'articolo originale (mai il testo
-   dell'articolo), esattamente come previsto dal formato RSS. */
+/* ============ TITOLI REALI DA INVESTING.COM (feed RSS ufficiale, via la nostra Edge Function) ============
+   Il fetch dell'RSS avviene lato server dentro "external-data" — niente più
+   proxy pubblici di terzi. Mostriamo solo titolo + data + link all'articolo
+   originale (mai il testo dell'articolo), esattamente come previsto dal
+   formato RSS. */
 async function caricaHeadlineInvesting() {
     const wrap = document.getElementById('investingNewsWrap');
     const etichetta = document.getElementById('investingUltimoAggiornamento');
-    const feedUrl = 'https://www.investing.com/rss/news.rss';
-    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(feedUrl);
+    const url = `${SUPABASE_URL}/functions/v1/external-data?tipo=investing-news`;
     try {
-        const resp = await fetch(proxyUrl);
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const resp = await fetch(url);
+        if (!resp.ok) {
+            const erroreJson = await resp.json().catch(() => null);
+            throw new Error((erroreJson && erroreJson.errore) || ('HTTP ' + resp.status));
+        }
         const testoXml = await resp.text();
         const xml = new DOMParser().parseFromString(testoXml, 'text/xml');
         if (xml.querySelector('parsererror')) throw new Error('XML non valido');
@@ -1659,7 +1661,7 @@ async function caricaHeadlineInvesting() {
         wrap.innerHTML = righe;
         if (etichetta) etichetta.innerText = new Date().toLocaleTimeString('it-IT');
     } catch (e) {
-        wrap.innerHTML = `<p class="placeholder-text">Titoli Investing.com non disponibili al momento (${escapeHtml(e.message)}). Il feed TradingView qui sopra resta comunque attivo come fonte principale. Il proxy CORS pubblico usato per leggere l'RSS può occasionalmente essere lento o irraggiungibile.</p>`;
+        wrap.innerHTML = `<p class="placeholder-text">Titoli Investing.com non disponibili al momento (${escapeHtml(e.message)}). Il feed TradingView qui sopra resta comunque attivo come fonte principale. Verifica di aver pubblicato la Edge Function "external-data" (supabase functions deploy external-data --no-verify-jwt).</p>`;
     }
 }
 
