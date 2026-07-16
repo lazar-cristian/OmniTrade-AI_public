@@ -7,15 +7,66 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
-    * { box-sizing: border-box; }
-    body { background-color: #0b0e11; color: #eaecef; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 0; display: flex; height: 100vh; height: 100dvh; overflow: hidden; animation: appFade .4s ease; }
+    :root {
+        --bg-main: #06080b;
+        --bg-panel: rgba(18, 22, 28, 0.65);
+        --bg-panel-solid: #12161c;
+        --border-color: rgba(255, 255, 255, 0.07);
+        --primary: #00ffa3;
+        --primary-glow: rgba(0, 255, 163, 0.15);
+        --secondary: #7b2cbf;
+        --accent-blue: #00d2ff;
+        --danger: #ff4d4d;
+        --danger-glow: rgba(255, 77, 77, 0.15);
+        --text-main: #eaecef;
+        --text-muted: #929aa5;
+        --text-dark: #55606c;
+        --glass-blur: blur(16px);
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: var(--border-color) transparent; }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    body { 
+        background-color: var(--bg-main); 
+        background-image: radial-gradient(circle at 80% 20%, rgba(123, 44, 191, 0.07) 0%, transparent 50%),
+                          radial-gradient(circle at 20% 80%, rgba(0, 255, 163, 0.05) 0%, transparent 50%);
+        color: var(--text-main); 
+        font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif; 
+        margin: 0; padding: 0; 
+        display: flex; height: 100vh; height: 100dvh; 
+        overflow: hidden; 
+        animation: appFade .5s ease; 
+    }
 
     /* MOBILE TOP BAR (visibile solo sotto i 768px) */
     .mobile-topbar { display: none; }
     @media (max-width: 768px) {
-        .mobile-topbar { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background-color: #161a1e; border-bottom: 1px solid #2b2f36; position: relative; z-index: 2; flex-shrink: 0; }
-        .mobile-topbar .brand-mobile { color: #00ffa3; font-weight: bold; font-size: 17px; }
-        .hamburger-btn { width: auto; padding: 8px 10px; background: #1e2329; border: 1px solid #2b2f36; color: #00ffa3; font-size: 18px; line-height: 1; border-radius: 6px; }
+        .mobile-topbar { 
+            display: flex; align-items: center; justify-content: space-between; 
+            padding: 12px 18px; 
+            background: rgba(18, 22, 28, 0.85); 
+            backdrop-filter: var(--glass-blur); 
+            border-bottom: 1px solid var(--border-color); 
+            position: relative; z-index: 10; flex-shrink: 0; 
+        }
+        .mobile-topbar .brand-mobile { 
+            color: var(--primary); font-weight: 700; font-size: 19px; 
+            text-shadow: 0 0 10px rgba(0, 255, 163, 0.3);
+        }
+        .hamburger-btn { 
+            width: auto; padding: 8px 12px; background: rgba(255,255,255,0.03); 
+            border: 1px solid var(--border-color); color: var(--primary); 
+            font-size: 20px; line-height: 1; border-radius: 8px; cursor: pointer;
+            transition: var(--transition);
+        }
+        .hamburger-btn:hover { background: var(--primary-glow); }
         body { flex-direction: column; }
     }
     @keyframes appFade { from{opacity:0;} to{opacity:1;} }
@@ -23,141 +74,239 @@
     #particleCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 
     /* AUTH GATE (login/registrazione) */
-    .auth-gate { position: fixed; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center; background: rgba(11,14,17,0.94); backdrop-filter: blur(6px); }
-    .auth-card { width: 380px; max-width: 92vw; background-color: #161a1e; border: 1px solid #2b2f36; border-radius: 12px; padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.55); }
-    .auth-card .brand { font-size: 24px; font-weight: bold; color: #00ffa3; text-shadow: 0 0 18px rgba(0,255,163,0.35); }
+    .auth-gate { position: fixed; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center; background: rgba(6,9,12,0.92); backdrop-filter: blur(8px); }
+    .auth-card { 
+        width: 390px; max-width: 92vw; 
+        background: rgba(18, 22, 28, 0.75); 
+        border: 1px solid var(--border-color); 
+        backdrop-filter: var(--glass-blur);
+        border-radius: 16px; padding: 32px; 
+        box-shadow: 0 24px 64px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.1); 
+    }
+    .auth-card .brand { 
+        font-size: 28px; font-weight: 700; color: var(--primary); 
+        text-shadow: 0 0 20px rgba(0,255,163,0.4); 
+    }
     body.app-hidden > .mobile-topbar, body.app-hidden > .sidebar-overlay, body.app-hidden > .sidebar, body.app-hidden > .workspace { display: none !important; }
 
     /* SIDEBAR */
-    .sidebar { position: relative; z-index: 1; width: 260px; background-color: #161a1e; border-right: 1px solid #2b2f36; display: flex; flex-direction: column; padding: 20px 0; flex-shrink: 0; transition: transform .25s ease; }
-    .sidebar-overlay { display: none; }
-    @media (max-width: 768px) {
-        .sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; transform: translateX(-100%); box-shadow: 20px 0 40px rgba(0,0,0,0.5); }
-        .sidebar.open { transform: translateX(0); }
-        .sidebar-overlay.open { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; }
+    .sidebar { 
+        position: relative; z-index: 100; width: 270px; 
+        background: rgba(13, 17, 23, 0.85); 
+        border-right: 1px solid var(--border-color); 
+        backdrop-filter: var(--glass-blur);
+        display: flex; flex-direction: column; padding: 24px 0; flex-shrink: 0; 
+        transition: transform .3s cubic-bezier(0.4, 0, 0.2, 1); 
     }
-    .sidebar .brand { font-size: 22px; font-weight: bold; color: #00ffa3; padding: 0 25px 25px 25px; border-bottom: 1px solid #2b2f36; margin-bottom: 20px; text-shadow: 0 0 18px rgba(0,255,163,0.35); }
-    .sidebar-menu { display: flex; flex-direction: column; gap: 5px; flex: 1; padding: 0 10px; }
-    .menu-item { padding: 14px 15px; color: #929aa5; text-decoration: none; font-weight: 600; border-radius: 6px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: 0.2s; user-select: none; }
-    .menu-item:hover, .menu-item.active { background-color: #1e2329; color: #00ffa3; }
-    .menu-item:focus-visible { outline: 2px solid #00ffa3; outline-offset: 2px; }
-    .sidebar-foot { padding: 15px 25px 0 25px; font-size: 11px; color: #55606c; border-top: 1px solid #2b2f36; margin-top: 10px; line-height: 1.6; }
+    .sidebar-overlay { display: none; transition: opacity 0.3s ease; }
+    
+    .sidebar-close-btn { display: none; }
+    
+    @media (max-width: 768px) {
+        .sidebar { 
+            position: fixed; top: 0; left: 0; bottom: 0; 
+            transform: translateX(-100%); 
+            box-shadow: 24px 0 50px rgba(0,0,0,0.6); 
+            background: #0d1117;
+            backdrop-filter: none;
+        }
+        .sidebar.open { transform: translateX(0); }
+        .sidebar-overlay.open { 
+            display: block; position: fixed; inset: 0; 
+            background: rgba(0,0,0,0.7); 
+            backdrop-filter: blur(4px);
+            z-index: 90; 
+        }
+        .sidebar-close-btn { 
+            display: block; position: absolute; top: 20px; right: 20px; 
+            background: transparent; border: none; color: var(--text-muted); 
+            font-size: 22px; cursor: pointer; font-weight: bold; width: auto; padding: 4px 8px;
+        }
+        .sidebar-close-btn:hover { color: var(--primary); }
+    }
+    
+    .sidebar .brand { 
+        font-size: 24px; font-weight: 700; color: var(--primary); 
+        padding: 0 25px 25px 25px; border-bottom: 1px solid var(--border-color); 
+        margin-bottom: 20px; text-shadow: 0 0 16px rgba(0,255,163,0.3); 
+    }
+    .sidebar-menu { display: flex; flex-direction: column; gap: 6px; flex: 1; padding: 0 12px; }
+    .menu-item { 
+        padding: 12px 16px; color: var(--text-muted); 
+        text-decoration: none; font-weight: 500; font-size: 14.5px;
+        border-radius: 8px; display: flex; align-items: center; gap: 12px; 
+        cursor: pointer; transition: var(--transition); user-select: none; 
+    }
+    .menu-item:hover, .menu-item.active { 
+        background: rgba(255,255,255,0.03); 
+        color: var(--primary); 
+        box-shadow: inset 1px 0 0 var(--primary);
+    }
+    .menu-item.active {
+        background: var(--primary-glow);
+    }
+    .menu-item:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    .sidebar-foot { padding: 15px 25px 0 25px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border-color); margin-top: 10px; line-height: 1.6; }
 
     /* WORKSPACE */
     .workspace { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; min-width: 0; }
-    @media (max-width: 768px) { .workspace { height: auto; flex: 1; } .view-content { padding: 18px; } }
+    @media (max-width: 768px) { .workspace { height: auto; flex: 1; } .view-content { padding: 16px; } }
 
-    .ticker-tape-wrap { border-bottom: 1px solid #2b2f36; background-color: #131722; flex-shrink: 0; }
+    .ticker-tape-wrap { border-bottom: 1px solid var(--border-color); background-color: #0b0e12; flex-shrink: 0; }
 
-    .view-content { flex: 1; padding: 30px; overflow-y: auto; display: none; }
-    .view-content.active { display: block; animation: viewFade .3s ease; }
-    @keyframes viewFade { from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+    .view-content { flex: 1; padding: 28px; overflow-y: auto; display: none; }
+    .view-content.active { display: block; animation: viewFade .35s cubic-bezier(0.4, 0, 0.2, 1); }
+    @keyframes viewFade { from{opacity:0; transform:translateY(12px);} to{opacity:1; transform:translateY(0);} }
 
-    .dashboard-grid { display: grid; grid-template-columns: 1fr 1.6fr; gap: 25px; }
-    @media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr; } }
+    .dashboard-grid { display: grid; grid-template-columns: 1fr 1.6fr; gap: 24px; }
+    @media (max-width: 980px) { .dashboard-grid { grid-template-columns: 1fr; } }
 
-    .panel { position: relative; overflow: hidden; background: linear-gradient(180deg, rgba(22,26,30,0.95), rgba(22,26,30,0.85)); border: 1px solid #2b2f36; border-radius: 8px; padding: 25px; height: fit-content; }
-    .panel::before { content:''; position:absolute; top:-60px; right:-60px; width:220px; height:220px; background: radial-gradient(circle, rgba(0,255,163,0.08), transparent 70%); pointer-events:none; }
-    h2 { position: relative; font-size: 16px; color: #ffffff; margin-top: 0; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #2b2f36; padding-bottom: 12px; margin-bottom: 20px; }
+    .panel { 
+        position: relative; overflow: hidden; 
+        background: var(--bg-panel); 
+        border: 1px solid var(--border-color); 
+        backdrop-filter: var(--glass-blur);
+        border-radius: 14px; padding: 24px; height: fit-content; 
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        transition: border-color 0.3s ease;
+    }
+    .panel::before { content:''; position:absolute; top:-60px; right:-60px; width:220px; height:220px; background: radial-gradient(circle, rgba(0,255,163,0.06), transparent 70%); pointer-events:none; }
+    h2 { position: relative; font-size: 15px; font-weight: 700; color: #ffffff; margin-top: 0; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 20px; }
 
-    .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
-    .kpi-grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; margin-top: 20px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+    .kpi-grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-top: 20px; }
     @media (max-width: 1200px) { .kpi-grid-6 { grid-template-columns: repeat(3, 1fr); } }
-    @media (max-width: 600px) { .kpi-grid-6 { grid-template-columns: repeat(2, 1fr); } }
-    .kpi-card { background-color: #1e2329; border: 1px solid #2b2f36; border-radius: 6px; padding: 15px; text-align: center; transition: 0.2s; }
-    .kpi-card:hover { border-color: #00ffa3; box-shadow: 0 0 0 1px rgba(0,255,163,0.3), 0 8px 20px rgba(0,255,163,0.06); transform: translateY(-2px); }
-    .kpi-label { font-size: 11px; color: #929aa5; text-transform: uppercase; margin-bottom: 5px; font-weight: bold; }
-    .kpi-value { font-size: 20px; font-weight: bold; color: #ffffff; }
-    .kpi-value.anomaly { color: #ff4d4d; animation: flash 1.5s infinite; }
+    @media (max-width: 600px) { 
+        .kpi-grid-6 { grid-template-columns: repeat(2, 1fr); } 
+        .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 420px) {
+        .kpi-grid { grid-template-columns: 1fr; }
+    }
+    .kpi-card { 
+        background: rgba(255,255,255,0.02); 
+        border: 1px solid var(--border-color); 
+        border-radius: 10px; padding: 16px 12px; text-align: center; 
+        transition: var(--transition); 
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    .kpi-card:hover { 
+        border-color: var(--primary); 
+        box-shadow: 0 0 12px rgba(0,255,163,0.1), inset 0 1px 0 rgba(255,255,255,0.05); 
+        transform: translateY(-3px); 
+    }
+    .kpi-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; font-weight: 700; letter-spacing: 0.5px; }
+    .kpi-value { font-size: 19px; font-weight: 700; color: #ffffff; font-family: 'Inter', sans-serif; }
+    .kpi-value.anomaly { color: var(--danger); animation: flash 1.5s infinite; }
     @media (prefers-reduced-motion: reduce) { .kpi-value.anomaly, .view-content.active, body { animation: none; } }
 
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
-    .form-group { margin-bottom: 18px; }
-    label { display: block; margin-bottom: 6px; color: #b7bdc6; font-size: 13px; font-weight: 500; }
-    input, select { width: 100%; padding: 12px; background-color: #1e2329; border: 1px solid #474d57; border-radius: 4px; color: white; font-size: 14px; }
-    input:focus, select:focus, button:focus-visible { border-color: #00ffa3; outline: none; box-shadow: 0 0 0 1px #00ffa3; }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 12.5px; font-weight: 600; }
+    input, select { 
+        width: 100%; padding: 12px; 
+        background: rgba(255,255,255,0.02); 
+        border: 1px solid var(--border-color); 
+        border-radius: 8px; color: white; font-size: 13.5px; 
+        transition: var(--transition);
+        font-family: inherit;
+    }
+    input:focus, select:focus, button:focus-visible { border-color: var(--primary); outline: none; box-shadow: 0 0 8px var(--primary-glow); background: rgba(255,255,255,0.04); }
 
     .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
-    button { width: 100%; padding: 14px; border: none; border-radius: 4px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; font-family: inherit; }
-    .btn-main { background-color: #00ffa3; color: #0b0e11; }
-    .btn-main:hover { background-color: #00db8b; }
-    .btn-sec { background-color: #2b2f36; color: white; border: 1px solid #474d57; }
-    .btn-sec:hover { background-color: #373d46; }
-    .btn-save { background-color: transparent; color: #00ffa3; border: 1px solid #00ffa3; }
-    .btn-save:hover { background-color: rgba(0, 255, 163, 0.05); }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button { 
+        width: 100%; padding: 14px; border: none; border-radius: 8px; 
+        font-size: 13.5px; font-weight: 700; cursor: pointer; 
+        transition: var(--transition); font-family: inherit; 
+    }
+    .btn-main { background-color: var(--primary); color: #06080b; box-shadow: 0 4px 16px rgba(0, 255, 163, 0.2); }
+    .btn-main:hover { background-color: #00db8b; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 255, 163, 0.35); }
+    .btn-main:active { transform: translateY(1px); }
+    .btn-sec { background-color: rgba(255,255,255,0.05); color: white; border: 1px solid var(--border-color); }
+    .btn-sec:hover { background-color: rgba(255,255,255,0.08); border-color: var(--text-muted); }
+    .btn-save { background-color: transparent; color: var(--primary); border: 1px solid var(--primary); }
+    .btn-save:hover { background-color: var(--primary-glow); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 
-    .output-box { background-color: #1e2329; border: 1px solid #2b2f36; border-radius: 6px; padding: 20px; min-height: 400px; font-size: 14px; line-height: 1.6; }
-    .report-section { margin-bottom: 20px; }
-    .report-title { font-weight: bold; color: #00ffa3; text-transform: uppercase; font-size: 13px; margin-bottom: 8px; }
-    .report-item { background-color: #161a1e; padding: 12px 15px; border-left: 4px solid #474d57; margin-bottom: 8px; border-radius: 0 4px 4px 0; font-size: 13.5px; }
-    .report-item.danger { border-left-color: #ff4d4d; background-color: rgba(255, 77, 77, 0.05); }
-    .report-item.success { border-left-color: #00ffa3; background-color: rgba(0, 255, 163, 0.05); }
-    .placeholder-text { color: #55606c; font-size: 13.5px; }
+    .output-box { 
+        background: rgba(0,0,0,0.2); 
+        border: 1px solid var(--border-color); 
+        border-radius: 10px; padding: 20px; min-height: 400px; 
+        font-size: 13.5px; line-height: 1.6; 
+    }
+    .report-section { margin-bottom: 22px; }
+    .report-title { font-weight: 700; color: var(--primary); text-transform: uppercase; font-size: 12.5px; margin-bottom: 10px; letter-spacing: 0.5px; }
+    .report-item { background: rgba(255,255,255,0.01); padding: 12px 16px; border-left: 4px solid var(--text-dark); margin-bottom: 10px; border-radius: 0 8px 8px 0; font-size: 13px; }
+    .report-item.danger { border-left-color: var(--danger); background: rgba(255, 77, 77, 0.04); }
+    .report-item.success { border-left-color: var(--primary); background: rgba(0, 255, 163, 0.03); }
+    .report-item.warning { border-left-color: #ffd200; background: rgba(255, 210, 0, 0.03); }
+    .placeholder-text { color: var(--text-dark); font-size: 13px; }
 
     /* SEGMENTED TOGGLE */
-    .segmented { display: inline-flex; background: #1e2329; border: 1px solid #2b2f36; border-radius: 8px; padding: 4px; gap: 4px; height: fit-content; }
-    .segmented button { width: auto; padding: 10px 22px; border-radius: 6px; background: transparent; color: #929aa5; font-weight: 700; }
-    .segmented button.active { background: #00ffa3; color: #0b0e11; }
-    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+    .segmented { display: inline-flex; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 4px; gap: 4px; height: fit-content; }
+    .segmented button { width: auto; padding: 8px 18px; border-radius: 6px; background: transparent; color: var(--text-muted); font-weight: 600; font-size: 12.5px; }
+    .segmented button.active { background: var(--primary); color: #06080b; box-shadow: 0 2px 8px rgba(0, 255, 163, 0.2); }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 15px; }
 
     /* CHAT */
-    .chat-layout { max-width: 900px; margin: 0 auto; background-color: #161a1e; border: 1px solid #2b2f36; border-radius: 8px; display: flex; flex-direction: column; height: 78vh; }
-    .chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-    .msg { max-width: 75%; padding: 12px 16px; border-radius: 8px; font-size: 14.5px; line-height: 1.5; }
-    .msg.user { background-color: #2b2f36; align-self: flex-end; color: white; }
-    .msg.ai { background-color: #1e2329; border: 1px solid #2b2f36; align-self: flex-start; }
-    .chat-input-area { padding: 15px; border-top: 1px solid #2b2f36; display: flex; gap: 10px; }
+    .chat-layout { max-width: 900px; margin: 0 auto; background: var(--bg-panel); border: 1px solid var(--border-color); backdrop-filter: var(--glass-blur); border-radius: 12px; display: flex; flex-direction: column; height: 75vh; box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+    .chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+    .msg { max-width: 78%; padding: 12px 18px; border-radius: 10px; font-size: 14px; line-height: 1.55; }
+    .msg.user { background: var(--secondary); color: white; align-self: flex-end; border-bottom-right-radius: 2px; box-shadow: 0 4px 12px rgba(123, 44, 191, 0.15); }
+    .msg.ai { background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); align-self: flex-start; border-bottom-left-radius: 2px; }
+    .chat-input-area { padding: 16px; border-top: 1px solid var(--border-color); display: flex; gap: 10px; background: rgba(0,0,0,0.1); border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
     .chat-input-area input { flex: 1; }
-    .chat-input-area button { width: auto; padding: 12px 22px; }
+    .chat-input-area button { width: auto; padding: 12px 24px; }
 
     /* TABLES */
-    table { width: 100%; border-collapse: collapse; background-color: #161a1e; border: 1px solid #2b2f36; border-radius: 6px; overflow: hidden; }
-    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 6px; }
-    .table-scroll table { min-width: 560px; }
-    @media (max-width: 600px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 400px) { .kpi-grid { grid-template-columns: 1fr; } }
-    th, td { padding: 14px 20px; text-align: left; border-bottom: 1px solid #2b2f36; font-size: 14px; }
-    th { background-color: #1e2329; color: #929aa5; font-weight: 600; }
-    tr:hover { background-color: #1f252c; }
-    .badge-emotion { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background-color: #2b2f36; color: #00ffa3; }
-    .badge-long { background-color: rgba(0,255,163,0.15); color: #00ffa3; border: 1px solid #00ffa3; }
-    .badge-short { background-color: rgba(255,77,77,0.15); color: #ff4d4d; border: 1px solid #ff4d4d; }
-    .dev-pos { color: #00ffa3; } .dev-neg { color: #ff4d4d; }
-    .btn-refresh { width: auto; padding: 10px 18px; background-color: #2b2f36; color: #00ffa3; border: 1px solid #2b2f36; }
+    table { width: 100%; border-collapse: collapse; background: transparent; border-radius: 8px; overflow: hidden; }
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.01); }
+    .table-scroll table { min-width: 580px; }
+    th, td { padding: 14px 18px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 13.5px; }
+    th { background: rgba(255,255,255,0.03); color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+    td { font-family: 'Inter', sans-serif; }
+    tr:hover { background-color: rgba(255, 255, 255, 0.015); }
+    .badge-emotion { padding: 4px 8px; border-radius: 4px; font-size: 11.5px; font-weight: 700; background-color: rgba(255,255,255,0.05); color: var(--primary); }
+    .badge-long { background-color: var(--primary-glow); color: var(--primary); border: 1px solid rgba(0,255,163,0.3); }
+    .badge-short { background-color: var(--danger-glow); color: var(--danger); border: 1px solid rgba(255,77,77,0.3); }
+    .dev-pos { color: var(--primary); text-shadow: 0 0 8px rgba(0,255,163,0.2); } 
+    .dev-neg { color: var(--danger); text-shadow: 0 0 8px rgba(255,77,77,0.2); }
+    .btn-refresh { width: auto; padding: 10px 18px; background: rgba(255,255,255,0.03); color: var(--primary); border: 1px solid var(--border-color); border-radius: 6px; }
+    .btn-refresh:hover { background: var(--primary-glow); }
 
     /* GLOSSARY */
     .glossary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
     @media (max-width: 900px) { .glossary-grid { grid-template-columns: 1fr; } }
-    .card { background-color: #161a1e; border: 1px solid #2b2f36; border-radius: 6px; padding: 20px; }
-    .card-title { font-size: 17px; color: #00ffa3; font-weight: bold; margin-bottom: 6px; }
-    .card-cat { display: inline-block; font-size: 11px; background-color: #1e2329; color: #929aa5; padding: 3px 8px; border-radius: 4px; margin-bottom: 12px; }
-    .card-def { color: #b7bdc6; font-size: 13.5px; line-height: 1.6; }
+    .card { background: var(--bg-panel); border: 1px solid var(--border-color); backdrop-filter: var(--glass-blur); border-radius: 10px; padding: 20px; transition: var(--transition); }
+    .card:hover { border-color: var(--primary); transform: translateY(-2px); }
+    .card-title { font-size: 16.5px; color: var(--primary); font-weight: 700; margin-bottom: 8px; }
+    .card-cat { display: inline-block; font-size: 10px; background-color: rgba(255,255,255,0.04); color: var(--text-muted); padding: 3px 8px; border-radius: 4px; margin-bottom: 12px; font-weight: 700; text-transform: uppercase; }
+    .card-def { color: var(--text-main); font-size: 13px; line-height: 1.6; }
 
     /* TRADINGVIEW CONTAINERS */
-    .tv-chart-wrap { height: 560px; border: 1px solid #2b2f36; border-radius: 8px; overflow: hidden; }
+    .tv-chart-wrap { height: 560px; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; background: #131722; }
     @media (max-width: 768px) { .tv-chart-wrap { height: 380px; } .tv-watchlist-wrap { height: 320px; } }
-    .tv-watchlist-wrap { height: 420px; border: 1px solid #2b2f36; border-radius: 8px; overflow: hidden; margin-top: 20px; }
+    .tv-watchlist-wrap { height: 420px; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; margin-top: 20px; background: #131722; }
 
     /* SKELETON */
-    .skeleton { background: linear-gradient(90deg, #1e2329 25%, #262c33 37%, #1e2329 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; border-radius: 6px; }
+    .skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.02) 25%, rgba(255,255,255,0.06) 37%, rgba(255,255,255,0.02) 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; border-radius: 8px; }
     @keyframes shimmer { 0%{background-position:100% 50%;} 100%{background-position:0 50%;} }
 
     /* TOASTS */
     #toastContainer { position: fixed; bottom: 20px; right: 20px; left: 20px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; z-index: 3000; pointer-events: none; }
-    .toast { pointer-events: auto; min-width: 280px; max-width: 380px; width: 100%; background-color: #161a1e; border: 1px solid #2b2f36; border-left: 4px solid #00ffa3; border-radius: 6px; padding: 14px 16px; font-size: 13.5px; box-shadow: 0 10px 30px rgba(0,0,0,0.45); animation: toastIn .25s ease; }
+    .toast { pointer-events: auto; min-width: 280px; max-width: 380px; width: 100%; background-color: rgba(18, 22, 28, 0.95); border: 1px solid var(--border-color); border-left: 4px solid var(--primary); backdrop-filter: var(--glass-blur); border-radius: 8px; padding: 14px 16px; font-size: 13px; box-shadow: 0 12px 36px rgba(0,0,0,0.5); animation: toastIn .25s cubic-bezier(0.4, 0, 0.2, 1); }
     @media (max-width: 480px) { #toastContainer { left: 10px; right: 10px; bottom: 10px; align-items: stretch; } .toast { min-width: 0; max-width: none; } }
-    .toast.error { border-left-color: #ff4d4d; }
-    .toast.info { border-left-color: #474d57; }
+    .toast.error { border-left-color: var(--danger); }
+    .toast.info { border-left-color: var(--accent-blue); }
     .toast.fadeout { animation: toastOut .25s ease forwards; }
     @keyframes toastIn { from{transform:translateX(30px); opacity:0;} to{transform:translateX(0); opacity:1;} }
     @keyframes toastOut { from{opacity:1;} to{opacity:0; transform:translateX(30px);} }
 
     /* MODAL */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(5,7,9,0.7); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; z-index: 4000; animation: fadeIn .2s ease; }
-    .modal-box { background-color: #161a1e; border: 1px solid #2b2f36; border-radius: 10px; padding: 26px; width: 380px; max-width: 92vw; box-shadow: 0 20px 60px rgba(0,0,0,0.55); }
-    .modal-box h3 { margin-top: 0; color: #fff; font-size: 16px; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(5,7,9,0.8); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 4000; animation: fadeIn .2s ease; }
+    .modal-box { background-color: #12161c; border: 1px solid var(--border-color); border-radius: 12px; padding: 26px; width: 390px; max-width: 92vw; box-shadow: 0 24px 64px rgba(0,0,0,0.6); }
+    .modal-box h3 { margin-top: 0; color: #fff; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
     .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
     .modal-actions button { width: auto; flex: 1; padding: 12px; }
     @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
@@ -197,6 +346,7 @@
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
 
 <div class="sidebar" id="sidebarEl">
+    <button class="sidebar-close-btn" onclick="toggleSidebar(false)" aria-label="Chiudi menu">✕</button>
     <div class="brand">OmniTrade AI</div>
     <div class="sidebar-menu">
         <div class="menu-item active" tabindex="0" onclick="switchView('portafoglio', this)">💼 Portafoglio</div>
@@ -210,7 +360,10 @@
     </div>
     <div class="sidebar-foot">
         👤 <span id="utenteEmailFoot">-</span><br>
-        <button class="btn-sec" style="margin-top:8px; padding:8px; font-size:11px;" onclick="effettuaLogout()">🚪 Esci</button>
+        <div style="display:flex; gap:6px; margin-top:8px;">
+            <button class="btn-sec" style="padding:8px; font-size:11px; flex:1;" onclick="apriImpostazioniAI()">⚙️ Config AI</button>
+            <button class="btn-sec" style="padding:8px; font-size:11px; flex:1;" onclick="effettuaLogout()">🚪 Esci</button>
+        </div>
     </div>
 </div>
 
@@ -386,6 +539,35 @@
 
     <!-- NEWS & CALENDARIO -->
     <div id="view-news" class="view-content">
+        <!-- CENTRO NOTIFICHE -->
+        <div class="panel" style="margin-bottom:25px; width: 100%;">
+            <h2>🔔 Centro Notifiche Macro & News Real-Time</h2>
+            <p class="placeholder-text" style="margin-bottom:15px;">Ricevi avvisi sonori e notifiche di sistema desktop quando vengono pubblicati eventi macro o notizie importanti (funziona anche in background).</p>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Stato Notifiche Desktop</label>
+                    <div style="display:flex; gap:10px;">
+                        <button id="btnRichiediNotifiche" class="btn-sec" onclick="richiediAutorizzazioneNotifiche()" style="flex:1;">Abilita Notifiche Desktop</button>
+                        <button class="btn-sec" onclick="inviaNotificaTest()" style="width:auto; padding:12px 18px;" title="Invia notifica di test">🔔 Test</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Parole Chiave Importanti (separate da virgola)</label>
+                    <input type="text" id="notificheKeywords" value="FED, BCE, CPI, inflazione, tassi, disoccupazione, FOMC, PIL, tassi d'interesse, tassi di interesse, breaking, shock, crypto, BTC, ETH" onchange="salvaImpostazioniNotifiche()">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group" style="display:flex; align-items:center; gap:8px; margin:0;">
+                    <input type="checkbox" id="notificheSuono" checked onchange="salvaImpostazioniNotifiche()" style="width:20px; height:20px; margin:0; cursor:pointer;">
+                    <label for="notificheSuono" style="margin:0; cursor:pointer;">Suono acustico all'arrivo</label>
+                </div>
+                <div class="form-group" style="display:flex; align-items:center; gap:8px; margin:0;">
+                    <input type="checkbox" id="notificheSoloKeywords" checked onchange="salvaImpostazioniNotifiche()" style="width:20px; height:20px; margin:0; cursor:pointer;">
+                    <label for="notificheSoloKeywords" style="margin:0; cursor:pointer;">Filtra solo notizie con parole chiave</label>
+                </div>
+            </div>
+        </div>
+
         <div class="toolbar">
             <div>
                 <h2 style="border:none; padding:0; margin:0 0 6px 0;">📰 News di Mercato in Tempo Reale</h2>
@@ -453,6 +635,10 @@
                         <label for="rr">Risk/Reward — valore libero</label>
                         <input type="number" id="rr" value="2.0" step="0.1" min="0.1">
                     </div>
+                </div>
+                <div class="form-group" style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+                    <input type="checkbox" id="esameCoscienza" style="width:20px; height:20px; margin:0; cursor:pointer;" checked>
+                    <label for="esameCoscienza" style="margin:0; cursor:pointer; font-weight: 600; color: var(--primary);">🧠 Abilita Esame di Coscienza dell'AI (Analisi Macro)</label>
                 </div>
                 <div class="btn-group">
                     <button class="btn-main" onclick="lanciaAzione('analisi')">⚡ GENERA ANALISI COMPLETA</button>
@@ -526,6 +712,48 @@
 const SUPABASE_URL = "https://qtwidsfqzfjapwiiuywq.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0d2lkc2ZxemZqYXB3aWl1eXdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NTMwODksImV4cCI6MjA5OTAyOTA4OX0.p4hryHTNzcjVRj1JkE_tu_H84fK0hPclrZC6FKTAFf4";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ============ PROXY CORS & FETCH HELPER ============ */
+async function fetchConFallback(tipo, params, urlDiretto) {
+    // 1. Prova a chiamare la Edge Function di Supabase
+    try {
+        const queryParams = new URLSearchParams({ tipo, ...params }).toString();
+        const edgeUrl = `${SUPABASE_URL}/functions/v1/external-data?${queryParams}`;
+        const resp = await fetch(edgeUrl);
+        if (resp.ok) {
+            console.log(`[CORS Proxy] Successo tramite Edge Function Supabase per ${tipo}`);
+            return resp;
+        }
+    } catch (e) {
+        console.warn(`[CORS Proxy] Edge Function fallita per ${tipo}, uso fallback:`, e);
+    }
+
+    // 2. Fallback su corsproxy.io
+    try {
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(urlDiretto)}`;
+        const resp = await fetch(proxyUrl);
+        if (resp.ok) {
+            console.log(`[CORS Proxy] Successo tramite corsproxy.io per ${tipo}`);
+            return resp;
+        }
+    } catch (e) {
+        console.warn(`[CORS Proxy] corsproxy.io fallito per ${tipo}:`, e);
+    }
+
+    // 3. Secondo fallback su allorigins.win
+    try {
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(urlDiretto)}`;
+        const resp = await fetch(proxyUrl);
+        if (resp.ok) {
+            console.log(`[CORS Proxy] Successo tramite allorigins.win per ${tipo}`);
+            return resp;
+        }
+    } catch (e) {
+        console.warn(`[CORS Proxy] allorigins.win fallito per ${tipo}:`, e);
+    }
+
+    throw new Error("Tutti i canali di connessione proxy CORS hanno fallito.");
+}
 
 /* ============ AUTENTICAZIONE: LOGIN / REGISTRAZIONE REALE ============
    Sostituisce le sessioni anonime con un vero account email+password
@@ -831,104 +1059,10 @@ function rangePerTimeframe(tf) {
     return mappa[tf] || "1mo";
 }
 
-/* ============ BACKTEST LIVE (per qualunque ticker, calcolato su dati storici reali) ============
-   Metodologia: scarica ~2 anni di candele giornaliere da Yahoo Finance, calcola
-   un VWAP "rolling" a 20 giorni (media dei prezzi tipici pesata per il volume
-   sulla finestra mobile — un'approssimazione della VWAP intraday, dato che i
-   dati giornalieri non contengono il VWAP nativo). Simula un trade ogni volta
-   che il prezzo si allontana dal VWAP rolling oltre la soglia impostata:
-   rischio = distanza dal VWAP (1R), target = rischio * RR nella direzione del
-   ritorno alla media, stop = rischio nella direzione opposta. Verifica nei
-   10 giorni successivi quale livello viene toccato per primo.
-   È una semplificazione statistica, utile per un'indicazione reale sui dati
-   di mercato effettivi — non è identica all'optimizer Python originale a
-   granularità intraday, e lo dichiariamo sempre esplicitamente nel report. */
-async function eseguiBacktestLive(ticker, soglia, rr) {
-    const json = await chiamaYahooViaEdge(ticker, '1d', '2y');
-    const result = json && json.chart && json.chart.result ? json.chart.result[0] : null;
-    if (!result) throw new Error((json.chart && json.chart.error && json.chart.error.description) || "Ticker non trovato su Yahoo Finance");
-
-    const q = result.indicators.quote[0];
-    const n = result.timestamp.length;
-    const closes = q.close, highs = q.high, lows = q.low, volumes = q.volume;
-
-    const FINESTRA = 20, ORIZZONTE = 10;
-    if (n < FINESTRA + ORIZZONTE + 5) throw new Error("Storico insufficiente per questo ticker (servono almeno " + (FINESTRA + ORIZZONTE + 5) + " candele giornaliere)");
-
-    let vincite = 0, perdite = 0, sommaR_vinte = 0, sommaR_perse = 0;
-    let i = FINESTRA;
-    while (i < n - ORIZZONTE) {
-        if (closes[i] == null || highs[i] == null || lows[i] == null) { i++; continue; }
-
-        // VWAP rolling sulla finestra [i-FINESTRA, i)
-        let cumPV = 0, cumV = 0, datiValidi = true;
-        for (let k = i - FINESTRA; k < i; k++) {
-            if (closes[k] == null || highs[k] == null || lows[k] == null) { datiValidi = false; break; }
-            const tipico = (highs[k] + lows[k] + closes[k]) / 3;
-            const v = volumes[k] || 1;
-            cumPV += tipico * v; cumV += v;
-        }
-        if (!datiValidi || cumV === 0) { i++; continue; }
-        const vwapRolling = cumPV / cumV;
-        const prezzo = closes[i];
-        const deviazionePct = ((prezzo - vwapRolling) / vwapRolling) * 100;
-
-        if (Math.abs(deviazionePct) > soglia) {
-            const long = deviazionePct < 0; // sotto la media -> long verso la media
-            const rischio = Math.abs(prezzo - vwapRolling);
-            if (rischio <= 0) { i++; continue; }
-            const target = long ? prezzo + rischio * rr : prezzo - rischio * rr;
-            const stop = long ? prezzo - rischio : prezzo + rischio;
-
-            let esito = null;
-            for (let j = i + 1; j <= Math.min(i + ORIZZONTE, n - 1); j++) {
-                if (highs[j] == null || lows[j] == null) continue;
-                if (long) {
-                    if (lows[j] <= stop) { esito = 'perdita'; break; }
-                    if (highs[j] >= target) { esito = 'vincita'; break; }
-                } else {
-                    if (highs[j] >= stop) { esito = 'perdita'; break; }
-                    if (lows[j] <= target) { esito = 'vincita'; break; }
-                }
-            }
-            if (esito === 'vincita') { vincite++; sommaR_vinte += rr; }
-            else if (esito === 'perdita') { perdite++; sommaR_perse += 1; }
-            // se nessun livello toccato entro l'orizzonte, il trade non viene contato (né vinto né perso)
-
-            i += ORIZZONTE; // evita segnali sovrapposti sullo stesso trade
-        } else {
-            i++;
-        }
-    }
-
-    const totale = vincite + perdite;
-    const winrate = totale > 0 ? (vincite / totale * 100) : 0;
-    const profitFactor = sommaR_perse > 0 ? (sommaR_vinte / sommaR_perse) : (sommaR_vinte > 0 ? Infinity : 0);
-    const expectancy = totale > 0 ? ((sommaR_vinte - sommaR_perse) / totale) : 0;
-
-    return { totale, vincite, perdite, winrate, profitFactor, expectancy };
-}
-/* ============ DATI YAHOO FINANCE tramite la nostra Edge Function "external-data" ============
-   Niente più proxy pubblici di terzi: il fetch verso Yahoo Finance avviene
-   lato server dentro la Edge Function (nessun problema di CORS, perché le
-   restrizioni CORS valgono solo per le chiamate dal browser). Se la funzione
-   non è ancora stata pubblicata, l'errore lo dice chiaramente invece di
-   restare generico. */
-async function chiamaYahooViaEdge(ticker, interval, range) {
-    const url = `${SUPABASE_URL}/functions/v1/external-data?tipo=yahoo&ticker=${encodeURIComponent(ticker)}&interval=${encodeURIComponent(interval)}&range=${encodeURIComponent(range)}`;
-    let resp;
-    try {
-        resp = await fetch(url);
-    } catch (e) {
-        throw new Error("Edge Function 'external-data' non raggiungibile — è stata pubblicata? (supabase functions deploy external-data --no-verify-jwt)");
-    }
-    const dati = await resp.json().catch(() => null);
-    if (!resp.ok) throw new Error((dati && dati.errore) || ('HTTP ' + resp.status));
-    return dati;
-}
-
 async function ottieniUltimoPrezzo(ticker) {
-    const json = await chiamaYahooViaEdge(ticker, '1d', '5d');
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5d`;
+    const resp = await fetchConFallback('yahoo', { ticker, interval: '1d', range: '5d' }, url);
+    const json = await resp.json();
     const result = json && json.chart && json.chart.result ? json.chart.result[0] : null;
     if (!result) throw new Error("Ticker non trovato");
     const closes = result.indicators.quote[0].close.filter(v => v != null);
@@ -938,9 +1072,11 @@ async function ottieniUltimoPrezzo(ticker) {
 
 async function tentaDatiLive(ticker, tf) {
     const range = rangePerTimeframe(tf);
-    const json = await chiamaYahooViaEdge(ticker, tf, range);
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=${encodeURIComponent(tf)}&range=${range}`;
+    const resp = await fetchConFallback('yahoo', { ticker, interval: tf, range: range }, url);
+    const json = await resp.json();
     const result = json && json.chart && json.chart.result ? json.chart.result[0] : null;
-    if (!result) throw new Error((json.chart && json.chart.error && json.chart.error.description) || "Ticker non trovato");
+    if (!result) throw new Error((json.chart.error && json.chart.error.description) || "Ticker non trovato");
     const closes = result.indicators.quote[0].close.filter(v => v != null);
     const highs = result.indicators.quote[0].high.filter(v => v != null);
     const lows = result.indicators.quote[0].low.filter(v => v != null);
@@ -967,33 +1103,26 @@ async function lanciaAzione(tipo) {
     if (tipo === 'analisi') {
         consoleBox.innerHTML = '<p class="placeholder-text">Sincronizzazione dati in corso per ' + escapeHtml(ticker) + ' [' + escapeHtml(tf) + ']...</p>';
 
-        let campione = null;
-        let erroreLive = null;
+        let campione;
         try {
             campione = await tentaDatiLive(ticker, tf);
         } catch (e) {
-            erroreLive = e.message;
-            // Usiamo il campione cache SOLO se il ticker richiesto è davvero BTC-USD:
-            // mai spacciare dati di un altro asset per quello cercato dall'utente.
             if (ticker === 'BTC-USD') {
                 campione = Object.assign({}, ULTIMO_CAMPIONE_MERCATO, { fonte: "CACHE LOCALE (dati_mercato.csv, BTC-USD) — live non raggiungibile: " + e.message });
+            } else {
+                consoleBox.innerHTML = `
+                    <div class="report-section">
+                        <div class="report-title">❌ RECUPERO DATI FALLITO</div>
+                        <div class="report-item danger">
+                            Non è stato possibile recuperare i dati live da Yahoo Finance per <strong>${escapeHtml(ticker)}</strong>. <br>
+                            Dettaglio errore: <code>${escapeHtml(e.message)}</code>
+                        </div>
+                        <div class="report-item">
+                            Verifica che il ticker sia scritto correttamente (es. AAPL, BTC-USD, EURUSD=X) e che la connessione sia attiva, quindi riprova.
+                        </div>
+                    </div>`;
+                return;
             }
-        }
-
-        if (!campione) {
-            consoleBox.innerHTML = `
-                <div class="report-item danger">
-                    <strong>Dati non disponibili per ${escapeHtml(ticker)}.</strong> Il recupero live da Yahoo Finance è fallito (${escapeHtml(erroreLive)}) e non ho un campione locale di riserva per questo asset specifico — solo BTC-USD ha dati di esempio da <code>dati_mercato.csv</code>.
-                </div>
-                <div class="report-item">Riprova tra qualche secondo, controlla che il ticker sia scritto in formato Yahoo Finance corretto, oppure verifica il prezzo direttamente su <a href="https://finance.yahoo.com/quote/${encodeURIComponent(ticker)}" target="_blank" rel="noopener noreferrer" style="color:#00ffa3;">Yahoo Finance ↗</a>.</div>`;
-            document.getElementById('kpiPrezzo').innerText = "$-";
-            document.getElementById('kpiDeviazione').innerText = "-";
-            document.getElementById('kpiDeviazione').style.color = "";
-            const kpiVolVuoto = document.getElementById('kpiVolume');
-            kpiVolVuoto.innerText = "-";
-            kpiVolVuoto.className = "kpi-value";
-            document.getElementById('btnSalva').disabled = true;
-            return;
         }
 
         const prezzo = campione.prezzo, vwap = campione.vwap, volume = campione.volume, fonte = campione.fonte;
@@ -1030,34 +1159,69 @@ async function lanciaAzione(tipo) {
         ultimaAnalisi = { ticker, timeframe: tf, prezzo, deviazione, volume };
         document.getElementById('btnSalva').disabled = false;
 
+        let esameAttivo = document.getElementById('esameCoscienza').checked;
+        if (esameAttivo) {
+            const idEsame = 'esame-' + Date.now();
+            consoleBox.innerHTML += `
+                <div class="report-section" id="${idEsame}">
+                    <div class="report-title">🧠 ESAME DI COSCIENZA DELL'AI (ANALISI DIALOGICA)</div>
+                    <div class="report-item" style="border-left-color: var(--primary); background: rgba(0, 255, 163, 0.02);">
+                        <em>Generazione dialogo interiore dell'AI... Rilevamento notizie macro in corso...</em>
+                    </div>
+                </div>`;
+            
+            setTimeout(async () => {
+                try {
+                    let notizieTesto = "Nessuna notizia recente caricata.";
+                    const newsWrap = document.getElementById('investingNewsWrap');
+                    if (newsWrap && newsWrap.innerText && !newsWrap.innerText.includes("non disponibili")) {
+                        notizieTesto = newsWrap.innerText.split('\n').slice(0, 15).join(' | ');
+                    }
+
+                    const promptEsame = `Fai un "esame di coscienza" dialettico e dettagliato per il ticker ${ticker} sul timeframe ${tf}.
+Dati correnti:
+- Prezzo: $${prezzo.toLocaleString('en-US')}
+- Deviazione dal VWAP: ${deviazione.toFixed(2)}%
+- Soglia impostata: ${soglia}%
+- Volume attuale: ${volume.toLocaleString('en-US')}
+- Notizie macro economiche recenti: ${notizieTesto}
+
+Istruzioni per l'auto-dialogo dell'AI:
+1. Poni a te stessa delle domande critiche sul trend e sulla deviazione: è una vera estensione statistica dovuta ad un'anomalia o c'è un driver fondamentale che spinge il prezzo?
+2. Rispondi a te stessa confrontando le notizie macroeconomiche con il movimento (ad es. se ci sono notizie sui tassi d'interesse o sull'inflazione).
+3. Ragiona sul potenziale assorbimento istituzionale o aggressione volumetrica sul book (teoria dell'asta di Andrea Cimi).
+4. Concludi ammettendo se lo scenario è ad alta o bassa probabilità e quali sono i rischi di auto-inganno.
+Struttura il responso come un dialogo interiore strutturato con domande che ti poni (es. "D: ...?") e risposte che ti dai (es. "R: ..."), usando uno stile estremamente professionale ed oggettivo in italiano.`;
+
+                    const risposta = await inviaRichiestaAICopilot(promptEsame);
+                    
+                    const divEsame = document.getElementById(idEsame);
+                    if (divEsame) {
+                        divEsame.innerHTML = `
+                            <div class="report-title">🧠 ESAME DI COSCIENZA DELL'AI (ANALISI DIALOGICA)</div>
+                            <div class="report-item success" style="white-space: pre-wrap; font-family: inherit; font-size: 13px; line-height: 1.6;">${escapeHtml(risposta)}</div>`;
+                    }
+                } catch (err) {
+                    const divEsame = document.getElementById(idEsame);
+                    if (divEsame) {
+                        divEsame.innerHTML = `
+                            <div class="report-title">🧠 ESAME DI COSCIENZA DELL'AI (ANALISI DIALOGICA)</div>
+                            <div class="report-item danger">
+                                Impossibile completare l'esame di coscienza dell'AI: <code>${escapeHtml(err.message)}</code>. <br>
+                                <span class="placeholder-text" style="font-size:11px;">Puoi configurare una Chiave API diretta cliccando su "⚙️ Config AI" nel menu laterale in basso.</span>
+                            </div>`;
+                    }
+                }
+            }, 100);
+        }
+
     } else if (tipo === 'backtest') {
         const righeAsset = OPTIMIZER_MULTIASSET.filter(r => r[0] === ticker);
 
         if (righeAsset.length === 0) {
-            consoleBox.innerHTML = '<p class="placeholder-text">Nessun backtest pre-calcolato per ' + escapeHtml(ticker) + '. Calcolo un backtest live sui dati storici reali di Yahoo Finance (~2 anni)...</p>';
-            try {
-                const r = await eseguiBacktestLive(ticker, soglia, rr);
-                if (r.totale === 0) {
-                    consoleBox.innerHTML = `<div class="report-item" style="border-left-color:#474d57;">Nessun segnale generato per ${escapeHtml(ticker)} con soglia=${soglia}% negli ultimi ~2 anni di storico giornaliero. Prova una soglia più bassa.</div>`;
-                    return;
-                }
-                const valida = r.profitFactor > 1.1 && r.totale >= 30;
-                consoleBox.innerHTML = `
-                    <div class="report-section">
-                        <div class="report-title">📊 BACKTEST LIVE — calcolato ora su dati reali (non l'optimizer Python)</div>
-                        <div class="report-item" style="border-left-color:#474d57;">Metodologia semplificata: VWAP rolling a 20 giorni su candele giornaliere reali di Yahoo Finance, non identica all'optimizer Python a granularità intraday. Vedi nota metodologica nel codice per i dettagli.</div>
-                        <div class="report-item"><strong>Asset:</strong> ${escapeHtml(ticker)} | <strong>Soglia:</strong> ${soglia}% | <strong>R/R:</strong> 1:${rr}</div>
-                        <div class="report-item"><strong>Trade rilevati:</strong> ${r.totale} (${r.vincite} vincite / ${r.perdite} perdite)</div>
-                        <div class="report-item ${r.winrate >= 50 ? 'success' : ''}"><strong>Win Rate:</strong> ${r.winrate.toFixed(2)}%</div>
-                        <div class="report-item ${r.profitFactor > 1.1 ? 'success' : 'danger'}"><strong>Profit Factor:</strong> ${isFinite(r.profitFactor) ? r.profitFactor.toFixed(2) : '∞'} | <strong>Expectancy:</strong> ${r.expectancy >= 0 ? '+' : ''}${r.expectancy.toFixed(3)}R per operazione.
-                            <strong>${valida ? '[EDGE STATISTICO POSITIVO SU QUESTO CAMPIONE]' : '[CAMPIONE PICCOLO O EDGE DEBOLE — VALUTA CON CAUTELA]'}</strong>
-                        </div>
-                    </div>`;
-            } catch (e) {
-                consoleBox.innerHTML = `
-                    <div class="report-item danger"><strong>Impossibile calcolare un backtest per ${escapeHtml(ticker)}:</strong> ${escapeHtml(e.message)}.</div>
-                    <div class="report-item">Verifica che il ticker sia scritto in formato Yahoo Finance corretto, o riprova tra qualche secondo.</div>`;
-            }
+            consoleBox.innerHTML = `
+                <div class="report-item danger">Nessun backtest storico presente per <strong>${escapeHtml(ticker)}</strong> in <code>optimizer_v3_multiasset.csv</code> (contiene solo BTC-USD, ETH-USD, ^GSPC).</div>
+                <div class="report-item">Per ottenere risultati reali su questo asset, rilancia l'optimizer Python impostando ticker=${escapeHtml(ticker)}, soglia=${soglia}, rr=${rr}, e importa il CSV risultante qui.</div>`;
             return;
         }
 
@@ -1168,7 +1332,56 @@ async function caricaGlossario() {
         </div>`).join('');
 }
 
-/* ============ CHAT (AI reale via Supabase Edge Function "chat-ai") ============ */
+/* ============ CHAT (AI reale via Supabase Edge Function o API Key diretta) ============ */
+async function inviaRichiestaAICopilot(promptText) {
+    const provider = localStorage.getItem('ai_provider') || 'supabase';
+    const apiKey = localStorage.getItem('ai_custom_key');
+    const model = localStorage.getItem('ai_custom_model') || 'meta-llama/llama-3.1-8b-instruct:free';
+
+    if (provider === 'custom' && apiKey) {
+        // Invio diretto a OpenRouter
+        const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+                'HTTP-Referer': window.location.origin,
+                'X-Title': 'OmniTrade AI'
+            },
+            body: JSON.stringify({
+                model: model,
+                messages: [
+                    {
+                        role: "system",
+                        content: "Sei l'AI Copilot di OmniTrade, un assistente di trading quantitativo esperto nella Liquidity Auction Theory di Andrea Cimi (Order Flow, VWAP, Mean Reversion, Volume Tick, Assorbimento, Smart Money). Rispondi sempre in italiano, in modo tecnico ma chiaro e sintetico. Non fornire mai consigli finanziari personalizzati."
+                    },
+                    { role: "user", content: promptText }
+                ],
+                max_tokens: 800
+            })
+        });
+        if (!resp.ok) {
+            const text = await resp.text();
+            throw new Error(`OpenRouter ha risposto con errore ${resp.status}: ${text}`);
+        }
+        const data = await resp.json();
+        return data?.choices?.[0]?.message?.content ?? "Nessuna risposta generata.";
+    }
+
+    // Fallback standard o provider impostato su 'supabase'
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) throw new Error('Sessione Supabase non attiva. Effettua l\'accesso.');
+
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/chat-ai`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+        body: JSON.stringify({ messaggio: promptText })
+    });
+    const dati = await resp.json().catch(() => ({}));
+    if (!resp.ok || dati.errore) throw new Error(dati.errore || ('HTTP ' + resp.status));
+    return dati.risposta;
+}
+
 async function inviaInChat() {
     const input = document.getElementById('chatInput');
     if (input.value.trim() === "") return;
@@ -1183,22 +1396,12 @@ async function inviaInChat() {
     chatBox.scrollTop = chatBox.scrollHeight;
 
     try {
-        const { data: { session } } = await sb.auth.getSession();
-        if (!session) throw new Error('sessione non attiva');
-
-        const resp = await fetch(`${SUPABASE_URL}/functions/v1/chat-ai`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-            body: JSON.stringify({ messaggio: userText })
-        });
-        const dati = await resp.json().catch(() => ({}));
-        if (!resp.ok || dati.errore) throw new Error(dati.errore || ('HTTP ' + resp.status));
-
-        document.getElementById(idAttesa).innerHTML = escapeHtml(dati.risposta).replace(/\n/g, '<br>');
+        const risposta = await inviaRichiestaAICopilot(userText);
+        document.getElementById(idAttesa).innerHTML = escapeHtml(risposta).replace(/\n/g, '<br>');
     } catch (e) {
         const elAttesa = document.getElementById(idAttesa);
         elAttesa.innerHTML = `<em>AI reale non raggiungibile (${escapeHtml(e.message)}).</em><br>Risposta dimostrativa: secondo la teoria dell'asta di Cimi, i flussi di volume e la deviazione dal VWAP vanno confrontati con il cruscotto intermarket prima di validare questo scenario.
-            <br><span class="placeholder-text" style="font-size:11px;">Per attivare l'AI reale, pubblica la funzione Supabase Edge "chat-ai" (vedi supabase/functions/chat-ai/index.ts).</span>`;
+            <br><span class="placeholder-text" style="font-size:11px;">Puoi configurare una Chiave API diretta cliccando su "⚙️ Config AI" nel menu laterale in basso.</span>`;
     }
     chatBox.scrollTop = chatBox.scrollHeight;
 }
@@ -1627,21 +1830,16 @@ function caricaNewsECalendario() {
 
 /* ============ TITOLI REALI DA INVESTING.COM (feed RSS ufficiale) ============
    Gli RSS non sono richiamabili direttamente dal browser per via del CORS,
-/* ============ TITOLI REALI DA INVESTING.COM (feed RSS ufficiale, via la nostra Edge Function) ============
-   Il fetch dell'RSS avviene lato server dentro "external-data" — niente più
-   proxy pubblici di terzi. Mostriamo solo titolo + data + link all'articolo
-   originale (mai il testo dell'articolo), esattamente come previsto dal
-   formato RSS. */
+   quindi passiamo attraverso un proxy CORS pubblico (allorigins.win) per
+   scaricare l'XML e lo interpretiamo con il parser XML nativo del browser.
+   Mostriamo solo titolo + data + link all'articolo originale (mai il testo
+   dell'articolo), esattamente come previsto dal formato RSS. */
 async function caricaHeadlineInvesting() {
     const wrap = document.getElementById('investingNewsWrap');
     const etichetta = document.getElementById('investingUltimoAggiornamento');
-    const url = `${SUPABASE_URL}/functions/v1/external-data?tipo=investing-news`;
+    const feedUrl = 'https://www.investing.com/rss/news.rss';
     try {
-        const resp = await fetch(url);
-        if (!resp.ok) {
-            const erroreJson = await resp.json().catch(() => null);
-            throw new Error((erroreJson && erroreJson.errore) || ('HTTP ' + resp.status));
-        }
+        const resp = await fetchConFallback('investing-news', { feed: feedUrl }, feedUrl);
         const testoXml = await resp.text();
         const xml = new DOMParser().parseFromString(testoXml, 'text/xml');
         if (xml.querySelector('parsererror')) throw new Error('XML non valido');
@@ -1661,7 +1859,7 @@ async function caricaHeadlineInvesting() {
         wrap.innerHTML = righe;
         if (etichetta) etichetta.innerText = new Date().toLocaleTimeString('it-IT');
     } catch (e) {
-        wrap.innerHTML = `<p class="placeholder-text">Titoli Investing.com non disponibili al momento (${escapeHtml(e.message)}). Il feed TradingView qui sopra resta comunque attivo come fonte principale. Verifica di aver pubblicato la Edge Function "external-data" (supabase functions deploy external-data --no-verify-jwt).</p>`;
+        wrap.innerHTML = `<p class="placeholder-text">Titoli Investing.com non disponibili al momento (${escapeHtml(e.message)}). Il feed TradingView qui sopra resta comunque attivo come fonte principale.</p>`;
     }
 }
 
@@ -1682,11 +1880,209 @@ function caricaTickerTapeGlobale() {
     container.appendChild(script);
 }
 
+function apriImpostazioniAI() {
+    const provider = localStorage.getItem('ai_provider') || 'supabase';
+    const key = localStorage.getItem('ai_custom_key') || '';
+    const model = localStorage.getItem('ai_custom_model') || 'meta-llama/llama-3.1-8b-instruct:free';
+    
+    apriModale({
+        titolo: 'Configurazione AI Copilot',
+        campi: [
+            { id: 'provider', label: 'Provider AI', tipo: 'select', valore: provider === 'supabase' ? 'Supabase Edge Function' : 'OpenRouter Direct API', opzioni: ['Supabase Edge Function', 'OpenRouter Direct API'] },
+            { id: 'key', label: 'Chiave API OpenRouter (lascia vuoto se usi Supabase)', tipo: 'password', valore: key, placeholder: 'sk-or-...' },
+            { id: 'model', label: 'Modello OpenRouter (opzionale)', tipo: 'text', valore: model, placeholder: 'meta-llama/llama-3.1-8b-instruct:free' }
+        ],
+        testoConferma: 'Salva Impostazioni',
+        onConferma: (v) => {
+            const prov = v.provider === 'Supabase Edge Function' ? 'supabase' : 'custom';
+            localStorage.setItem('ai_provider', prov);
+            localStorage.setItem('ai_custom_key', v.key.trim());
+            localStorage.setItem('ai_custom_model', v.model.trim() || 'meta-llama/llama-3.1-8b-instruct:free');
+            toast('Impostazioni AI salvate con successo!', 'success');
+        }
+    });
+}
+
+/* ============ SISTEMA DI NOTIFICHE & NEWS POLLING ============ */
+let newsPollingInterval = null;
+let notizieGiaViste = new Set();
+
+function caricaImpostazioniNotifiche() {
+    const keywords = localStorage.getItem('notifiche_keywords') || "FED, BCE, CPI, inflazione, tassi, disoccupazione, FOMC, PIL, tassi d'interesse, tassi di interesse, breaking, shock, crypto, BTC, ETH";
+    const suono = localStorage.getItem('notifiche_suono') !== 'false';
+    const soloKeywords = localStorage.getItem('notifiche_solokeywords') !== 'false';
+
+    const elKeywords = document.getElementById('notificheKeywords');
+    const elSuono = document.getElementById('notificheSuono');
+    const elSoloKeywords = document.getElementById('notificheSoloKeywords');
+
+    if (elKeywords) elKeywords.value = keywords;
+    if (elSuono) elSuono.checked = suono;
+    if (elSoloKeywords) elSoloKeywords.checked = soloKeywords;
+
+    aggiornaPulsanteNotifiche();
+}
+
+function salvaImpostazioniNotifiche() {
+    const keywords = document.getElementById('notificheKeywords')?.value || "";
+    const suono = document.getElementById('notificheSuono')?.checked ?? true;
+    const soloKeywords = document.getElementById('notificheSoloKeywords')?.checked ?? true;
+
+    localStorage.setItem('notifiche_keywords', keywords);
+    localStorage.setItem('notifiche_suono', suono);
+    localStorage.setItem('notifiche_solokeywords', soloKeywords);
+    
+    toast("Impostazioni notifiche salvate.", "info");
+}
+
+function aggiornaPulsanteNotifiche() {
+    const btn = document.getElementById('btnRichiediNotifiche');
+    if (!btn) return;
+
+    if (Notification.permission === 'granted') {
+        btn.innerText = '🟢 Notifiche Abilitate';
+        btn.disabled = true;
+        btn.className = 'btn-sec';
+    } else if (Notification.permission === 'denied') {
+        btn.innerText = '🔴 Notifiche Bloccate dal Browser';
+        btn.disabled = true;
+        btn.className = 'btn-sec';
+    } else {
+        btn.innerText = 'Abilita Notifiche Desktop';
+        btn.disabled = false;
+        btn.className = 'btn-main';
+    }
+}
+
+async function richiediAutorizzazioneNotifiche() {
+    if (!('Notification' in window)) {
+        toast("Questo browser non supporta le notifiche desktop.", "error");
+        return;
+    }
+    const permission = await Notification.requestPermission();
+    aggiornaPulsanteNotifiche();
+    if (permission === 'granted') {
+        toast("Notifiche desktop abilitate correttamente!", "success");
+        new Notification("OmniTrade AI", { body: "Le notifiche macro e di news in tempo reale sono ora attive.", icon: "favicon.ico" });
+    }
+}
+
+function inviaNotificaTest() {
+    if (!('Notification' in window)) {
+        toast("Notifiche non supportate.", "error");
+        return;
+    }
+    if (Notification.permission !== 'granted') {
+        toast("Devi prima abilitare le notifiche desktop cliccando sul pulsante a sinistra.", "error");
+        return;
+    }
+    new Notification("OmniTrade AI - Notifica Test", {
+        body: "Questa è una notifica di test. Il sistema invierà avvisi come questo per le notizie importanti.",
+        icon: "favicon.ico"
+    });
+    riproduciSuonoNotifica();
+}
+
+function riproduciSuonoNotifica() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+        gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        oscillator.start();
+        
+        oscillator.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.12); // A5
+        gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime + 0.12);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4);
+        oscillator.stop(audioCtx.currentTime + 0.4);
+    } catch (e) {
+        console.warn("Audio Context bloccato o non supportato dall'interazione utente:", e);
+    }
+}
+
+async function avviaPollingNotizieBackground() {
+    try {
+        const feedUrl = 'https://www.investing.com/rss/news.rss';
+        const resp = await fetchConFallback('investing-news', { feed: feedUrl }, feedUrl);
+        const testoXml = await resp.text();
+        const xml = new DOMParser().parseFromString(testoXml, 'text/xml');
+        const items = xml.querySelectorAll('item');
+        items.forEach(item => {
+            const link = item.querySelector('link')?.textContent;
+            if (link) notizieGiaViste.add(link);
+        });
+    } catch (e) {
+        console.warn("Impossibile popolare cronologia iniziale notizie:", e);
+    }
+
+    if (newsPollingInterval) clearInterval(newsPollingInterval);
+    
+    newsPollingInterval = setInterval(async () => {
+        try {
+            const feedUrl = 'https://www.investing.com/rss/news.rss';
+            const resp = await fetchConFallback('investing-news', { feed: feedUrl }, feedUrl);
+            const testoXml = await resp.text();
+            const xml = new DOMParser().parseFromString(testoXml, 'text/xml');
+            const items = Array.from(xml.querySelectorAll('item')).reverse();
+
+            const keywordsStr = localStorage.getItem('notifiche_keywords') || "";
+            const keywords = keywordsStr.split(',').map(k => k.trim().toLowerCase()).filter(k => k !== "");
+            const suono = localStorage.getItem('notifiche_suono') !== 'false';
+            const soloKeywords = localStorage.getItem('notifiche_solokeywords') !== 'false';
+
+            items.forEach(item => {
+                const link = item.querySelector('link')?.textContent;
+                const titolo = item.querySelector('title')?.textContent || '';
+                
+                if (link && !notizieGiaViste.has(link)) {
+                    notizieGiaViste.add(link);
+                    
+                    let matchKeywords = false;
+                    let keywordTrovata = "";
+                    if (keywords.length > 0) {
+                         for (const kw of keywords) {
+                             if (titolo.toLowerCase().includes(kw)) {
+                                 matchKeywords = true;
+                                 keywordTrovata = kw.toUpperCase();
+                                 break;
+                             }
+                         }
+                    }
+
+                    if (!soloKeywords || matchKeywords) {
+                         const corpoNotifica = matchKeywords ? `[Focus: ${keywordTrovata}] ${titolo}` : titolo;
+                         
+                         if (Notification.permission === 'granted') {
+                             new Notification("OmniTrade AI - News Importante", {
+                                 body: corpoNotifica,
+                                 icon: 'favicon.ico'
+                             });
+                         }
+
+                         toast(`🔔 NOTIZIA: ${corpoNotifica}`, "info");
+
+                         if (suono) riproduciSuonoNotifica();
+                    }
+                }
+            });
+        } catch (e) {
+            console.warn("Errore durante il background polling notizie:", e);
+        }
+    }, 30000);
+}
+
 /* ============ AVVIO ============ */
 function avviaApp() {
     initParticles();
     caricaTickerTapeGlobale();
     ricalcolaPortafoglio();
+    caricaImpostazioniNotifiche();
+    avviaPollingNotizieBackground();
 }
 
 // Controllo iniziale della sessione già esistente (utente già loggato in precedenza)
