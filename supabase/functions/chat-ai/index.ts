@@ -59,7 +59,7 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         model: OPENROUTER_MODEL,
         messages: messaggiChat,
-        max_tokens: 600,
+        max_tokens: 2000,
       }),
     });
 
