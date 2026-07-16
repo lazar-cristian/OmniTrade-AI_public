@@ -6,6 +6,9 @@
 <title>OmniTrade AI - Workspace Quantitativo</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
     :root {
         --bg-main: #06080b;
@@ -73,20 +76,180 @@
 
     #particleCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 
-    /* AUTH GATE (login/registrazione) */
-    .auth-gate { position: fixed; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center; background: rgba(6,9,12,0.92); backdrop-filter: blur(8px); }
-    .auth-card { 
-        width: 390px; max-width: 92vw; 
-        background: rgba(18, 22, 28, 0.75); 
-        border: 1px solid var(--border-color); 
-        backdrop-filter: var(--glass-blur);
-        border-radius: 16px; padding: 32px; 
-        box-shadow: 0 24px 64px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.1); 
+    /* ====== AUTH GATE (login/registrazione) — PREMIUM REDESIGN ====== */
+    .auth-gate {
+        position: fixed; inset: 0; z-index: 500;
+        display: flex; align-items: center; justify-content: center;
+        background: radial-gradient(ellipse at 50% 0%, rgba(0,255,163,0.07) 0%, transparent 60%),
+                    radial-gradient(ellipse at 100% 100%, rgba(123,44,191,0.09) 0%, transparent 60%),
+                    rgba(4, 6, 9, 0.97);
+        backdrop-filter: blur(12px);
+        overflow: hidden;
     }
-    .auth-card .brand { 
-        font-size: 28px; font-weight: 700; color: var(--primary); 
-        text-shadow: 0 0 20px rgba(0,255,163,0.4); 
+    /* animated grid background on login screen */
+    .auth-gate::before {
+        content: ''; position: absolute; inset: 0;
+        background-image: linear-gradient(rgba(0,255,163,0.03) 1px, transparent 1px),
+                          linear-gradient(90deg, rgba(0,255,163,0.03) 1px, transparent 1px);
+        background-size: 48px 48px;
+        animation: gridScroll 20s linear infinite;
+        pointer-events: none;
     }
+    @keyframes gridScroll { from { background-position: 0 0; } to { background-position: 48px 48px; } }
+
+    .auth-card {
+        position: relative; z-index: 1;
+        width: 440px; max-width: 94vw;
+        background: rgba(12, 16, 21, 0.88);
+        border: 1px solid rgba(0,255,163,0.15);
+        backdrop-filter: blur(24px) saturate(180%);
+        border-radius: 20px;
+        padding: 40px 36px 32px;
+        box-shadow:
+            0 0 0 1px rgba(0,255,163,0.05),
+            0 32px 80px rgba(0,0,0,0.7),
+            0 0 60px rgba(0,255,163,0.04),
+            inset 0 1px 0 rgba(255,255,255,0.08);
+        animation: authCardIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes authCardIn {
+        from { opacity: 0; transform: translateY(20px) scale(0.97); }
+        to   { opacity: 1; transform: translateY(0)    scale(1);    }
+    }
+    .auth-logo-wrap {
+        text-align: center; margin-bottom: 28px;
+    }
+    .auth-logo-icon {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 60px; height: 60px;
+        background: radial-gradient(circle, rgba(0,255,163,0.15), rgba(0,255,163,0.03));
+        border: 1px solid rgba(0,255,163,0.25);
+        border-radius: 16px;
+        margin-bottom: 14px;
+        font-size: 26px;
+        box-shadow: 0 0 24px rgba(0,255,163,0.12);
+        animation: logoPulse 3s ease-in-out infinite;
+    }
+    @keyframes logoPulse {
+        0%, 100% { box-shadow: 0 0 20px rgba(0,255,163,0.12); }
+        50%       { box-shadow: 0 0 36px rgba(0,255,163,0.28); }
+    }
+    .auth-logo-wrap .brand-name {
+        display: block; font-size: 26px; font-weight: 800;
+        color: var(--primary);
+        text-shadow: 0 0 24px rgba(0,255,163,0.4);
+        letter-spacing: -0.5px;
+    }
+    .auth-logo-wrap .brand-sub {
+        display: block; font-size: 12px; color: var(--text-muted);
+        letter-spacing: 2px; text-transform: uppercase; margin-top: 4px;
+    }
+    /* Input with icon */
+    .auth-input-wrap {
+        position: relative; margin-bottom: 16px;
+    }
+    .auth-input-wrap .input-icon {
+        position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+        color: var(--text-dark); font-size: 15px; pointer-events: none;
+        transition: color 0.2s;
+    }
+    .auth-input-wrap input {
+        padding-left: 40px;
+        background: rgba(255,255,255,0.025);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 10px;
+        color: #eaecef; font-size: 14px;
+        transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+    }
+    .auth-input-wrap input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(0,255,163,0.1);
+        background: rgba(0,255,163,0.025);
+    }
+    .auth-input-wrap input:focus + .input-icon-right,
+    .auth-input-wrap input:focus ~ .input-icon {
+        color: var(--primary);
+    }
+    .auth-input-wrap .input-icon-right {
+        position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+        color: var(--text-dark); cursor: pointer; font-size: 16px;
+        padding: 4px; border-radius: 4px;
+        transition: color 0.2s;
+        background: none; border: none; width: auto;
+    }
+    .auth-input-wrap .input-icon-right:hover { color: var(--primary); }
+    .auth-input-label {
+        display: block; margin-bottom: 8px;
+        color: var(--text-muted); font-size: 12px; font-weight: 600;
+        letter-spacing: 0.3px;
+    }
+    /* Segmented tabs inside auth card */
+    .auth-tabs {
+        display: grid; grid-template-columns: 1fr 1fr;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 10px; padding: 4px; gap: 4px;
+        margin-bottom: 26px;
+    }
+    .auth-tab-btn {
+        padding: 10px; border-radius: 8px;
+        background: transparent; color: var(--text-muted);
+        border: none; font-weight: 600; font-size: 13px;
+        cursor: pointer; transition: all 0.25s;
+        font-family: inherit;
+    }
+    .auth-tab-btn.active {
+        background: var(--primary); color: #06080b;
+        box-shadow: 0 2px 10px rgba(0,255,163,0.25);
+    }
+    /* Submit button with spinner state */
+    .btn-auth {
+        width: 100%; padding: 14px; border: none; border-radius: 10px;
+        background: linear-gradient(135deg, #00ffa3 0%, #00d4a0 100%);
+        color: #06080b; font-size: 14px; font-weight: 700;
+        cursor: pointer; font-family: inherit;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 20px rgba(0,255,163,0.25);
+        display: flex; align-items: center; justify-content: center; gap: 10px;
+        margin-top: 6px;
+    }
+    .btn-auth:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(0,255,163,0.38); }
+    .btn-auth:active { transform: translateY(1px); }
+    .btn-auth:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+    .btn-auth .spinner {
+        width: 16px; height: 16px; border: 2px solid rgba(0,0,0,0.25);
+        border-top-color: #06080b; border-radius: 50%;
+        animation: spin 0.7s linear infinite; display: none;
+    }
+    .btn-auth.loading .spinner { display: block; }
+    .btn-auth.loading .btn-auth-text { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    /* Security badge */
+    .auth-security-badge {
+        display: flex; align-items: center; justify-content: center; gap: 7px;
+        margin-top: 22px; padding: 10px 14px;
+        background: rgba(0,255,163,0.04);
+        border: 1px solid rgba(0,255,163,0.1);
+        border-radius: 8px;
+        font-size: 11px; color: var(--text-muted);
+    }
+    .auth-security-badge .lock-icon { color: var(--primary); font-size: 12px; }
+    /* Error/success message */
+    .auth-msg {
+        min-height: 18px; font-size: 13px;
+        margin-bottom: 14px; border-radius: 6px;
+        padding: 0; transition: all 0.2s;
+    }
+    .auth-msg.error { color: var(--danger); padding: 10px 12px; background: rgba(255,77,77,0.07); border: 1px solid rgba(255,77,77,0.2); }
+    .auth-msg.ok { color: var(--primary); padding: 10px 12px; background: rgba(0,255,163,0.07); border: 1px solid rgba(0,255,163,0.2); }
+    .forgot-pw {
+        text-align: center; margin-top: 14px;
+        font-size: 12px; color: var(--text-muted);
+        cursor: pointer; text-decoration: none;
+        transition: color 0.2s;
+    }
+    .forgot-pw:hover { color: var(--primary); }
+
     body.app-hidden > .mobile-topbar, body.app-hidden > .sidebar-overlay, body.app-hidden > .sidebar, body.app-hidden > .workspace { display: none !important; }
 
     /* SIDEBAR */
@@ -211,6 +374,23 @@
         border-radius: 8px; color: white; font-size: 13.5px; 
         transition: var(--transition);
         font-family: inherit;
+        -webkit-appearance: none; appearance: none;
+    }
+    /* FIX: Dropdown options — dark bg + light text (il browser non eredita il parent) */
+    select option {
+        background-color: #12161c;
+        color: #eaecef;
+    }
+    select option:checked, select option:focus, select option:hover {
+        background-color: rgba(0, 255, 163, 0.15);
+        color: var(--primary);
+    }
+    /* Custom dropdown arrow */
+    select {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23929aa5' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        padding-right: 36px;
     }
     input:focus, select:focus, button:focus-visible { border-color: var(--primary); outline: none; box-shadow: 0 0 8px var(--primary-glow); background: rgba(255,255,255,0.04); }
 
@@ -320,22 +500,59 @@
 
 <div class="auth-gate" id="authGate">
     <div class="auth-card">
-        <div class="brand" style="text-align:center; margin-bottom:20px; border:none; padding:0;">OmniTrade AI</div>
-        <div class="segmented" id="authTabs" style="width:100%; margin-bottom:20px;">
-            <button class="active" style="flex:1;" onclick="mostraTabAuth('login', this)">Accedi</button>
-            <button style="flex:1;" onclick="mostraTabAuth('registrati', this)">Registrati</button>
+        <!-- Logo & Brand -->
+        <div class="auth-logo-wrap">
+            <div class="auth-logo-icon">📊</div>
+            <span class="brand-name">OmniTrade AI</span>
+            <span class="brand-sub">Workspace Quantitativo</span>
         </div>
-        <div class="form-group">
-            <label for="authEmail">Email</label>
-            <input type="email" id="authEmail" placeholder="tuaemail@esempio.com" autocomplete="username">
+
+        <!-- Tab switcher Login / Registrati -->
+        <div class="auth-tabs" id="authTabs">
+            <button class="auth-tab-btn active" id="tabLogin" onclick="mostraTabAuth('login', this)">Accedi</button>
+            <button class="auth-tab-btn" id="tabRegistrati" onclick="mostraTabAuth('registrati', this)">Registrati</button>
         </div>
-        <div class="form-group">
-            <label for="authPassword">Password</label>
-            <input type="password" id="authPassword" placeholder="Almeno 6 caratteri" autocomplete="current-password" onkeydown="if(event.key==='Enter') eseguiAuth()">
+
+        <!-- Email -->
+        <div class="auth-input-wrap">
+            <label class="auth-input-label" for="authEmail">Indirizzo Email</label>
+            <div style="position:relative;">
+                <span class="input-icon" style="top:50%; transform:translateY(-50%);">✉️</span>
+                <input type="email" id="authEmail" placeholder="tuaemail@esempio.com"
+                       autocomplete="username" style="padding-left:40px;">
+            </div>
         </div>
-        <div id="authMessaggio" style="min-height:20px; font-size:13px; margin-bottom:10px;"></div>
-        <button class="btn-main" id="authSubmitBtn" onclick="eseguiAuth()">Accedi</button>
-        <p class="placeholder-text" style="text-align:center; margin-top:16px; font-size:12px; cursor:pointer; text-decoration:underline;" onclick="richiediResetPassword()">Password dimenticata?</p>
+
+        <!-- Password -->
+        <div class="auth-input-wrap" id="authPasswordWrap">
+            <label class="auth-input-label" for="authPassword">Password</label>
+            <div style="position:relative;">
+                <span class="input-icon" style="top:50%; transform:translateY(-50%);">🔑</span>
+                <input type="password" id="authPassword" placeholder="Almeno 6 caratteri"
+                       autocomplete="current-password" style="padding-left:40px; padding-right:44px;"
+                       onkeydown="if(event.key==='Enter') eseguiAuth()">
+                <button class="input-icon-right" onclick="togglePasswordVisibility()" id="togglePwBtn"
+                        aria-label="Mostra/nascondi password" type="button" tabindex="-1">👁</button>
+            </div>
+        </div>
+
+        <!-- Messaggio errore/successo -->
+        <div class="auth-msg" id="authMessaggio"></div>
+
+        <!-- Submit -->
+        <button class="btn-auth" id="authSubmitBtn" onclick="eseguiAuth()">
+            <span class="spinner"></span>
+            <span class="btn-auth-text" id="authBtnText">Accedi al Workspace</span>
+        </button>
+
+        <!-- Forgot password -->
+        <p class="forgot-pw" onclick="richiediResetPassword()">Password dimenticata? Recupera accesso →</p>
+
+        <!-- Security badge -->
+        <div class="auth-security-badge">
+            <span class="lock-icon">🔒</span>
+            <span>Connessione TLS · Dati cifrati su Supabase · Nessuna chiave esposta</span>
+        </div>
     </div>
 </div>
 
@@ -360,10 +577,7 @@
     </div>
     <div class="sidebar-foot">
         👤 <span id="utenteEmailFoot">-</span><br>
-        <div style="display:flex; gap:6px; margin-top:8px;">
-            <button class="btn-sec" style="padding:8px; font-size:11px; flex:1;" onclick="apriImpostazioniAI()">⚙️ Config AI</button>
-            <button class="btn-sec" style="padding:8px; font-size:11px; flex:1;" onclick="effettuaLogout()">🚪 Esci</button>
-        </div>
+        <button class="btn-sec" style="margin-top:8px; padding:10px; font-size:11px; width:100%;" onclick="effettuaLogout()">🚪 Esci dal Workspace</button>
     </div>
 </div>
 
@@ -770,10 +984,39 @@ let modalitaAuth = 'login';
 
 function mostraTabAuth(tab, el) {
     modalitaAuth = tab;
-    document.querySelectorAll('#authTabs button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.auth-tab-btn').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
-    document.getElementById('authSubmitBtn').innerText = tab === 'login' ? 'Accedi' : 'Crea Account';
-    document.getElementById('authMessaggio').innerText = '';
+    const btnText = document.getElementById('authBtnText');
+    if (btnText) btnText.innerText = tab === 'login' ? 'Accedi al Workspace' : 'Crea Account';
+    const msg = document.getElementById('authMessaggio');
+    msg.className = 'auth-msg';
+    msg.innerText = '';
+    // Mostra/nascondi campo password su registrazione
+    const pwWrap = document.getElementById('authPasswordWrap');
+    if (pwWrap) pwWrap.style.display = 'block';
+    // Aggiorna autocomplete
+    const pwInput = document.getElementById('authPassword');
+    if (pwInput) pwInput.autocomplete = tab === 'login' ? 'current-password' : 'new-password';
+}
+
+function togglePasswordVisibility() {
+    const input = document.getElementById('authPassword');
+    const btn = document.getElementById('togglePwBtn');
+    if (!input) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        if (btn) btn.innerText = '🙈';
+    } else {
+        input.type = 'password';
+        if (btn) btn.innerText = '👁';
+    }
+}
+
+function impostaMessaggioAuth(testo, tipo) {
+    const msg = document.getElementById('authMessaggio');
+    if (!msg) return;
+    msg.className = 'auth-msg' + (tipo ? ' ' + tipo : '');
+    msg.innerText = testo;
 }
 
 function traduciErroreAuth(msg) {
@@ -789,48 +1032,50 @@ function traduciErroreAuth(msg) {
 async function eseguiAuth() {
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value;
-    const msg = document.getElementById('authMessaggio');
     const btn = document.getElementById('authSubmitBtn');
-    if (!email || !password) { msg.style.color = '#ff4d4d'; msg.innerText = 'Inserisci email e password.'; return; }
-
+    if (!email || !password) {
+        impostaMessaggioAuth('Inserisci email e password.', 'error');
+        return;
+    }
+    // Spinner on
     btn.disabled = true;
-    msg.style.color = '#929aa5'; msg.innerText = 'Attendere...';
+    btn.classList.add('loading');
+    impostaMessaggioAuth('', '');
+
     try {
         if (modalitaAuth === 'login') {
             const { error } = await sb.auth.signInWithPassword({ email, password });
             if (error) throw error;
-            msg.style.color = '#00ffa3'; msg.innerText = 'Accesso effettuato!';
-            // Il resto lo gestisce onAuthStateChange
+            impostaMessaggioAuth('✓ Accesso effettuato!', 'ok');
         } else {
             const { data, error } = await sb.auth.signUp({ email, password });
             if (error) throw error;
             if (data.session) {
-                msg.style.color = '#00ffa3'; msg.innerText = 'Account creato con successo!';
+                impostaMessaggioAuth('✓ Account creato con successo!', 'ok');
             } else {
-                msg.style.color = '#00ffa3';
-                msg.innerText = 'Registrazione avvenuta! Controlla la tua email per confermare l\'account prima di accedere (anche nello spam).';
+                impostaMessaggioAuth('Registrazione avvenuta! Controlla la tua email per confermare l\'account (anche nello spam).', 'ok');
             }
         }
     } catch (e) {
-        msg.style.color = '#ff4d4d';
-        msg.innerText = traduciErroreAuth(e.message);
+        impostaMessaggioAuth(traduciErroreAuth(e.message), 'error');
     } finally {
         btn.disabled = false;
+        btn.classList.remove('loading');
     }
 }
 
 async function richiediResetPassword() {
     const email = document.getElementById('authEmail').value.trim();
-    const msg = document.getElementById('authMessaggio');
-    if (!email) { msg.style.color = '#ff4d4d'; msg.innerText = 'Scrivi la tua email qui sopra, poi premi di nuovo "Password dimenticata?".'; return; }
+    if (!email) {
+        impostaMessaggioAuth('Scrivi la tua email nel campo sopra, poi premi di nuovo "Recupera accesso".', 'error');
+        return;
+    }
     try {
         const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.href });
         if (error) throw error;
-        msg.style.color = '#00ffa3';
-        msg.innerText = 'Email per reimpostare la password inviata: controlla la posta.';
+        impostaMessaggioAuth('Email per reimpostare la password inviata! Controlla la posta.', 'ok');
     } catch (e) {
-        msg.style.color = '#ff4d4d';
-        msg.innerText = traduciErroreAuth(e.message);
+        impostaMessaggioAuth(traduciErroreAuth(e.message), 'error');
     }
 }
 
@@ -1332,49 +1577,19 @@ async function caricaGlossario() {
         </div>`).join('');
 }
 
-/* ============ CHAT (AI reale via Supabase Edge Function o API Key diretta) ============ */
+/* ============ CHAT (AI reale — solo via Supabase Edge Function "chat-ai") ============
+   Per sicurezza (Opzione A), le chiavi OpenRouter sono custodite SOLO nei segreti
+   Supabase (Dashboard → Settings → Secrets). Nessuna chiave transita nel browser. */
 async function inviaRichiestaAICopilot(promptText) {
-    const provider = localStorage.getItem('ai_provider') || 'supabase';
-    const apiKey = localStorage.getItem('ai_custom_key');
-    const model = localStorage.getItem('ai_custom_model') || 'meta-llama/llama-3.1-8b-instruct:free';
-
-    if (provider === 'custom' && apiKey) {
-        // Invio diretto a OpenRouter
-        const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-                'HTTP-Referer': window.location.origin,
-                'X-Title': 'OmniTrade AI'
-            },
-            body: JSON.stringify({
-                model: model,
-                messages: [
-                    {
-                        role: "system",
-                        content: "Sei l'AI Copilot di OmniTrade, un assistente di trading quantitativo esperto nella Liquidity Auction Theory di Andrea Cimi (Order Flow, VWAP, Mean Reversion, Volume Tick, Assorbimento, Smart Money). Rispondi sempre in italiano, in modo tecnico ma chiaro e sintetico. Non fornire mai consigli finanziari personalizzati."
-                    },
-                    { role: "user", content: promptText }
-                ],
-                max_tokens: 800
-            })
-        });
-        if (!resp.ok) {
-            const text = await resp.text();
-            throw new Error(`OpenRouter ha risposto con errore ${resp.status}: ${text}`);
-        }
-        const data = await resp.json();
-        return data?.choices?.[0]?.message?.content ?? "Nessuna risposta generata.";
-    }
-
-    // Fallback standard o provider impostato su 'supabase'
     const { data: { session } } = await sb.auth.getSession();
-    if (!session) throw new Error('Sessione Supabase non attiva. Effettua l\'accesso.');
+    if (!session) throw new Error('Sessione non attiva. Effettua l\'accesso per usare l\'AI Copilot.');
 
     const resp = await fetch(`${SUPABASE_URL}/functions/v1/chat-ai`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + session.access_token
+        },
         body: JSON.stringify({ messaggio: promptText })
     });
     const dati = await resp.json().catch(() => ({}));
@@ -2078,6 +2293,10 @@ async function avviaPollingNotizieBackground() {
 
 /* ============ AVVIO ============ */
 function avviaApp() {
+    // SICUREZZA: rimuovi eventuali chiavi API salvate in precedenza in localStorage
+    // Le chiavi devono risiedere SOLO nei segreti Supabase (server-side).
+    ['ai_provider', 'ai_custom_key', 'ai_custom_model'].forEach(k => localStorage.removeItem(k));
+
     initParticles();
     caricaTickerTapeGlobale();
     ricalcolaPortafoglio();
