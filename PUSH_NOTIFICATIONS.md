@@ -10,12 +10,14 @@
 ## Configurazione Supabase
 
 1. Applicare la migration `supabase/migrations/20261123200000_web_push_notifications.sql`.
-2. Verificare che `VAPID_PUBLIC_KEY` corrisponda alla chiave pubblica già impostata in `index.html`. Configurare le chiavi VAPID e l'indirizzo di contatto:
+2. Configurare una coppia VAPID pubblica/privata corrispondente e l'indirizzo di contatto:
 
    ```sh
    npx web-push generate-vapid-keys
    supabase secrets set VAPID_PUBLIC_KEY="..." VAPID_PRIVATE_KEY="..." VAPID_SUBJECT="mailto:support@example.com"
    ```
+
+   Il frontend recupera la chiave pubblica dalla funzione `push-notifications`; non va copiata in `index.html`. Se la coppia VAPID cambia, rinnova la subscription da ciascun dispositivo.
 
 3. Distribuire le funzioni:
 

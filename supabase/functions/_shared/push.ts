@@ -112,6 +112,7 @@ export async function sendPushNotifications(
   }
 
   const result = { attempted: 0, delivered: 0, failed: 0, removed: 0 };
+  const failureStatusCodes: Record<string, number> = {};
   const staleEndpoints: string[] = [];
   const pageSize = 500;
 
@@ -144,6 +145,8 @@ export async function sendPushNotifications(
           if (statusCode === 404 || statusCode === 410) {
             return { type: "stale" as const, endpoint: subscription.endpoint };
           }
+          const status = typeof statusCode === "number" ? String(statusCode) : "network";
+          failureStatusCodes[status] = (failureStatusCodes[status] || 0) + 1;
           console.error("[Web Push] Invio fallito:", statusCode || "errore provider");
           return { type: "failed" as const };
         }
@@ -171,5 +174,5 @@ export async function sendPushNotifications(
     }
   }
 
-  return result;
+  return { ...result, failureStatusCodes };
 }
