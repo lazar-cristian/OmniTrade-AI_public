@@ -406,6 +406,30 @@
         padding-right: 36px;
     }
     input:focus, select:focus, button:focus-visible { border-color: var(--primary); outline: none; box-shadow: 0 0 8px var(--primary-glow); background: rgba(255,255,255,0.04); }
+    input[type="checkbox"], input[type="radio"] {
+        width: 20px; height: 20px; flex: 0 0 20px; margin: 0; padding: 0;
+        border: 0; border-radius: 4px; background: transparent;
+        accent-color: var(--primary); appearance: auto; -webkit-appearance: auto;
+        color-scheme: dark; cursor: pointer;
+    }
+    input[type="checkbox"]:focus-visible, input[type="radio"]:focus-visible {
+        outline: 2px solid var(--primary); outline-offset: 3px; box-shadow: none;
+    }
+    input[type="checkbox"]:disabled, input[type="radio"]:disabled { cursor: not-allowed; opacity: 0.55; }
+    .push-category-hint { margin: -4px 0 12px; color: var(--text-muted); font-size: 12px; line-height: 1.5; }
+    .push-category-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .push-category-option {
+        display: flex; align-items: center; gap: 8px; width: auto; min-height: 40px;
+        margin: 0; padding: 7px 10px; border: 1px solid var(--border-color);
+        border-radius: 8px; background: rgba(255,255,255,0.025); color: var(--text-muted);
+        cursor: pointer; user-select: none; transition: var(--transition);
+    }
+    .push-category-option.is-selected {
+        border-color: rgba(0,255,163,0.7); background: rgba(0,255,163,0.09); color: #eafff7;
+    }
+    .push-category-option.is-saving { opacity: 0.65; cursor: wait; }
+    .push-category-summary { margin: 8px 0 0; color: var(--text-muted); font-size: 12px; }
+    .push-category-summary.is-empty { color: #ffbf69; }
 
     .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
     button { 
@@ -839,6 +863,7 @@
         <div class="panel" style="margin-bottom:25px; width: 100%;">
             <h2>🔔 Web Push — dispositivi e categorie</h2>
             <p class="placeholder-text" style="margin-bottom:15px;">Le notifiche Push arrivano anche con sito o PWA chiusi, quando il browser e il sistema operativo consentono la consegna. Su iPhone/iPad devi aggiungere questa app alla schermata Home (iOS/iPadOS 16.4+). Attiva ogni dispositivo e scegli le categorie separatamente.</p>
+            <p class="push-category-hint">Una casella verde con spunta è attiva. Le preferenze si salvano automaticamente. Per il test, attiva la categoria <strong>Sistema</strong> su almeno un dispositivo attivo.</p>
             <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
                 <button id="btnPushDeviceToggle" class="btn-main" onclick="gestisciToggleNotifichePush()" disabled>🔔 Attiva su questo dispositivo</button>
                 <button id="btnPushTest" class="btn-sec" onclick="inviaNotificaTest()" disabled>Invia push di test</button>
@@ -3872,35 +3897,63 @@ async function registraServiceWorkerPush() {
 
 function appendPushCategoryControls(container, row) {
     const wrapper = document.createElement('div');
+    wrapper.className = 'push-category-controls';
     wrapper.setAttribute('role', 'group');
     wrapper.setAttribute('aria-label', `Categorie per ${row.device_name}`);
-    wrapper.style.cssText = 'display:flex; flex-wrap:wrap; gap:8px 14px; margin-top:10px;';
     const selected = new Set(Array.isArray(row.categories) ? row.categories : []);
+    const summary = document.createElement('p');
+    summary.className = 'push-category-summary';
+    summary.setAttribute('role', 'status');
+    summary.setAttribute('aria-live', 'polite');
+    let saving = false;
+
+    const updateSummary = () => {
+        const selectedLabels = PUSH_CATEGORIES
+            .filter(category => selected.has(category.id))
+            .map(category => category.label);
+        summary.classList.toggle('is-empty', selectedLabels.length === 0);
+        summary.textContent = selectedLabels.length
+            ? `Categorie attive: ${selectedLabels.join(', ')}`
+            : 'Nessuna categoria attiva: questo dispositivo non riceverà notifiche.';
+    };
 
     PUSH_CATEGORIES.forEach(category => {
         const label = document.createElement('label');
-        label.style.cssText = 'display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;';
+        label.className = 'push-category-option';
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.checked = selected.has(category.id);
-        checkbox.style.cssText = 'width:16px; height:16px; margin:0;';
-        checkbox.addEventListener('change', () => {
-            const previous = row.categories;
+        checkbox.setAttribute('aria-label', `Categoria ${category.label}`);
+        label.classList.toggle('is-selected', checkbox.checked);
+        checkbox.addEventListener('change', async () => {
+            if (saving) return;
+            const previous = Array.isArray(row.categories) ? [...row.categories] : [];
             const categories = new Set(Array.isArray(row.categories) ? row.categories : []);
             if (checkbox.checked) categories.add(category.id);
             else categories.delete(category.id);
             row.categories = [...categories];
-            checkbox.disabled = true;
+            selected.clear();
+            categories.forEach(categoryId => selected.add(categoryId));
+            saving = true;
+            wrapper.classList.add('is-saving');
+            wrapper.querySelectorAll('input').forEach(input => { input.disabled = true; });
+            wrapper.querySelectorAll('.push-category-option').forEach(option => option.classList.add('is-saving'));
+            label.classList.toggle('is-selected', checkbox.checked);
+            summary.textContent = 'Salvataggio delle preferenze…';
             aggiornaPreferenzeDispositivoPush(row, { categories: row.categories }).catch(error => {
                 row.categories = previous;
                 toast(`Preferenza Push non aggiornata: ${error.message}`, 'error');
                 renderPushDevices();
+            }).finally(() => {
+                saving = false;
             });
         });
         label.append(checkbox, document.createTextNode(category.label));
         wrapper.appendChild(label);
     });
     container.appendChild(wrapper);
+    updateSummary();
+    container.appendChild(summary);
 }
 
 function renderPushDevices() {
@@ -4009,7 +4062,13 @@ async function controllaStatoPushNotifiche() {
         else toggle.textContent = '🔔 Attiva su questo dispositivo';
 
         toggle.disabled = Notification.permission === 'denied' && (!current || !current.enabled);
-        if (test) test.disabled = !pushDeviceRows.some(row => row.enabled && row.categories?.includes('system'));
+        const hasSystemTarget = pushDeviceRows.some(row => row.enabled && row.categories?.includes('system'));
+        if (test) {
+            test.disabled = !hasSystemTarget;
+            test.title = hasSystemTarget
+                ? 'Invia una notifica di prova ai dispositivi attivi per Sistema.'
+                : 'Attiva Sistema su almeno un dispositivo attivo per abilitare il test.';
+        }
         const permissionLabel = Notification.permission === 'granted'
             ? 'Permesso browser: attivo.'
             : Notification.permission === 'denied'
@@ -4102,11 +4161,13 @@ async function aggiornaPreferenzeDispositivoPush(row, changes) {
     const { data: { session }, error: sessionError } = await sb.auth.getSession();
     if (sessionError) throw sessionError;
     if (!session?.user) throw new Error('Accedi per modificare le preferenze dei dispositivi.');
-    const { error } = await sb.from('push_subscriptions')
+    const { data, error } = await sb.from('push_subscriptions')
         .update({ ...changes, updated_at: new Date().toISOString() })
         .eq('user_id', session.user.id)
-        .eq('device_id', row.device_id);
+        .eq('device_id', row.device_id)
+        .select('device_id');
     if (error) throw error;
+    if (!data?.length) throw new Error('Dispositivo non trovato o non autorizzato: la preferenza non è stata salvata.');
     if (changes.enabled !== undefined) row.enabled = changes.enabled;
     if (changes.categories !== undefined) row.categories = changes.categories;
     await controllaStatoPushNotifiche();
@@ -4149,11 +4210,23 @@ async function inviaNotificaTest() {
     try {
         const { data, error } = await sb.functions.invoke('push-notifications', { body: { test: true } });
         if (error) throw error;
-        if (!data?.delivered) {
-            toast('Nessun dispositivo attivo ha la categoria Sistema abilitata.', 'info');
+        const delivered = Number(data?.delivered) || 0;
+        const failed = Number(data?.failed) || 0;
+        const attempted = Number(data?.attempted) || 0;
+        const removed = Number(data?.removed) || 0;
+        if (delivered > 0) {
+            toast(`Push di test accettata per ${delivered} dispositivo/i.`, 'success');
             return;
         }
-        toast(`Push di test inviata a ${data.delivered} dispositivo/i.`, 'success');
+        if (failed > 0) {
+            toast(`Il server ha trovato ${attempted} dispositivo/i, ma ${failed} invii sono falliti. Verifica chiavi VAPID e configurazione del provider push.`, 'error');
+        } else if (removed > 0) {
+            toast('La subscription del browser è scaduta. Rimuovi e riattiva questo dispositivo.', 'error');
+        } else if (attempted === 0) {
+            toast('Nessuna subscription idonea: attiva Sistema su un dispositivo abilitato e riprova.', 'info');
+        } else {
+            toast('Il server ha tentato l’invio ma non ha confermato consegne. Aggiorna i dispositivi e riprova.', 'error');
+        }
     } catch (error) {
         toast(`Push di test non riuscita: ${error.message}`, 'error');
     }
