@@ -799,7 +799,10 @@
                 <h2 style="border:none; padding:0; margin:0 0 6px 0;">🌐 Titoli da Investing.com</h2>
                 <p class="placeholder-text" style="margin:0;">Feed RSS ufficiale di Investing.com (titolo + link all'articolo originale) — si riaggancia ogni 60 secondi. Ultimo aggiornamento: <span id="investingUltimoAggiornamento">-</span></p>
             </div>
-            <button class="btn-refresh" onclick="caricaHeadlineInvesting()">↻ Aggiorna ora</button>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <button id="btnPushNotifiche" class="btn-sec" style="width:auto; padding:8px 14px; font-size:12px;" onclick="gestisciToggleNotifichePush()">🔔 Attiva Notifiche Macro (Push)</button>
+                <button class="btn-refresh" onclick="caricaHeadlineInvesting()">↻ Aggiorna ora</button>
+            </div>
         </div>
         <div class="panel" id="investingNewsWrap"><div class="skeleton" style="height:200px;"></div></div>
 
@@ -1241,7 +1244,7 @@ function switchView(viewId, element) {
     if (viewId === 'portafoglio') ricalcolaPortafoglio();
     if (viewId === 'grafici') { caricaGraficoLive(); caricaWatchlist(); }
     if (viewId === 'volumetrica') caricaVolumetrica();
-    if (viewId === 'news') caricaNewsECalendario();
+    if (viewId === 'news') { caricaNewsECalendario(); controllaStatoPushNotifiche(); }
     if (window.innerWidth <= 768) toggleSidebar(false);
 }
 
@@ -2164,6 +2167,92 @@ async function caricaHeadlineInvesting() {
         if (etichetta) etichetta.innerText = new Date().toLocaleTimeString('it-IT');
     } catch (e) {
         wrap.innerHTML = `<p class="placeholder-text">Titoli Investing.com non disponibili al momento (${escapeHtml(e.message)}). Il feed TradingView qui sopra resta comunque attivo come fonte principale.</p>`;
+    }
+}
+
+/* ============ WEB PUSH NOTIFICHE MACRO ============ */
+const VAPID_PUBLIC_KEY = "BDRdLQwVKAAWnGSNwAODT2_aS6s7p438AMpNFYN7LllTXkDf_3id54nF43izUmQv4ZTVWMaS9alew-UoASQicjc";
+
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+async function controllaStatoPushNotifiche() {
+    const btn = document.getElementById('btnPushNotifiche');
+    if (!btn || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    try {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) {
+            const sub = await reg.pushManager.getSubscription();
+            if (sub) {
+                btn.innerText = '🔕 Disattiva Notifiche Macro';
+                btn.classList.add('active');
+            } else {
+                btn.innerText = '🔔 Attiva Notifiche Macro (Push)';
+                btn.classList.remove('active');
+            }
+        }
+    } catch (_) {}
+}
+
+async function gestisciToggleNotifichePush() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        toast('Le notifiche Push non sono supportate da questo browser.', 'error');
+        return;
+    }
+
+    try {
+        let reg = await navigator.serviceWorker.getRegistration();
+        if (!reg) {
+            reg = await navigator.serviceWorker.register('/sw.js');
+        }
+
+        const subEsistente = await reg.pushManager.getSubscription();
+        if (subEsistente) {
+            // Disiscrizione
+            await subEsistente.unsubscribe();
+            await sb.from('push_subscriptions').delete().eq('endpoint', subEsistente.endpoint);
+            toast('Notifiche push disattivate.', 'success');
+            controllaStatoPushNotifiche();
+            return;
+        }
+
+        // Iscrizione
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') {
+            toast('Permesso notifiche negato nel browser.', 'error');
+            return;
+        }
+
+        const sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+
+        const keyObj = sub.toJSON();
+        const { data: { session } } = await sb.auth.getSession();
+        const userId = session?.user?.id || null;
+
+        const { error } = await sb.from('push_subscriptions').upsert({
+            endpoint: sub.endpoint,
+            p256dh: keyObj.keys.p256dh,
+            auth: keyObj.keys.auth,
+            user_id: userId
+        }, { onConflict: 'endpoint' });
+
+        if (error) throw error;
+
+        toast('🔔 Notifiche Macro Push attivate con successo!', 'success');
+        controllaStatoPushNotifiche();
+    } catch (err) {
+        toast('Errore attivazione push: ' + err.message, 'error');
     }
 }
 
