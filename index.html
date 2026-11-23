@@ -748,7 +748,7 @@
             <div class="kpi-grid" id="volumeStatsWrap" style="margin-bottom:16px;"></div>
             <div id="orderBookWrap"><div class="skeleton" style="height:180px;"></div></div>
         </div>
-        <p class="placeholder-text" id="orderBookAssenteMsg" style="display:none; margin-top:20px;">L'order book live è disponibile solo per coppie crypto quotate su Binance (es. BTC-USD, ETH-USD). Per "<span id="orderBookAssenteTicker"></span>" non è disponibile — usa comunque i widget sopra per l'analisi.</p>
+        <p class="placeholder-text" id="orderBookAssenteMsg" style="display:none; margin-top:20px;">📊 L'order book live è disponibile solo per coppie crypto quotate su Binance (es. BTC-USD, ETH-USD, BNB-USD). Per "<span id="orderBookAssenteTicker"></span>" (azione, forex, ETF o indice) l'order book non è disponibile tramite Binance — per l'analisi del book usa i widget TradingView nella sezione "Grafici", oppure prova il ticker nella forma <code>BTCUSDT</code> per le crypto.</p>
     </div>
 
     <!-- NEWS & CALENDARIO -->
@@ -1100,7 +1100,15 @@ function gestisciCambioSessione(session) {
         gate.style.display = 'flex';
         document.body.classList.add('app-hidden');
         appGiaAvviata = false;
+        // FIX 2: pulizia intervalli al logout per evitare memory leak e chiamate fantasma
+        pulisciIntervalli();
     }
+}
+
+function pulisciIntervalli() {
+    if (typeof orderBookInterval !== 'undefined' && orderBookInterval) { clearInterval(orderBookInterval); orderBookInterval = null; }
+    if (typeof newsRefreshInterval !== 'undefined' && newsRefreshInterval) { clearInterval(newsRefreshInterval); newsRefreshInterval = null; }
+    if (typeof newsPollingInterval !== 'undefined' && newsPollingInterval) { clearInterval(newsPollingInterval); newsPollingInterval = null; }
 }
 
 sb.auth.onAuthStateChange((_evento, session) => {
@@ -1322,10 +1330,42 @@ async function tentaDatiLive(ticker, tf) {
     const json = await resp.json();
     const result = json && json.chart && json.chart.result ? json.chart.result[0] : null;
     if (!result) throw new Error((json.chart.error && json.chart.error.description) || "Ticker non trovato");
-    const closes = result.indicators.quote[0].close.filter(v => v != null);
-    const highs = result.indicators.quote[0].high.filter(v => v != null);
-    const lows = result.indicators.quote[0].low.filter(v => v != null);
-    const volumes = result.indicators.quote[0].volume.filter(v => v != null);
+
+    const rawCloses = result.indicators.quote[0].close;
+    const rawHighs = result.indicators.quote[0].high;
+    const rawLows = result.indicators.quote[0].low;
+    const rawVolumes = result.indicators.quote[0].volume;
+    const rawTimestamps = result.timestamp || [];
+
+    // FIX 5: VWAP ancorato alla sessione odierna (mezzanotte UTC)
+    const mezzanotteUTC = new Date(); mezzanotteUTC.setUTCHours(0,0,0,0);
+    const startSessione = mezzanotteUTC.getTime() / 1000;
+
+    // Per timeframe intraday (1m,2m,5m,15m,30m,60m,90m,1h) usa solo candele di oggi
+    const intradayTF = ['1m','2m','5m','15m','30m','60m','90m','1h'];
+    const usaFiltroSessione = intradayTF.includes(tf) && rawTimestamps.length > 0;
+
+    const closes = [], highs = [], lows = [], volumes = [];
+    for (let i = 0; i < rawCloses.length; i++) {
+        if (rawCloses[i] == null) continue;
+        if (usaFiltroSessione && rawTimestamps[i] < startSessione) continue;
+        closes.push(rawCloses[i]);
+        highs.push(rawHighs[i] ?? rawCloses[i]);
+        lows.push(rawLows[i] ?? rawCloses[i]);
+        volumes.push(rawVolumes[i] || 1);
+    }
+
+    // Fallback: se il filtro sessione svuota l'array (mercato non ancora aperto) usa tutti
+    if (closes.length === 0) {
+        for (let i = 0; i < rawCloses.length; i++) {
+            if (rawCloses[i] == null) continue;
+            closes.push(rawCloses[i]);
+            highs.push(rawHighs[i] ?? rawCloses[i]);
+            lows.push(rawLows[i] ?? rawCloses[i]);
+            volumes.push(rawVolumes[i] || 1);
+        }
+    }
+
     if (closes.length === 0) throw new Error("Nessuna candela valida restituita");
 
     let cumPV = 0, cumV = 0;
@@ -1453,7 +1493,7 @@ Struttura il responso come un dialogo interiore strutturato con domande che ti p
                             <div class="report-title">🧠 ESAME DI COSCIENZA DELL'AI (ANALISI DIALOGICA)</div>
                             <div class="report-item danger">
                                 Impossibile completare l'esame di coscienza dell'AI: <code>${escapeHtml(err.message)}</code>. <br>
-                                <span class="placeholder-text" style="font-size:11px;">Puoi configurare una Chiave API diretta cliccando su "⚙️ Config AI" nel menu laterale in basso.</span>
+                                <span class="placeholder-text" style="font-size:11px;">Verifica che le chiavi Supabase siano configurate come Secrets nelle Edge Functions del tuo progetto Supabase.</span>
                             </div>`;
                     }
                 }
@@ -1486,6 +1526,9 @@ Struttura il responso come un dialogo interiore strutturato con domande che ti p
         consoleBox.innerHTML = `
             <div class="report-section">
                 <div class="report-title">📊 METRICHE BACKTEST (dati reali optimizer_v3_multiasset.csv)</div>
+                <div class="report-item" style="border-left-color:#f59e0b; color:#f59e0b;">
+                    ⚠️ <strong>Nota importante:</strong> Questo backtest usa dati storici pre-calcolati per <strong>BTC-USD, ETH-USD e ^GSPC</strong>. Il timeframe selezionato (${escapeHtml(tf)}) <em>non influenza il calcolo</em> (i dati si riferiscono al timeframe originale dell'optimizer). Per altri asset, rilancia l'optimizer Python e importa il nuovo CSV.
+                </div>
                 ${approssimato ? `<div class="report-item" style="border-left-color:#474d57;">Nessuna riga esatta per soglia=${soglia}/rr=${rr}: mostro la combinazione più vicina disponibile → soglia=${sogliaRiga}, rr=${rrRiga}.</div>` : ''}
                 <div class="report-item"><strong>Asset:</strong> ${escapeHtml(ticker)} | <strong>Timeframe:</strong> ${escapeHtml(tf)} | <strong>Soglia:</strong> ${sogliaRiga}% | <strong>R/R:</strong> 1:${rrRiga}</div>
                 <div class="report-item"><strong>Trade totali:</strong> ${totale} (${vincite} vincite / ${perdite} perdite)</div>
@@ -1616,7 +1659,7 @@ async function inviaInChat() {
     } catch (e) {
         const elAttesa = document.getElementById(idAttesa);
         elAttesa.innerHTML = `<em>AI reale non raggiungibile (${escapeHtml(e.message)}).</em><br>Risposta dimostrativa: secondo la teoria dell'asta di Cimi, i flussi di volume e la deviazione dal VWAP vanno confrontati con il cruscotto intermarket prima di validare questo scenario.
-            <br><span class="placeholder-text" style="font-size:11px;">Puoi configurare una Chiave API diretta cliccando su "⚙️ Config AI" nel menu laterale in basso.</span>`;
+            <br><span class="placeholder-text" style="font-size:11px;">Verifica che le chiavi Supabase siano configurate come Secrets nelle Edge Functions del tuo progetto Supabase.</span>`;
     }
     chatBox.scrollTop = chatBox.scrollHeight;
 }
@@ -1693,7 +1736,7 @@ async function chiediChiusura(id, ticker) {
 }
 
 async function eseguiChiusura(id, prezzoUscita) {
-    if (!prezzoUscita || prezzoUscita <= 0) { toast('Prezzo di uscita non valido.', 'error'); return; }
+    if (!prezzoUscita || isNaN(prezzoUscita) || prezzoUscita <= 0) { toast('Prezzo di uscita non valido.', 'error'); return; }
     try {
         const { data, error } = await sb.from('wallet_posizioni').select('*').eq('id', id).single();
         if (error) throw error;
@@ -1773,16 +1816,50 @@ async function ricalcolaPortafoglio() {
         if (aperte.length === 0) {
             wrapAperte.innerHTML = '<p class="placeholder-text">Nessuna posizione aperta in modalità ' + modalitaCorrente + '.</p>';
         } else {
-            const righe = aperte.map(p => `<tr>
+            // FIX 6: Fetch prezzi live da Binance per crypto, Yahoo Finance per altri — calcola P&L latente
+            wrapAperte.innerHTML = '<div class="skeleton" style="height:80px;"></div>';
+            const prezziLive = {};
+            await Promise.allSettled(aperte.map(async p => {
+                try {
+                    const sim = tickerVersoSimboloBinance(p.ticker);
+                    if (sim) {
+                        const r = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${sim}`);
+                        if (r.ok) { const d = await r.json(); prezziLive[p.ticker] = parseFloat(d.price); }
+                    } else {
+                        const r = await fetchConFallback('yahoo', { ticker: p.ticker, interval: '1d', range: '1d' },
+                            `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(p.ticker)}?interval=1d&range=1d`);
+                        if (r.ok) {
+                            const j = await r.json();
+                            const cls = j?.chart?.result?.[0]?.indicators?.quote?.[0]?.close?.filter(v => v != null);
+                            if (cls && cls.length) prezziLive[p.ticker] = cls[cls.length - 1];
+                        }
+                    }
+                } catch (_) {}
+            }));
+
+            const righe = aperte.map(p => {
+                const prezzoLive = prezziLive[p.ticker];
+                let pnlLatente = '-', pnlClass = '', pnlStr = '-';
+                if (prezzoLive != null && p.prezzo_ingresso) {
+                    pnlLatente = (p.direzione === 'long'
+                        ? (prezzoLive - Number(p.prezzo_ingresso))
+                        : (Number(p.prezzo_ingresso) - prezzoLive)) * Number(p.quantita);
+                    pnlStr = (pnlLatente >= 0 ? '+$' : '-$') + Math.abs(pnlLatente).toFixed(2);
+                    pnlClass = pnlLatente >= 0 ? 'dev-pos' : 'dev-neg';
+                }
+                return `<tr>
                 <td>${new Date(p.aperta_il).toLocaleString('it-IT')}</td>
                 <td>${escapeHtml(p.ticker)}</td>
                 <td><span class="badge-emotion ${p.direzione === 'long' ? 'badge-long' : 'badge-short'}">${p.direzione.toUpperCase()}</span></td>
                 <td>${Number(p.quantita)}</td>
                 <td>$${Number(p.prezzo_ingresso).toLocaleString('en-US')}</td>
+                <td>${prezzoLive != null ? '$' + prezzoLive.toLocaleString('en-US', {maximumFractionDigits: 4}) : '—'}</td>
+                <td class="${pnlClass}">${pnlStr}</td>
                 <td>${p.rr_pianificato != null ? '1:' + p.rr_pianificato : '-'}</td>
                 <td><button class="btn-sec" style="width:auto;padding:8px 14px;" onclick="chiediChiusura('${p.id}','${escapeHtml(p.ticker)}')">Chiudi</button></td>
-            </tr>`).join('');
-            wrapAperte.innerHTML = `<div class="table-scroll"><table><thead><tr><th>Apertura</th><th>Ticker</th><th>Direzione</th><th>Qtà</th><th>Ingresso</th><th>RR Piano</th><th></th></tr></thead><tbody>${righe}</tbody></table></div>`;
+            </tr>`;
+            }).join('');
+            wrapAperte.innerHTML = `<div class="table-scroll"><table><thead><tr><th>Apertura</th><th>Ticker</th><th>Direzione</th><th>Qtà</th><th>Ingresso</th><th>Prezzo Live</th><th>P&amp;L Latente</th><th>RR Piano</th><th></th></tr></thead><tbody>${righe}</tbody></table></div>`;
         }
 
         const eventiStorico = movimenti.map(m => ({ data: m.creato_il, tipo: m.tipo === 'deposito' ? 'Deposito' : 'Prelievo', dettaglio: m.nota || '-', valore: (m.tipo === 'deposito' ? 1 : -1) * Number(m.importo) }))
@@ -1976,7 +2053,9 @@ async function aggiornaOrderBook(tickerInput) {
     }
     await caricaStatistiche24h();
     await caricaSnapshot();
-    orderBookInterval = setInterval(() => { caricaSnapshot(); caricaStatistiche24h(); }, 4000);
+    // FIX 8: polling più lento su mobile per ridurre consumo batteria e lag
+    const intervalloOB = window.innerWidth <= 768 ? 8000 : 4000;
+    orderBookInterval = setInterval(() => { caricaSnapshot(); caricaStatistiche24h(); }, intervalloOB);
 }
 
 function caricaWatchlist() {
