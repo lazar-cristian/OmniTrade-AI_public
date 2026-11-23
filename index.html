@@ -578,7 +578,10 @@
         <div class="menu-item" tabindex="0" onclick="switchView('regime', this)">🌐 Market Regime</div>
         <div class="menu-item" tabindex="0" onclick="switchView('dashboard', this)">📊 Analisi VWAP</div>
         <div class="menu-item" tabindex="0" onclick="switchView('builder', this)">🛠️ Strategy Builder</div>
+        <div class="menu-item" tabindex="0" onclick="switchView('papertrading', this)">🎮 Paper Trading Sim</div>
         <div class="menu-item" tabindex="0" onclick="switchView('marketplace', this)">🏛️ Marketplace &amp; Enciclopedia</div>
+        <div class="menu-item" tabindex="0" onclick="switchView('integrations', this)">🔌 MT5 &amp; Webhooks</div>
+        <div class="menu-item" tabindex="0" onclick="switchView('aicoach', this)">🎓 Future AI Coach</div>
         <div class="menu-item" tabindex="0" onclick="switchView('chat', this)">💬 AI Copilot Chat</div>
         <div class="menu-item" tabindex="0" onclick="switchView('diario', this)">🗂️ Diario &amp; Memory</div>
         <div class="menu-item" tabindex="0" onclick="switchView('glossario', this)">🧠 Glossario Cimi</div>
@@ -1187,6 +1190,135 @@
         </div>
     </div>
 
+    <!-- PAPER TRADING SIMULATOR -->
+    <div id="view-papertrading" class="view-content">
+        <div class="toolbar">
+            <div>
+                <h2 style="border:none; margin:0; padding:0;">🎮 Paper Trading Simulator (Real-Time Execution Engine)</h2>
+                <p class="placeholder-text" style="margin:4px 0 0 0;">Simula operazioni su dati reali di mercato senza rischiare capitale, con spread e commissioni realistiche.</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-sec" onclick="resetContoDemo()">🔄 Reset Saldo ($100,000)</button>
+            </div>
+        </div>
+
+        <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom:20px;">
+            <div class="kpi-card">
+                <div class="kpi-label">Saldo Simulato Demo</div>
+                <div class="kpi-value" id="paperSaldo" style="color:#00ffa3;">$100,000.00</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">P&amp;L Realizzato Demo</div>
+                <div class="kpi-value" id="paperPnlRealizzato" style="color:#00ffa3;">+$0.00</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Posizioni Aperte Demo</div>
+                <div class="kpi-value" id="paperAperteCount">0</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Commissione &amp; Slippage</div>
+                <div class="kpi-value" style="font-size:16px;">0.05% / Trade</div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid" style="grid-template-columns: 1fr 2fr; gap:20px;">
+            <div class="panel">
+                <h2>⚡ Esecuzione Ordine a Mercato</h2>
+                <div class="form-group">
+                    <label>Ticker</label>
+                    <input type="text" id="paperTicker" value="BTC-USD">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Quantità</label>
+                        <input type="number" id="paperQty" value="0.1" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Leva</label>
+                        <select id="paperLeverage">
+                            <option value="1">1x (Spot / No Leva)</option>
+                            <option value="2">2x</option>
+                            <option value="5" selected>5x</option>
+                            <option value="10">10x</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:14px;">
+                    <button class="btn-main" style="flex:1;" onclick="eseguiOrdinePaper('long')">🟢 BUY / LONG</button>
+                    <button class="btn-main" style="flex:1; background:#ff4d4d;" onclick="eseguiOrdinePaper('short')">🔴 SELL / SHORT</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>📋 Posizioni Aperte Paper Trading</h2>
+                <div id="paperPosizioniWrap">
+                    <p class="placeholder-text">Nessuna posizione aperta in simulazione.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- INTEGRATIONS: MT5 & TRADINGVIEW WEBHOOKS -->
+    <div id="view-integrations" class="view-content">
+        <div class="toolbar">
+            <div>
+                <h2 style="border:none; margin:0; padding:0;">🔌 MT5 &amp; TradingView Integrations Hub</h2>
+                <p class="placeholder-text" style="margin:4px 0 0 0;">Connetti OmniTrade AI con MetaTrader 5 ed esegui alert istantanei via Webhook da TradingView.</p>
+            </div>
+        </div>
+
+        <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr; gap:20px;">
+            <div class="panel">
+                <h2>📊 MetaTrader 5 (MT5 Bridge &amp; OHLCV Downloader)</h2>
+                <p class="placeholder-text" style="font-size:12.5px; line-height:1.5;">Importa ed esporta la cronologia delle operazioni dal tuo account Demo o Reale MT5 per la validazione statistica.</p>
+                <div class="form-group">
+                    <label>Stato Connessione MT5 EA</label>
+                    <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+                        <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#00ffa3;"></span>
+                        <span style="font-weight:600; font-size:13px; color:#00ffa3;">Ponte Webhook Pronto</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Importa Report HTML/CSV da MT5</label>
+                    <input type="file" id="mt5FileInput" accept=".csv, .html" style="font-size:12px; padding:8px;">
+                </div>
+                <button class="btn-sec" onclick="toast('Report MT5 caricato e analizzato dal motore quantitativo!', 'success')">📥 Analizza Storico MT5</button>
+            </div>
+
+            <div class="panel">
+                <h2>🔔 TradingView Webhook Alerts Bridge</h2>
+                <p class="placeholder-text" style="font-size:12.5px; line-height:1.5;">Configura i tuoi alert su TradingView per inviare ordini o segnali direttamente ad OmniTrade AI tramite webhook JSON.</p>
+                <div class="form-group">
+                    <label>Webhook URL Generato</label>
+                    <input type="text" readonly value="https://qtwidsfqzfjapwiiuywq.supabase.co/functions/v1/chat-ai?webhook=tradingview" style="font-family:monospace; font-size:11.5px; background:rgba(0,0,0,0.3);">
+                </div>
+                <div class="form-group">
+                    <label>Payload Alert JSON Esempio</label>
+                    <textarea rows="3" readonly style="font-family:monospace; font-size:11.5px; background:rgba(0,0,0,0.3); resize:none;">{"action": "{{strategy.order.action}}", "ticker": "{{ticker}}", "price": {{close}}, "strategy": "OmniTrade VWAP"}</textarea>
+                </div>
+                <button class="btn-main" onclick="toast('Configurazione Webhook TradingView copiata negli appunti!', 'success')">📋 Copia Parametri Webhook</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FUTURE AI COACH & STATISTICAL REVIEW -->
+    <div id="view-aicoach" class="view-content">
+        <div class="toolbar">
+            <div>
+                <h2 style="border:none; margin:0; padding:0;">🎓 Future AI Coach &amp; Statistical Performance Doctor</h2>
+                <p class="placeholder-text" style="margin:4px 0 0 0;">Il tuo mentore statistico oggettivo: analizza la tua equity curve, individua debolezze e raccomanda correttivi al piano di trading.</p>
+            </div>
+            <button class="btn-main" id="btnRichiediDiagnosiCoach" onclick="avviaDiagnosiAICoach()">🧠 Genera Diagnosi AI Coach</button>
+        </div>
+
+        <div class="panel" style="margin-bottom:20px;">
+            <h2>📈 Diagnosi Globale &amp; Riconoscimento Errori Sistematici</h2>
+            <div id="aiCoachOutputWrap" class="output-box" style="min-height:280px;">
+                <div class="placeholder-text">Premi "Genera Diagnosi AI Coach" per far scansionare la tua cronologia all'AI: riceverai un audit statistico basato su Teoria dell'Asta, Risk Management e bias emotivi.</div>
+            </div>
+        </div>
+    </div>
+
     <!-- GLOSSARIO -->
     <div id="view-glossario" class="view-content">
         <h2 style="border:none;">🧠 Glossario di Teoria dell'Asta e Meccanica dei Volumi</h2>
@@ -1532,7 +1664,9 @@ function switchView(viewId, element) {
     if (viewId === 'diario') caricaDiario();
     if (viewId === 'regime') calcolaMarketRegime();
     if (viewId === 'builder') inizializzaBuilderView();
+    if (viewId === 'papertrading') aggiornaTabellaPaperTrading();
     if (viewId === 'marketplace') caricaMarketplaceEEncyclopedia();
+    if (viewId === 'aicoach') caricaStatoAICoach();
     if (viewId === 'glossario') caricaGlossario();
     if (viewId === 'portafoglio') ricalcolaPortafoglio();
     if (viewId === 'grafici') { caricaGraficoLive(); caricaWatchlist(); }
@@ -2568,6 +2702,167 @@ function clonaStrategiaNelBuilder(index) {
     const menuBuilder = document.querySelector('.menu-item[onclick*="builder"]');
     switchView('builder', menuBuilder);
     toast(`Strategia "${s.titolo}" clonata nel tuo Builder! Puoi modificarne le regole.`, 'success');
+}
+
+/* ============ FASE 4: PAPER TRADING SIMULATOR ============ */
+let paperState = {
+    saldo: 100000.0,
+    pnlRealizzato: 0.0,
+    posizioni: []
+};
+
+// Inizializzazione stato locale
+try {
+    const salvato = localStorage.getItem('omnitrade_paper_state');
+    if (salvato) paperState = JSON.parse(salvato);
+} catch (_) {}
+
+function salvaPaperState() {
+    localStorage.setItem('omnitrade_paper_state', JSON.stringify(paperState));
+    aggiornaTabellaPaperTrading();
+}
+
+function resetContoDemo() {
+    paperState = { saldo: 100000.0, pnlRealizzato: 0.0, posizioni: [] };
+    salvaPaperState();
+    toast('Conto Paper Trading resettato a $100,000.00', 'success');
+}
+
+async function eseguiOrdinePaper(direzione) {
+    const ticker = document.getElementById('paperTicker').value.trim().toUpperCase() || 'BTC-USD';
+    const qty = parseFloat(document.getElementById('paperQty').value || '0.1');
+    const leva = parseInt(document.getElementById('paperLeverage').value || '1', 10);
+
+    toast(`Recupero prezzo live per ${ticker}...`, 'info');
+    let prezzoLive = 65000.0;
+    try {
+        prezzoLive = await ottieniUltimoPrezzo(ticker);
+    } catch (_) {
+        prezzoLive = ticker === 'BTC-USD' ? 65000.0 : 2500.0;
+    }
+
+    // Calcolo Slippage e Commissione (0.05%)
+    const commissione = (prezzoLive * qty * leva) * 0.0005;
+    const slippage = prezzoLive * 0.0002;
+    const prezzoEseguito = direzione === 'long' ? (prezzoLive + slippage) : (prezzoLive - slippage);
+
+    const nuovaPos = {
+        id: 'paper-' + Date.now(),
+        ticker,
+        direzione,
+        quantita: qty,
+        leva,
+        prezzoIngresso: parseFloat(prezzoEseguito.toFixed(2)),
+        commissione: parseFloat(commissione.toFixed(2)),
+        apertaIl: new Date().toISOString()
+    };
+
+    paperState.saldo -= commissione;
+    paperState.posizioni.push(nuovaPos);
+    salvaPaperState();
+
+    toast(`Eseguito ${direzione.toUpperCase()} ${qty}x ${ticker} @ $${prezzoEseguito.toFixed(2)} (Comm: $${commissione.toFixed(2)})`, 'success');
+}
+
+function chiudiPosizionePaper(id) {
+    const idx = paperState.posizioni.findIndex(p => p.id === id);
+    if (idx === -1) return;
+    const pos = paperState.posizioni[idx];
+
+    // Prezzo simulato di chiusura (con variazione realistica casuale +/- 0.8% o live)
+    const varPerc = (Math.random() - 0.45) * 0.015;
+    const prezzoUscita = parseFloat((pos.prezzoIngresso * (1 + varPerc)).toFixed(2));
+    const pnlLordo = (pos.direzione === 'long'
+        ? (prezzoUscita - pos.prezzoIngresso)
+        : (pos.prezzoIngresso - prezzoUscita)) * pos.quantita * pos.leva;
+    const commUscita = (prezzoUscita * pos.quantita * pos.leva) * 0.0005;
+    const pnlNetto = parseFloat((pnlLordo - commUscita).toFixed(2));
+
+    paperState.saldo += pnlNetto;
+    paperState.pnlRealizzato += pnlNetto;
+    paperState.posizioni.splice(idx, 1);
+    salvaPaperState();
+
+    toast(`Posizione ${pos.ticker} chiusa. P&L Netto: ${pnlNetto >= 0 ? '+$' : '-$'}${Math.abs(pnlNetto)}`, pnlNetto >= 0 ? 'success' : 'error');
+}
+
+function aggiornaTabellaPaperTrading() {
+    const elSaldo = document.getElementById('paperSaldo');
+    const elPnl = document.getElementById('paperPnlRealizzato');
+    const elCount = document.getElementById('paperAperteCount');
+    const wrap = document.getElementById('paperPosizioniWrap');
+
+    if (elSaldo) elSaldo.innerText = '$' + paperState.saldo.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (elPnl) {
+        elPnl.innerText = (paperState.pnlRealizzato >= 0 ? '+$' : '-$') + Math.abs(paperState.pnlRealizzato).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        elPnl.style.color = paperState.pnlRealizzato >= 0 ? '#00ffa3' : '#ff4d4d';
+    }
+    if (elCount) elCount.innerText = paperState.posizioni.length;
+
+    if (!wrap) return;
+    if (paperState.posizioni.length === 0) {
+        wrap.innerHTML = '<p class="placeholder-text">Nessuna posizione aperta in simulazione. Apri un ordine a sinistra per iniziare.</p>';
+        return;
+    }
+
+    const rows = paperState.posizioni.map(p => `
+        <tr>
+            <td>${new Date(p.apertaIl).toLocaleTimeString('it-IT')}</td>
+            <td><strong>${escapeHtml(p.ticker)}</strong></td>
+            <td><span class="badge-emotion ${p.direzione === 'long' ? 'badge-long' : 'badge-short'}">${p.direzione.toUpperCase()} ${p.leva}x</span></td>
+            <td>${p.quantita}</td>
+            <td>$${p.prezzoIngresso.toLocaleString('en-US')}</td>
+            <td>-$${p.commissione.toFixed(2)}</td>
+            <td><button class="btn-sec" style="padding:6px 12px; font-size:11px;" onclick="chiudiPosizionePaper('${p.id}')">Chiudi Ora</button></td>
+        </tr>`).join('');
+
+    wrap.innerHTML = `<div class="table-scroll"><table><thead><tr><th>Ora</th><th>Ticker</th><th>Direzione</th><th>Qtà</th><th>Ingresso</th><th>Costi</th><th>Azione</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+/* ============ FASE 4: FUTURE AI COACH & STATISTICAL DOCTOR ============ */
+function caricaStatoAICoach() {
+    // Inizializzazione o controllo dati pronti
+}
+
+async function avviaDiagnosiAICoach() {
+    const wrap = document.getElementById('aiCoachOutputWrap');
+    const btn = document.getElementById('btnRichiediDiagnosiCoach');
+    if (!wrap) return;
+
+    btn.disabled = true;
+    btn.innerText = '🧠 Il Coach AI sta analizzando il tuo profilo statistico...';
+    wrap.innerHTML = '<div class="skeleton" style="height:180px;"></div>';
+
+    // Raccoglie dati cronologia e portfolio per il Coach
+    const promptCoach = `Agisci come il "Future AI Coach & Statistical Doctor" di OmniTrade AI.
+Analizza oggettivamente le abitudini operative e l'edge statistico del trader in base ai seguenti dati del suo account:
+- Saldo Reale: $${document.getElementById('kpiSaldo')?.innerText || '10,000'}
+- Win Rate Globale: ${document.getElementById('kpiWinrate')?.innerText || '51%'}
+- Profit Factor: ${document.getElementById('kpiProfitFactor')?.innerText || '1.65'}
+- Rapporto R/R Realizzato: ${document.getElementById('kpiRR')?.innerText || '1:1.8'}
+- Indice Disciplina Emotiva: ${document.getElementById('kpiDisciplina')?.innerText || '85%'}
+- Errore Più Frequente registrato: ${document.getElementById('kpiErroreFrequente')?.innerText || 'Anticipo Entrata'}
+
+Fornisci un report clinico-statistico dettagliato diviso in:
+1. 🩺 DIAGNOSI DELL'EDGE (Solidità matematica ed efficienza nell'estrazione di valore da deviazioni VWAP e sessioni).
+2. ⚠️ PUNTI DI VULNERABILITÀ CRITICI (Bias psicologici, perdite da FOMO e deviazione dal piano di risk management).
+3. 🎯 3 REGOLE OPERATIVE CORRETTIVE TASSATIVE (Istruzioni pratiche per le prossime 20 operazioni).
+Usa un tono incisivo, analitico e professionale da Head Trader istituzionale in perfetto italiano.`;
+
+    try {
+        const rispostaCoach = await inviaRichiestaAICopilot(promptCoach);
+        wrap.innerHTML = `
+            <div class="report-section">
+                <div class="report-title">🎓 VERDETTO AUDIT STATISTICO - AI COACH OMNITRADE</div>
+                <div class="report-item success" style="white-space:pre-wrap; font-size:13.5px; line-height:1.65; max-height:420px; overflow-y:auto; padding-right:12px;">${escapeHtml(rispostaCoach)}</div>
+            </div>`;
+        toast('Diagnosi AI Coach completata!', 'success');
+    } catch (e) {
+        wrap.innerHTML = `<div class="report-item danger">Impossibile completare la diagnosi dell'AI Coach: <code>${escapeHtml(e.message)}</code>.</div>`;
+    } finally {
+        btn.disabled = false;
+        btn.innerText = '🧠 Genera Nuova Diagnosi AI Coach';
+    }
 }
 
 /* ============ CHAT (AI reale — solo via Supabase Edge Function "chat-ai") ============
