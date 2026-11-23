@@ -10,7 +10,7 @@ import {
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -21,6 +21,18 @@ const isUuid = (value: unknown): value is string =>
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "GET") {
+    const publicKey = Deno.env.get("VAPID_PUBLIC_KEY");
+    if (!publicKey) {
+      return new Response(JSON.stringify({ error: "VAPID_PUBLIC_KEY non configurata." }), {
+        status: 503,
+        headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
+      });
+    }
+    return new Response(JSON.stringify({ publicKey }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
+    });
+  }
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Metodo non supportato." }), {
       status: 405,

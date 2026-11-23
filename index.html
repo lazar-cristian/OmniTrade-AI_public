@@ -863,7 +863,7 @@
         <div class="panel" style="margin-bottom:25px; width: 100%;">
             <h2>🔔 Web Push — dispositivi e categorie</h2>
             <p class="placeholder-text" style="margin-bottom:15px;">Le notifiche Push arrivano anche con sito o PWA chiusi, quando il browser e il sistema operativo consentono la consegna. Su iPhone/iPad devi aggiungere questa app alla schermata Home (iOS/iPadOS 16.4+). Attiva ogni dispositivo e scegli le categorie separatamente.</p>
-            <p class="push-category-hint">Una casella verde con spunta è attiva. Le preferenze si salvano automaticamente. Per il test, attiva la categoria <strong>Sistema</strong> su almeno un dispositivo attivo.</p>
+            <p class="push-category-hint">Una casella verde con spunta è attiva. Le preferenze si salvano automaticamente. Per il test, attiva la categoria <strong>Sistema</strong> su almeno un dispositivo attivo. Se il provider rifiuta la chiave VAPID, rinnova la subscription da ciascun dispositivo.</p>
             <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
                 <button id="btnPushDeviceToggle" class="btn-main" onclick="gestisciToggleNotifichePush()" disabled>🔔 Attiva su questo dispositivo</button>
                 <button id="btnPushTest" class="btn-sec" onclick="inviaNotificaTest()" disabled>Invia push di test</button>
@@ -3829,8 +3829,6 @@ async function caricaHeadlineInvesting() {
 }
 
 /* ============ WEB PUSH NOTIFICHE MACRO ============ */
-const VAPID_PUBLIC_KEY = "BDRdLQwVKAAWnGSNwAODT2_aS6s7p438AMpNFYN7LllTXkDf_3id54nF43izUmQv4ZTVWMaS9alew-UoASQicjc";
-
 function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
     const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
@@ -3840,6 +3838,27 @@ function urlBase64ToUint8Array(base64String) {
         outputArray[i] = rawData.charCodeAt(i);
     }
     return outputArray;
+}
+
+async function recuperaChiaveVapidServer() {
+    const { data, error } = await sb.functions.invoke('push-notifications', { method: 'GET' });
+    if (error) throw error;
+    if (typeof data?.publicKey !== 'string' || !data.publicKey) {
+        throw new Error('Il server non ha restituito la chiave pubblica VAPID.');
+    }
+    const keyBytes = urlBase64ToUint8Array(data.publicKey);
+    if (keyBytes.length !== 65 || keyBytes[0] !== 4) {
+        throw new Error('La chiave pubblica VAPID del server non è valida.');
+    }
+    return keyBytes;
+}
+
+function subscriptionUsesVapidKey(subscription, expectedKey) {
+    const applicationServerKey = subscription?.options?.applicationServerKey;
+    if (!applicationServerKey) return false;
+    const currentKey = new Uint8Array(applicationServerKey);
+    return currentKey.length === expectedKey.length
+        && currentKey.every((value, index) => value === expectedKey[index]);
 }
 
 const PUSH_DEVICE_ID_KEY = 'omnitrade_push_device_id';
@@ -4004,6 +4023,16 @@ function renderPushDevices() {
         card.appendChild(description);
         appendPushCategoryControls(card, row);
 
+        if (isCurrent) {
+            const renew = document.createElement('button');
+            renew.type = 'button';
+            renew.className = 'btn-sec';
+            renew.style.cssText = 'width:auto; margin-top:10px; margin-right:8px; padding:7px 12px; font-size:12px;';
+            renew.textContent = 'Rinnova Push su questo dispositivo';
+            renew.addEventListener('click', () => rinnovaSubscriptionPush(row));
+            card.appendChild(renew);
+        }
+
         const remove = document.createElement('button');
         remove.type = 'button';
         remove.className = 'btn-sec';
@@ -4112,11 +4141,24 @@ async function gestisciToggleNotifichePush() {
         if (!session?.user) throw new Error('Accedi per associare la subscription al tuo account.');
 
         const registration = await registraServiceWorkerPush();
+        const applicationServerKey = await recuperaChiaveVapidServer();
         let subscription = await registration.pushManager.getSubscription();
+        if (subscription && !subscriptionUsesVapidKey(subscription, applicationServerKey)) {
+            const oldEndpoint = subscription.endpoint;
+            if (!(await subscription.unsubscribe())) {
+                throw new Error('Il browser non ha confermato il rinnovo della subscription.');
+            }
+            const { error: oldSubscriptionError } = await sb.from('push_subscriptions')
+                .delete()
+                .eq('user_id', session.user.id)
+                .eq('endpoint', oldEndpoint);
+            if (oldSubscriptionError) throw oldSubscriptionError;
+            subscription = null;
+        }
         if (!subscription) {
             subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                applicationServerKey
             });
         }
 
@@ -4153,6 +4195,58 @@ async function gestisciToggleNotifichePush() {
     } catch (err) {
         toast('Attivazione Push non riuscita: ' + err.message, 'error');
         console.error('[Web Push] Attivazione fallita:', err);
+        await controllaStatoPushNotifiche();
+    }
+}
+
+async function rinnovaSubscriptionPush(row) {
+    try {
+        const { data: { session }, error: sessionError } = await sb.auth.getSession();
+        if (sessionError) throw sessionError;
+        if (!session?.user) throw new Error('Accedi per rinnovare la subscription.');
+        if (row.device_id !== getPushDeviceId()) {
+            throw new Error('Apri OmniTrade su quel dispositivo per rinnovarne la subscription.');
+        }
+        if (Notification.permission !== 'granted') {
+            throw new Error('Abilita prima le notifiche nelle impostazioni del browser.');
+        }
+
+        const registration = await registraServiceWorkerPush();
+        const applicationServerKey = await recuperaChiaveVapidServer();
+        const previousSubscription = await registration.pushManager.getSubscription();
+        if (previousSubscription && !(await previousSubscription.unsubscribe())) {
+            throw new Error('Il browser non ha confermato la disiscrizione precedente.');
+        }
+
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey
+        });
+        const subscriptionJson = subscription.toJSON();
+        if (!subscriptionJson.keys?.p256dh || !subscriptionJson.keys?.auth) {
+            throw new Error('Il browser non ha restituito le chiavi della subscription Push.');
+        }
+
+        const { data: updatedRows, error } = await sb.from('push_subscriptions')
+            .update({
+                endpoint: subscription.endpoint,
+                p256dh: subscriptionJson.keys.p256dh,
+                auth: subscriptionJson.keys.auth,
+                expiration_time: subscription.expirationTime ? new Date(subscription.expirationTime).toISOString() : null,
+                last_seen_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            })
+            .eq('user_id', session.user.id)
+            .eq('device_id', row.device_id)
+            .select('device_id');
+        if (error) throw error;
+        if (!updatedRows?.length) throw new Error('Dispositivo non trovato: la nuova subscription non è stata salvata.');
+
+        currentPushSubscription = subscription;
+        toast('Subscription rinnovata con la chiave VAPID del server.', 'success');
+        await controllaStatoPushNotifiche();
+    } catch (error) {
+        toast(`Rinnovo Push non riuscito: ${error.message}`, 'error');
         await controllaStatoPushNotifiche();
     }
 }
@@ -4219,7 +4313,14 @@ async function inviaNotificaTest() {
             return;
         }
         if (failed > 0) {
-            toast(`Il server ha trovato ${attempted} dispositivo/i, ma ${failed} invii sono falliti. Verifica chiavi VAPID e configurazione del provider push.`, 'error');
+            const failureCodes = data?.failureStatusCodes || {};
+            const codes = Object.keys(failureCodes);
+            if (codes.some(code => code === '401' || code === '403')) {
+                toast(`Il provider ha rifiutato l’autenticazione VAPID (HTTP ${codes.join(', ')}). Rinnova la subscription su ogni dispositivo; se persiste, la coppia VAPID pubblica/privata del server non corrisponde.`, 'error');
+            } else {
+                const detail = codes.length ? ` Codici: ${codes.join(', ')}.` : '';
+                toast(`Il server ha trovato ${attempted} dispositivo/i, ma ${failed} invii sono falliti.${detail} Verifica configurazione VAPID e provider push.`, 'error');
+            }
         } else if (removed > 0) {
             toast('La subscription del browser è scaduta. Rimuovi e riattiva questo dispositivo.', 'error');
         } else if (attempted === 0) {
