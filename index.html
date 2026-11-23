@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>OmniTrade AI - Workspace Quantitativo</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="alternate icon" href="favicon.svg">
@@ -497,6 +497,56 @@
     @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
 
     @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    @media (max-width: 768px) {
+        body { min-height: 100dvh; }
+        .mobile-topbar {
+            padding: calc(10px + env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
+        }
+        .workspace { min-height: 0; }
+        .view-content {
+            min-height: 0;
+            padding: 16px max(14px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        .sidebar {
+            width: min(300px, 85vw);
+            padding-top: max(24px, env(safe-area-inset-top));
+            padding-bottom: max(16px, env(safe-area-inset-bottom));
+        }
+        .sidebar-menu { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+        .menu-item { min-height: 44px; }
+        .panel, .card { min-width: 0; padding: 18px; }
+        .dashboard-grid, .kpi-grid, .kpi-grid-6, .glossary-grid { min-width: 0; }
+        .toolbar { align-items: stretch; }
+        .toolbar > .segmented { align-self: flex-start; max-width: 100%; }
+        .segmented button { min-height: 40px; padding: 8px 12px; }
+        input, select { min-height: 44px; font-size: 16px; }
+        button { min-height: 44px; }
+        .tv-chart-wrap { height: 340px; }
+        .tv-watchlist-wrap { height: 280px; }
+        #tvTechAnalysis, #tvSymbolInfo { height: 320px !important; }
+        #tvVolumeChart { height: 340px !important; }
+        .auth-gate { overflow-y: auto; padding: max(16px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom)); }
+        .auth-card { padding: 32px 24px 26px; }
+        .chat-layout { height: 65vh; min-height: 360px; max-height: 620px; }
+        #toastContainer { bottom: max(10px, env(safe-area-inset-bottom)); }
+    }
+
+    @media (max-width: 420px) {
+        .view-content {
+            padding-left: max(12px, env(safe-area-inset-left));
+            padding-right: max(12px, env(safe-area-inset-right));
+        }
+        .panel, .card { padding: 15px; }
+        .kpi-card { padding: 13px 8px; }
+        .kpi-value { font-size: 17px; }
+        .chat-box { padding: 14px; }
+        .chat-input-area { padding: 12px; gap: 8px; }
+        .chat-input-area button { padding: 10px 14px; }
+        .modal-box { padding: 20px; }
+    }
 </style>
 </head>
 <body class="app-hidden">
