@@ -929,44 +929,51 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* ============ PROXY CORS & FETCH HELPER ============ */
 async function fetchConFallback(tipo, params, urlDiretto) {
-    // 1. Prova a chiamare la Edge Function di Supabase
+    // 1. Edge Function Supabase (server-side, nessun CORS) — con anon key per compatibilità
     try {
         const queryParams = new URLSearchParams({ tipo, ...params }).toString();
         const edgeUrl = `${SUPABASE_URL}/functions/v1/external-data?${queryParams}`;
-        const resp = await fetch(edgeUrl);
-        if (resp.ok) {
-            console.log(`[CORS Proxy] Successo tramite Edge Function Supabase per ${tipo}`);
-            return resp;
-        }
-    } catch (e) {
-        console.warn(`[CORS Proxy] Edge Function fallita per ${tipo}, uso fallback:`, e);
+        const resp = await fetch(edgeUrl, { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY } });
+        if (resp.ok) { console.log(`[Proxy 1-Supabase] OK per ${tipo}`); return resp; }
+        console.warn(`[Proxy 1-Supabase] status ${resp.status} per ${tipo}`);
+    } catch (e) { console.warn(`[Proxy 1-Supabase] errore per ${tipo}:`, e.message); }
+
+    // Per Yahoo Finance: prova prima query2 direttamente (a volte risponde senza CORS issues)
+    if (tipo === 'yahoo' && params.ticker) {
+        try {
+            const q2url = urlDiretto.replace('query1.finance.yahoo.com', 'query2.finance.yahoo.com');
+            const resp = await fetch(q2url, { mode: 'cors' });
+            if (resp.ok) { console.log(`[Proxy 2-Yahoo-q2] OK per ${tipo}`); return resp; }
+        } catch (e) { console.warn(`[Proxy 2-Yahoo-q2] errore:`, e.message); }
     }
 
-    // 2. Fallback su corsproxy.io
+    // 2. corsproxy.io
     try {
-        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(urlDiretto)}`;
-        const resp = await fetch(proxyUrl);
-        if (resp.ok) {
-            console.log(`[CORS Proxy] Successo tramite corsproxy.io per ${tipo}`);
-            return resp;
-        }
-    } catch (e) {
-        console.warn(`[CORS Proxy] corsproxy.io fallito per ${tipo}:`, e);
-    }
+        const resp = await fetch(`https://corsproxy.io/?${encodeURIComponent(urlDiretto)}`);
+        if (resp.ok) { console.log(`[Proxy 3-corsproxy.io] OK per ${tipo}`); return resp; }
+    } catch (e) { console.warn(`[Proxy 3-corsproxy.io] errore:`, e.message); }
 
-    // 3. Secondo fallback su allorigins.win
+    // 3. allorigins.win
     try {
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(urlDiretto)}`;
-        const resp = await fetch(proxyUrl);
-        if (resp.ok) {
-            console.log(`[CORS Proxy] Successo tramite allorigins.win per ${tipo}`);
-            return resp;
-        }
-    } catch (e) {
-        console.warn(`[CORS Proxy] allorigins.win fallito per ${tipo}:`, e);
-    }
+        const resp = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(urlDiretto)}`);
+        if (resp.ok) { console.log(`[Proxy 4-allorigins] OK per ${tipo}`); return resp; }
+    } catch (e) { console.warn(`[Proxy 4-allorigins] errore:`, e.message); }
 
-    throw new Error("Tutti i canali di connessione proxy CORS hanno fallito.");
+    // 4. cors-anywhere su Heroku (pubblico)
+    try {
+        const resp = await fetch(`https://cors-anywhere.herokuapp.com/${urlDiretto}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (resp.ok) { console.log(`[Proxy 5-cors-anywhere] OK per ${tipo}`); return resp; }
+    } catch (e) { console.warn(`[Proxy 5-cors-anywhere] errore:`, e.message); }
+
+    // 5. thingproxy.freeboard.io
+    try {
+        const resp = await fetch(`https://thingproxy.freeboard.io/fetch/${urlDiretto}`);
+        if (resp.ok) { console.log(`[Proxy 6-thingproxy] OK per ${tipo}`); return resp; }
+    } catch (e) { console.warn(`[Proxy 6-thingproxy] errore:`, e.message); }
+
+    throw new Error("Tutti i canali di connessione proxy CORS hanno fallito. Verifica che la Edge Function Supabase 'external-data' sia deployata e che la connessione internet sia attiva.");
 }
 
 /* ============ AUTENTICAZIONE: LOGIN / REGISTRAZIONE REALE ============
