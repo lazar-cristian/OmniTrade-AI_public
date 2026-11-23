@@ -3840,11 +3840,21 @@ async function caricaHeadlineInvesting() {
 
         const righe = items.map(item => {
             const titolo = item.querySelector('title')?.textContent || 'Senza titolo';
-            const link = item.querySelector('link')?.textContent || '#';
+            const linkRaw = item.querySelector('link')?.textContent?.trim() || '';
+            let linkSicuro = null;
+            try {
+                const url = new URL(linkRaw);
+                if (url.protocol === 'https:') linkSicuro = url.href;
+            } catch {
+                // Link RSS non valido: il titolo viene mostrato senza collegamento.
+            }
             const dataRaw = item.querySelector('pubDate')?.textContent;
             const data = dataRaw ? new Date(dataRaw).toLocaleString('it-IT') : '';
+            const titoloMarkup = linkSicuro
+                ? `<a href="${escapeHtml(linkSicuro)}" target="_blank" rel="noopener noreferrer" style="color:#eaecef; text-decoration:none; font-weight:600;">${escapeHtml(titolo)}</a>`
+                : `<span style="color:#eaecef; font-weight:600;">${escapeHtml(titolo)}</span>`;
             return `<div class="report-item" style="border-left-color:#474d57;">
-                <a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" style="color:#eaecef; text-decoration:none; font-weight:600;">${escapeHtml(titolo)}</a>
+                ${titoloMarkup}
                 <div class="placeholder-text" style="margin-top:4px; font-size:11.5px;">${escapeHtml(data)} · Investing.com</div>
             </div>`;
         }).join('');
