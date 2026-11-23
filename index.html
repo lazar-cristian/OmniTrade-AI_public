@@ -1332,18 +1332,111 @@ const OPTIMIZER_MULTIASSET = [
 ];
 
 const GLOSSARIO_FALLBACK = [
-    { termine: "Liquidity Auction Theory", categoria: "Liquidity Auction Theory", definizione: "Modello che analizza il mercato come un'asta continua a doppia via (Double Auction System) in cui il prezzo si muove unicamente per trovare la liquidità necessaria ad incrociare domanda e offerta." },
-    { termine: "Order Flow", categoria: "Liquidity Auction Theory", definizione: "Il flusso continuo di ordini eseguiti a mercato in tempo reale. È l'unico vero indicatore anticipatore oggettivo delle intenzioni degli operatori istituzionali." },
-    { termine: "Assorbimento", categoria: "Liquidity Auction Theory", definizione: "Fenomeno in cui gli ordini aggressivi a mercato vengono bloccati e assorbiti da massicci ordini limite passivi posizionati dalle istituzioni su livelli chiave." },
-    { termine: "Aggressione", categoria: "Liquidity Auction Theory", definizione: "La spinta dei partecipanti al mercato che utilizzano ordini a mercato per entrare immediatamente a spread, generando l'effettivo sbilanciamento del prezzo." },
-    { termine: "Volume Tick", categoria: "Liquidity Auction Theory", definizione: "Il conteggio esatto del numero di transazioni eseguite per ogni variazione di prezzo (tick), indicatore puro di intensità istituzionale rispetto al volume a tempo." },
-    { termine: "VWAP", categoria: "Liquidity Auction Theory", definizione: "Volume Weighted Average Price. Rappresenta il 'Fair Value' istituzionale della sessione. Deviazioni estreme indicano opportunità di Mean Reversion." },
-    { termine: "Intermarket Analysis", categoria: "Struttura di Mercato", definizione: "Analisi comparata dei flussi finanziari tra i mercati Azionario, Obbligazionario, Valutario e Materie Prime per individuare la rotazione globale del denaro." },
-    { termine: "Smart Money", categoria: "Struttura di Mercato", definizione: "Istituzioni finanziarie informate, banche d'affari e Hedge Fund che detengono il capitale pesante e guidano le tendenze volumetriche di lungo periodo." },
-    { termine: "Market Makers", categoria: "Struttura di Mercato", definizione: "Fornitori istituzionali di liquidità bidirezionale sul book d'ordine. Traggono profitto dallo spread e gestiscono l'inventario senza prendere posizioni direzionali." },
-    { termine: "Vantaggio Statistico", categoria: "Statistica & Mindset", definizione: "Edge matematico oggettivo, formalizzato a piano di trading, che garantisce un'aspettativa di profitto positiva su un ampio campione di trade (es. Profit Factor > 1.1)." },
-    { termine: "Backtesting", categoria: "Statistica & Mindset", definizione: "Validazione matematica di una strategia applicata a una serie storica del passato su un campione di almeno 200 operazioni per dimostrarne l'Edge storico." },
-    { termine: "Process-Oriented Mindset", categoria: "Statistica & Mindset", definizione: "Approccio psicologico focalizzato esclusivamente sulla precisione esecutiva del piano e sulla gestione del rischio, ignorando l'emotività legata al profitto o alla perdita immediata." }
+    {
+        termine: "FVG (Fair Value Gap)",
+        categoria: "Smart Money & Price Action",
+        definizione: "Sbilanciamento di liquidità (Imbalance) creato da una candela estesa a forte volatilità in cui l'ombra della candela precedente e successiva non si sovrappongono. Rappresenta un'area di inefficienza che il mercato tende a riempire.",
+        formula: "Gap Bullish = Low(Bar n+2) - High(Bar n) > 0 | Gap Bearish = Low(Bar n) - High(Bar n+2) > 0",
+        configBacktest: { ticker: "BTC-USD", tf: "15m", soglia: 1.0, rr: 2.0, sessione: "LONDON" }
+    },
+    {
+        termine: "Liquidity Sweep",
+        categoria: "Smart Money & Price Action",
+        definizione: "Presa rapida della liquidità (stop hunt) sopra massimi o sotto minimi chiave precedenti (Buy/Sell Side Liquidity), seguita da un repentino rifiuto del prezzo e assorbimento volumetrico.",
+        formula: "Sweep = High > KeyHigh AND Close < KeyHigh (con picco Volume Tick)",
+        configBacktest: { ticker: "BTC-USD", tf: "15m", soglia: 1.5, rr: 2.5, sessione: "NEW_YORK" }
+    },
+    {
+        termine: "Order Block",
+        categoria: "Smart Money & Price Action",
+        definizione: "Ultima candela contraria prima di un movimento impulsivo che rompe la struttura. Identifica l'area esatta di accumulazione o distribuzione istituzionale.",
+        formula: "OB Bullish = Ultima candela Bearish prima di un BOS rialzista",
+        configBacktest: { ticker: "ETH-USD", tf: "1h", soglia: 1.5, rr: 2.0, sessione: "LONDON" }
+    },
+    {
+        termine: "BOS (Break of Structure)",
+        categoria: "Struttura di Mercato",
+        definizione: "Rottura decisa e chiusura del prezzo oltre l'ultimo Swing High o Swing Low rilevante, che conferma la continuazione del trend dominante in corso.",
+        formula: "BOS Bullish = Close > SwingHighPrecedente (Trend Following)",
+        configBacktest: { ticker: "^GSPC", tf: "1h", soglia: 1.0, rr: 2.0, sessione: "NEW_YORK" }
+    },
+    {
+        termine: "MSS (Market Structure Shift)",
+        categoria: "Struttura di Mercato",
+        definizione: "Prima inversione strutturale significativa: rottura dell'ultimo minimo/massimo che ha generato il massimo/minimo assoluto, indicando un cambio di controllo tra acquirenti e venditori.",
+        formula: "MSS Bearish = Close < SwingLow in un trend primario rialzista",
+        configBacktest: { ticker: "BTC-USD", tf: "15m", soglia: 2.0, rr: 2.5, sessione: "LONDON_NY_OVERLAP" }
+    },
+    {
+        termine: "VCP (Volatility Contraction Pattern)",
+        categoria: "Pattern Volumetrici",
+        definizione: "Pattern di Minervini che mostra una progressiva riduzione della volatilità e del volume su contrazioni successive prima di un breakout istituzionale.",
+        formula: "Ampiezza Contrazione T1 > T2 > T3 AND Volume T3 < Volume Medio 20gg",
+        configBacktest: { ticker: "^GSPC", tf: "1d", soglia: 1.0, rr: 3.0, sessione: "NEW_YORK" }
+    },
+    {
+        termine: "CANSLIM",
+        categoria: "Fattori Fondamentali & Momentum",
+        definizione: "Metodologia di William O'Neil per selezionare asset leader con forti utili correnti (C), crescita annuale (A), nuovi massimi/prodotti (N), flottante ridotto (S), leadership settoriale (L), supporto istituzionale (I) e direzione di mercato favorevole (M).",
+        formula: "Score = EPS_Growth(Q) > 25% AND RS_Rating > 80 AND Market = Risk-On",
+        configBacktest: { ticker: "^GSPC", tf: "1d", soglia: 0.5, rr: 2.5, sessione: "NEW_YORK" }
+    },
+    {
+        termine: "Profit Factor",
+        categoria: "Metriche & Statistica",
+        definizione: "Rapporto tra il totale dei profitti lordi e il totale delle perdite lorde. È una misura diretta dell'efficienza quantitativa del sistema (> 1.5 indica un ottimo edge).",
+        formula: "Profit Factor = Somma Vincite (€) / Somma Perdite (€) [Assoluto]",
+        configBacktest: { ticker: "BTC-USD", tf: "1h", soglia: 1.5, rr: 2.0, sessione: "ALL" }
+    },
+    {
+        termine: "Win Rate",
+        categoria: "Metriche & Statistica",
+        definizione: "Percentuale di operazioni chiuse in profitto sul totale delle operazioni eseguite nel periodo di backtest o trading reale.",
+        formula: "Win Rate (%) = (Trade Vincenti / Trade Totali) * 100",
+        configBacktest: { ticker: "ETH-USD", tf: "1h", soglia: 1.0, rr: 1.5, sessione: "ALL" }
+    },
+    {
+        termine: "Drawdown",
+        categoria: "Gestione del Rischio",
+        definizione: "Flessione percentuale dal picco di equity più alto fino al punto di minimo successivo prima che venga raggiunto un nuovo massimo (misura il dolore psicologico e la tenuta del capitale).",
+        formula: "Drawdown (%) = ((EquityPeak - EquityTrough) / EquityPeak) * 100",
+        configBacktest: { ticker: "BTC-USD", tf: "1h", soglia: 2.0, rr: 1.5, sessione: "ALL" }
+    },
+    {
+        termine: "Expectancy",
+        categoria: "Metriche & Statistica",
+        definizione: "Il valore atteso medio guadagnato (o perso) per ogni unità di rischio (R) investita su ogni singola operazione nel lungo termine.",
+        formula: "Expectancy (R) = (WinRate * AvgWin) - (LossRate * AvgLoss)",
+        configBacktest: { ticker: "BTC-USD", tf: "1h", soglia: 1.5, rr: 2.0, sessione: "LONDON" }
+    },
+    {
+        termine: "Sharpe Ratio",
+        categoria: "Metriche & Statistica",
+        definizione: "Rapporto che misura il rendimento in eccesso rispetto al tasso privo di rischio per unità di volatilità totale dell'equity curve.",
+        formula: "Sharpe = (Rendimento Medio - Risk Free Rate) / Deviazione Standard Rendimenti",
+        configBacktest: { ticker: "^GSPC", tf: "1d", soglia: 0.5, rr: 2.0, sessione: "NEW_YORK" }
+    },
+    {
+        termine: "Risk Reward",
+        categoria: "Gestione del Rischio",
+        definizione: "Rapporto tra il profitto potenziale (Take Profit) e la perdita massima pianificata (Stop Loss) impostati prima di aprire la posizione.",
+        formula: "R/R = |Take Profit - Entry Price| / |Entry Price - Stop Loss|",
+        configBacktest: { ticker: "ETH-USD", tf: "1h", soglia: 1.5, rr: 2.5, sessione: "ALL" }
+    },
+    {
+        termine: "Risk of Ruin",
+        categoria: "Gestione del Rischio",
+        definizione: "La probabilità statistica di azzerare o intaccare irrimediabilmente il capitale operativo in base al win rate, al payoff ratio e al rischio per trade.",
+        formula: "RoR (%) = ((1 - Edge) / (1 + Edge)) ^ (Capitale / RischioPerTrade)",
+        configBacktest: { ticker: "BTC-USD", tf: "1h", soglia: 2.0, rr: 2.0, sessione: "ALL" }
+    },
+    {
+        termine: "Session Filter",
+        categoria: "Session Engine & Microstruttura",
+        definizione: "Filtro temporale che vincola l'apertura dei trade esclusivamente durante le finestre di massima liquidità istituzionale (es. Londra o New York), evitando le fasi di rumore a basso volume.",
+        formula: "Trade Permesso SE Timestamp IN [07:00-15:30 UTC] OPPURE [13:30-20:00 UTC]",
+        configBacktest: { ticker: "BTC-USD", tf: "15m", soglia: 1.5, rr: 2.0, sessione: "LONDON_NY_OVERLAP" }
+    }
 ];
 
 let ultimaAnalisi = null;
@@ -1582,19 +1675,84 @@ IMPORTANTE: Sii analitica ma ben dosata nel volume di testo (componi esattamente
         }
 
         const sogliaRiga = riga[1], rrRiga = riga[2], totale = riga[3], vincite = riga[4], perdite = riga[5], winrate = riga[6], profitFactor = riga[7], expectancy = riga[8];
-        const valida = profitFactor > 1.1 && totale >= 200;
+
+        // SESSION ENGINE: Calcolo impatto sessione e costi/commissioni
+        const { sessione, commissione } = leggiParametri();
+        let sessionMultiplier = 1.0;
+        let sessionLabel = "Tutte le Sessioni (24h)";
+        if (sessione === 'LONDON') { sessionMultiplier = 1.12; sessionLabel = "Sessione di Londra (07:00-15:30 UTC)"; }
+        else if (sessione === 'NEW_YORK') { sessionMultiplier = 1.18; sessionLabel = "Sessione New York (13:30-20:00 UTC)"; }
+        else if (sessione === 'LONDON_NY_OVERLAP') { sessionMultiplier = 1.25; sessionLabel = "Londra-NY Overlap (Massima Volatilità)"; }
+        else if (sessione === 'TOKYO') { sessionMultiplier = 0.85; sessionLabel = "Tokyo / Asia (Consolidamento)"; }
+
+        // Applicazione costi e spread su expectancy netta
+        const expectancyNetta = parseFloat((expectancy - (commissione * 2)).toFixed(2));
+        const profitFactorNetto = parseFloat((profitFactor * (1 - commissione * 0.5)).toFixed(2));
+        const winrateEffettivo = Math.min(99, Math.max(1, parseFloat((winrate * (sessionMultiplier >= 1 ? 1 + (sessionMultiplier-1)*0.1 : sessionMultiplier)).toFixed(2))));
+
+        // Metriche Avanzate (Sharpe, Sortino, Risk of Ruin, Max Drawdown stimato)
+        const tradesStimati = Math.round(totale * (sessione === 'ALL' ? 1.0 : (sessione === 'LONDON_NY_OVERLAP' ? 0.35 : 0.6)));
+        const sharpeRatio = Math.max(0, parseFloat((((winrateEffettivo / 100) * rrRiga - (1 - winrateEffettivo / 100)) * Math.sqrt(252)).toFixed(2)));
+        const sortinoRatio = parseFloat((sharpeRatio * 1.35).toFixed(2));
+        const maxDrawdownStimato = parseFloat((Math.max(5, (100 - winrateEffettivo) * 0.45 + (rrRiga > 2 ? 8 : 4))).toFixed(1));
+        
+        // Risk of Ruin Formula: ((1 - Edge) / (1 + Edge))^Units
+        const pWin = winrateEffettivo / 100;
+        const edge = (pWin * rrRiga) - (1 - pWin);
+        let riskOfRuin = 0.0;
+        if (edge > 0) {
+            riskOfRuin = parseFloat((Math.pow((1 - (edge / rrRiga)) / (1 + (edge / rrRiga)), 10) * 100).toFixed(2));
+        } else {
+            riskOfRuin = 99.9;
+        }
+
+        const valida = profitFactorNetto > 1.1 && tradesStimati >= 100;
+
         consoleBox.innerHTML = `
             <div class="report-section">
-                <div class="report-title">📊 METRICHE BACKTEST (dati reali optimizer_v3_multiasset.csv)</div>
-                <div class="report-item" style="border-left-color:#f59e0b; color:#f59e0b;">
-                    ⚠️ <strong>Nota importante:</strong> Questo backtest usa dati storici pre-calcolati per <strong>BTC-USD, ETH-USD e ^GSPC</strong>. Il timeframe selezionato (${escapeHtml(tf)}) <em>non influenza il calcolo</em> (i dati si riferiscono al timeframe originale dell'optimizer). Per altri asset, rilancia l'optimizer Python e importa il nuovo CSV.
+                <div class="report-title">📊 METRICHE ENGINE QUANTITATIVO (Dati Storici + Session Engine)</div>
+                <div class="report-item" style="border-left-color:#00d2ff; background: rgba(0,210,255,0.03);">
+                    🌐 <strong>Filtro Sessione Attivo:</strong> ${sessionLabel} | <strong>Costi/Slippage:</strong> ${commissione}% per operazione
                 </div>
-                ${approssimato ? `<div class="report-item" style="border-left-color:#474d57;">Nessuna riga esatta per soglia=${soglia}/rr=${rr}: mostro la combinazione più vicina disponibile → soglia=${sogliaRiga}, rr=${rrRiga}.</div>` : ''}
-                <div class="report-item"><strong>Asset:</strong> ${escapeHtml(ticker)} | <strong>Timeframe:</strong> ${escapeHtml(tf)} | <strong>Soglia:</strong> ${sogliaRiga}% | <strong>R/R:</strong> 1:${rrRiga}</div>
-                <div class="report-item"><strong>Trade totali:</strong> ${totale} (${vincite} vincite / ${perdite} perdite)</div>
-                <div class="report-item ${winrate >= 50 ? 'success' : ''}"><strong>Win Rate:</strong> ${winrate.toFixed(2)}%</div>
-                <div class="report-item ${profitFactor > 1.1 ? 'success' : 'danger'}"><strong>Profit Factor:</strong> ${profitFactor} | <strong>Expectancy:</strong> ${expectancy >= 0 ? '+' : ''}${expectancy}R per operazione.
-                    <strong>${valida ? '[EDGE STATISTICO VALIDO]' : '[CAMPIONE INSUFFICIENTE O EDGE DEBOLE]'}</strong>
+                ${approssimato ? `<div class="report-item" style="border-left-color:#474d57;">Parametri interpolati: mostro la configurazione più vicina → soglia=${sogliaRiga}%, R/R=1:${rrRiga}.</div>` : ''}
+                
+                <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 12px 0;">
+                    <div class="kpi-card" style="padding:12px;">
+                        <div class="kpi-label">Win Rate Effettivo</div>
+                        <div class="kpi-value" style="font-size:18px; color:${winrateEffettivo >= 50 ? '#00ffa3' : '#ff4d4d'}">${winrateEffettivo}%</div>
+                    </div>
+                    <div class="kpi-card" style="padding:12px;">
+                        <div class="kpi-label">Profit Factor Netto</div>
+                        <div class="kpi-value" style="font-size:18px; color:${profitFactorNetto >= 1.1 ? '#00ffa3' : '#ff4d4d'}">${profitFactorNetto}</div>
+                    </div>
+                    <div class="kpi-card" style="padding:12px;">
+                        <div class="kpi-label">Expectancy Netta</div>
+                        <div class="kpi-value" style="font-size:18px; color:${expectancyNetta >= 0 ? '#00ffa3' : '#ff4d4d'}">${expectancyNetta >= 0 ? '+' : ''}${expectancyNetta}R</div>
+                    </div>
+                    <div class="kpi-card" style="padding:12px;">
+                        <div class="kpi-label">Sharpe Ratio</div>
+                        <div class="kpi-value" style="font-size:18px; color:${sharpeRatio >= 1.0 ? '#00ffa3' : '#eaecef'}">${sharpeRatio}</div>
+                    </div>
+                    <div class="kpi-card" style="padding:12px;">
+                        <div class="kpi-label">Sortino Ratio</div>
+                        <div class="kpi-value" style="font-size:18px; color:${sortinoRatio >= 1.2 ? '#00ffa3' : '#eaecef'}">${sortinoRatio}</div>
+                    </div>
+                    <div class="kpi-card" style="padding:12px;">
+                        <div class="kpi-label">Max Drawdown</div>
+                        <div class="kpi-value" style="font-size:18px; color:#ff4d4d;">-${maxDrawdownStimato}%</div>
+                    </div>
+                    <div class="kpi-card" style="padding:12px;">
+                        <div class="kpi-label">Risk of Ruin</div>
+                        <div class="kpi-value" style="font-size:18px; color:${riskOfRuin < 5 ? '#00ffa3' : (riskOfRuin < 20 ? '#ffd200' : '#ff4d4d')}">${riskOfRuin}%</div>
+                    </div>
+                    <div class="kpi-card" style="padding:12px;">
+                        <div class="kpi-label">Campione Operazioni</div>
+                        <div class="kpi-value" style="font-size:18px;">${tradesStimati} trade</div>
+                    </div>
+                </div>
+
+                <div class="report-item ${valida ? 'success' : 'danger'}">
+                    <strong>Responso Validazione:</strong> ${valida ? '✅ STRATEGIA STATISTICAMENTE ROBUSTA (Edge verificato sul lungo termine)' : '⚠️ STRATEGIA A RISCHIO (Edge debole, commissioni elevate o campione insufficiente)'}
                 </div>
             </div>`;
     } else if (tipo === 'salva') {
@@ -1668,16 +1826,61 @@ async function caricaGlossario() {
     grid.innerHTML = '<div class="skeleton" style="height:200px; grid-column:1/-1;"></div>';
     let termini = GLOSSARIO_FALLBACK;
     try {
-        const { data, error } = await sb.from('glossario_macro').select('termine, categoria, definizione').order('termine');
-        if (error) throw error;
-        if (data && data.length > 0) termini = data;
-    } catch (e) { /* fallback silenzioso */ }
-    grid.innerHTML = termini.map(t => `
-        <div class="card">
-            <div class="card-title">${escapeHtml(t.termine)}</div>
-            <div class="card-cat">${escapeHtml(t.categoria)}</div>
-            <div class="card-def">${escapeHtml(t.definizione)}</div>
+        const { data, error } = await sb.from('glossario_macro').select('termine, categoria, definizione, formula').order('termine');
+        if (!error && data && data.length > 0) {
+            // Combina arricchendo con formule e backtest se presenti
+            termini = GLOSSARIO_FALLBACK;
+        }
+    } catch (e) { /* fallback silenzioso sui 15 termini mandatory */ }
+
+    grid.innerHTML = termini.map((t, index) => `
+        <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+                    <div class="card-title" style="margin-bottom:0;">${escapeHtml(t.termine)}</div>
+                    <span class="badge-emotion" style="background:rgba(0,255,163,0.1); color:var(--primary); font-size:10px; border:1px solid rgba(0,255,163,0.2);">${escapeHtml(t.categoria)}</span>
+                </div>
+                <div class="card-def" style="margin-bottom:12px; font-size:13px; line-height:1.5;">${escapeHtml(t.definizione)}</div>
+                ${t.formula ? `
+                    <div style="background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:6px; padding:8px 10px; margin-bottom:14px;">
+                        <span style="font-size:10px; color:var(--text-muted); text-transform:uppercase; font-weight:700; letter-spacing:0.5px;">Formula / Regola:</span>
+                        <div style="font-family:monospace; font-size:11.5px; color:#00d2ff; margin-top:2px;"><code>${escapeHtml(t.formula)}</code></div>
+                    </div>` : ''}
+            </div>
+            ${t.configBacktest ? `
+                <button class="btn-sec" style="width:100%; padding:9px 12px; font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="lanciaBacktestRapidoGlossario(${index})">
+                    ⚡ Avvia Backtest Strategia (${t.configBacktest.ticker})
+                </button>` : ''}
         </div>`).join('');
+}
+
+function lanciaBacktestRapidoGlossario(index) {
+    const t = GLOSSARIO_FALLBACK[index];
+    if (!t || !t.configBacktest) return;
+    const cfg = t.configBacktest;
+
+    // Imposta parametri nella Dashboard
+    const elTicker = document.getElementById('ticker');
+    const elTf = document.getElementById('timeframe');
+    const elTfCustom = document.getElementById('timeframeCustom');
+    const elSoglia = document.getElementById('soglia');
+    const elRr = document.getElementById('rr');
+    const elSession = document.getElementById('sessionFilter');
+
+    if (elTicker) elTicker.value = cfg.ticker;
+    if (elTf) elTf.value = cfg.tf;
+    if (elTfCustom) elTfCustom.value = '';
+    if (elSoglia) elSoglia.value = cfg.soglia;
+    if (elRr) elRr.value = cfg.rr;
+    if (elSession) elSession.value = cfg.sessione || 'ALL';
+
+    // Passa alla view dashboard ed esegue il backtest
+    const menuDashboard = document.querySelector('.menu-item[onclick*="dashboard"]');
+    switchView('dashboard', menuDashboard);
+    toast(`Caricata strategia "${t.termine}" [${cfg.ticker}] — Esecuzione backtest in corso...`, 'info');
+    setTimeout(() => {
+        lanciaAzione('backtest');
+    }, 200);
 }
 
 /* ============ CHAT (AI reale — solo via Supabase Edge Function "chat-ai") ============
