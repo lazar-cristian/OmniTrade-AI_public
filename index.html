@@ -412,7 +412,10 @@
     .output-box { 
         background: rgba(0,0,0,0.2); 
         border: 1px solid var(--border-color); 
-        border-radius: 10px; padding: 20px; min-height: 400px; 
+        border-radius: 10px; padding: 20px; min-height: 400px;
+        max-height: 560px;
+        overflow-y: auto;
+        overflow-x: auto;
         font-size: 13.5px; line-height: 1.6; 
     }
     .report-section { margin-bottom: 22px; }
@@ -1482,8 +1485,8 @@ Istruzioni per l'auto-dialogo dell'AI:
 1. Poni a te stessa delle domande critiche sul trend e sulla deviazione: è una vera estensione statistica dovuta ad un'anomalia o c'è un driver fondamentale che spinge il prezzo?
 2. Rispondi a te stessa confrontando le notizie macroeconomiche con il movimento (ad es. se ci sono notizie sui tassi d'interesse o sull'inflazione).
 3. Ragiona sul potenziale assorbimento istituzionale o aggressione volumetrica sul book (teoria dell'asta di Andrea Cimi).
-4. Concludi ammettendo se lo scenario è ad alta o bassa probabilità e quali sono i rischi di auto-inganno.
-Struttura il responso come un dialogo interiore strutturato con domande che ti poni (es. "D: ...?") e risposte che ti dai (es. "R: ..."), usando uno stile estremamente professionale ed oggettivo in italiano.`;
+4. Concludi sintetizzando la decisione: scenario ad alta o bassa probabilità e i rischi concreti di auto-inganno.
+Sii concisa, incisiva e completa (massimo 3 scambi D/R completi e chiari), senza troncare il discorso o lasciare frasi a metà.`;
 
                     const risposta = await inviaRichiestaAICopilot(promptEsame);
                     
@@ -1491,7 +1494,7 @@ Struttura il responso come un dialogo interiore strutturato con domande che ti p
                     if (divEsame) {
                         divEsame.innerHTML = `
                             <div class="report-title">🧠 ESAME DI COSCIENZA DELL'AI (ANALISI DIALOGICA)</div>
-                            <div class="report-item success" style="white-space: pre-wrap; font-family: inherit; font-size: 13px; line-height: 1.6;">${escapeHtml(risposta)}</div>`;
+                            <div class="report-item success" style="white-space: pre-wrap; font-family: inherit; font-size: 13px; line-height: 1.6; max-height: 380px; overflow-y: auto; overflow-x: auto; padding-right: 12px;">${escapeHtml(risposta)}</div>`;
                     }
                 } catch (err) {
                     const divEsame = document.getElementById(idEsame);
