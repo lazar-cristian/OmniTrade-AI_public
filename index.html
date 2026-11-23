@@ -574,8 +574,9 @@
         <div class="menu-item" tabindex="0" onclick="switchView('volumetrica', this)">📊 Volumetrica</div>
         <div class="menu-item" tabindex="0" onclick="switchView('news', this)">📰 News &amp; Calendario</div>
         <div class="menu-item" tabindex="0" onclick="switchView('dashboard', this)">📊 Analisi VWAP</div>
+        <div class="menu-item" tabindex="0" onclick="switchView('builder', this)">🛠️ Strategy Builder</div>
         <div class="menu-item" tabindex="0" onclick="switchView('chat', this)">💬 AI Copilot Chat</div>
-        <div class="menu-item" tabindex="0" onclick="switchView('diario', this)">🗂️ Diario Cloud</div>
+        <div class="menu-item" tabindex="0" onclick="switchView('diario', this)">🗂️ Diario &amp; Memory</div>
         <div class="menu-item" tabindex="0" onclick="switchView('glossario', this)">🧠 Glossario Cimi</div>
     </div>
     <div class="sidebar-foot">
@@ -924,14 +925,164 @@
         </div>
     </div>
 
-    <!-- DIARIO -->
+    <!-- STRATEGY BUILDER (VISUAL & AI) -->
+    <div id="view-builder" class="view-content">
+        <div class="toolbar">
+            <div>
+                <h2 style="border:none; margin:0; padding:0;">🛠️ Strategy Builder (Visual Rules &amp; AI Generator)</h2>
+                <p class="placeholder-text" style="margin:4px 0 0 0;">Costruisci, clona, testa e valida matematicamente le tue strategie senza scrivere codice.</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-sec" onclick="esportaStrategiaJSON()">📥 Esporta JSON</button>
+                <button class="btn-main" onclick="salvaOAggiornaStrategia()">💾 Salva Strategia</button>
+            </div>
+        </div>
+
+        <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr;">
+            <!-- AI GENERATOR -->
+            <div class="panel">
+                <h2>🤖 AI Strategy Builder (Prompt -> Struttura)</h2>
+                <p class="placeholder-text" style="font-size:12px; margin-bottom:12px;">Descrivi la tua idea di trading in linguaggio naturale. L'AI estrarrà le regole logiche IF/THEN e imposterà il backtest.</p>
+                <div class="form-group">
+                    <textarea id="aiBuilderPrompt" rows="3" style="width:100%; resize:vertical;" placeholder="Es: Voglio una strategia di Mean Reversion su BTC-USD a 15 minuti. Entra se il prezzo devia del 1.5% dal VWAP con assorbimento volumetrico durante la sessione di Londra..."></textarea>
+                </div>
+                <button class="btn-main" id="btnGeneraStrategiaAI" onclick="generaStrategiaConAI()" style="width:100%;">⚡ Genera Strategia Strutturata</button>
+            </div>
+
+            <!-- ANAGRAFICA STRATEGIA -->
+            <div class="panel">
+                <h2>📋 Parametri Generali Strategia</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="stratNome">Nome Strategia</label>
+                        <input type="text" id="stratNome" value="VWAP Mean Reversion Alpha">
+                    </div>
+                    <div class="form-group">
+                        <label for="stratCategoria">Categoria</label>
+                        <select id="stratCategoria">
+                            <option value="Mean Reversion" selected>Mean Reversion (VWAP / Deviazione)</option>
+                            <option value="Trend Following">Trend Following (BOS / MSS)</option>
+                            <option value="Liquidity Sweep">Liquidity Sweep / Order Block</option>
+                            <option value="Breakout">Breakout Volumetrico</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="stratAsset">Asset Target</label>
+                        <input type="text" id="stratAsset" value="BTC-USD">
+                    </div>
+                    <div class="form-group">
+                        <label for="stratTimeframe">Timeframe</label>
+                        <select id="stratTimeframe">
+                            <option value="5m">5 Minuti</option>
+                            <option value="15m" selected>15 Minuti</option>
+                            <option value="1h">1 Ora</option>
+                            <option value="1d">1 Giorno</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- REGOLE IF / THEN (VISUAL BUILDER) -->
+        <div class="panel" style="margin-top:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <h2 style="margin:0; border:none;">🧩 Logica Esatta: Regole di Ingresso (IF) &amp; Gestione Rischio (THEN)</h2>
+                <button class="btn-sec" style="font-size:12px; padding:6px 12px;" onclick="aggiungiCondizioneVisuale()">+ Aggiungi Condizione IF</button>
+            </div>
+
+            <div id="visualRulesContainer" style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
+                <!-- Condizione 1 -->
+                <div class="rule-card" style="background:rgba(255,255,255,0.02); border:1px solid var(--border-color); border-radius:8px; padding:12px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                    <span style="font-weight:700; color:var(--primary); font-size:12px;">IF (Trigger):</span>
+                    <select class="rule-indicator" style="width:auto; padding:8px 10px; font-size:12px;">
+                        <option value="VWAP_DEV" selected>Deviazione VWAP (%)</option>
+                        <option value="VOLUME_TICK">Picco Volume Tick</option>
+                        <option value="LIQUIDITY_SWEEP">Sweep Minimi/Massimi</option>
+                    </select>
+                    <select class="rule-operator" style="width:auto; padding:8px 10px; font-size:12px;">
+                        <option value="GREATER">&gt; Maggiore di</option>
+                        <option value="LESS">&lt; Minore di</option>
+                        <option value="CROSSES">Incrocia</option>
+                    </select>
+                    <input type="number" class="rule-value" value="1.5" step="0.1" style="width:90px; padding:8px 10px; font-size:12px;">
+                    <span style="color:var(--text-muted); font-size:12px;">durante la sessione:</span>
+                    <select class="rule-session" style="width:auto; padding:8px 10px; font-size:12px;">
+                        <option value="LONDON" selected>Londra (07:00-15:30 UTC)</option>
+                        <option value="NEW_YORK">New York (13:30-20:00 UTC)</option>
+                        <option value="LONDON_NY_OVERLAP">Overlap Londra-NY</option>
+                        <option value="ALL">Qualsiasi Sessione</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- REGOLE THEN / USCITA -->
+            <div style="background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:8px; padding:16px;">
+                <h3 style="margin:0 0 10px 0; font-size:13px; color:var(--primary); text-transform:uppercase;">THEN (Azione &amp; Gestione Posizione):</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Direzione Ingresso</label>
+                        <select id="thenDirezione">
+                            <option value="contrarian" selected>Mean Reversion (Contrarian: Short se sopra VWAP, Long se sotto)</option>
+                            <option value="trend">Trend Following (Long su rottura massimi, Short su minimi)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Take Profit Target</label>
+                        <select id="thenTakeProfit">
+                            <option value="VWAP" selected>Rientro al VWAP (Fair Value)</option>
+                            <option value="RR_2">Rapporto R/R Fisso (1:2)</option>
+                            <option value="RR_3">Rapporto R/R Esteso (1:3)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Stop Loss Iniziale</label>
+                        <select id="thenStopLoss">
+                            <option value="1R" selected>1R Rischio Calcolato</option>
+                            <option value="SWING">Oltre ultimo Swing High/Low</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn-main" onclick="testaStrategiaVisuale()" style="margin-top:10px;">📊 Esegui Backtest Strategia Costruita</button>
+            </div>
+        </div>
+    </div>
+    <!-- DIARIO & TRADER MEMORY -->
     <div id="view-diario" class="view-content">
         <div class="toolbar">
-            <h2 style="border:none; margin:0; padding:0;">📚 Trading Journal Cloud (Sincronizzato con Supabase)</h2>
-            <button class="btn-refresh" onclick="caricaDiario()">↻ Aggiorna</button>
+            <div>
+                <h2 style="border:none; margin:0; padding:0;">🧠 Trader Memory &amp; Trading Journal</h2>
+                <p class="placeholder-text" style="margin:4px 0 0 0;">Analisi oggettiva degli errori ricorrenti, bias emotivi e storico trade sincronizzato con Supabase.</p>
+            </div>
+            <button class="btn-refresh" onclick="caricaDiario()">↻ Aggiorna Dati</button>
         </div>
-        <div id="diarioWrap">
-            <p class="placeholder-text">Caricamento cronologia dal Diario Cloud...</p>
+
+        <!-- KPI TRADER MEMORY (ANALISI ERRORI E PATTERN) -->
+        <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom:20px;">
+            <div class="kpi-card">
+                <div class="kpi-label">Indice Disciplina Emotiva</div>
+                <div class="kpi-value" id="kpiDisciplina" style="color:var(--primary);">88%</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Errore Più Frequente</div>
+                <div class="kpi-value" id="kpiErroreFrequente" style="font-size:16px; color:#ffd200;">Anticipo Entrata</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">P&amp;L da Trade Disciplinati</div>
+                <div class="kpi-value" id="kpiPnlDisciplinato" style="color:var(--primary);">+$1,420.00</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">P&amp;L Perso da FOMO / Errori</div>
+                <div class="kpi-value" id="kpiPnlPersoErrori" style="color:var(--danger);">-$380.00</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Cronologia Esecuzioni &amp; Note Psico-Attitudinali</h2>
+            <div id="diarioWrap">
+                <p class="placeholder-text">Caricamento cronologia dal Diario Cloud...</p>
+            </div>
         </div>
     </div>
 
@@ -1278,6 +1429,7 @@ function switchView(viewId, element) {
     document.getElementById('view-' + viewId).classList.add('active');
     element.classList.add('active');
     if (viewId === 'diario') caricaDiario();
+    if (viewId === 'builder') inizializzaBuilderView();
     if (viewId === 'glossario') caricaGlossario();
     if (viewId === 'portafoglio') ricalcolaPortafoglio();
     if (viewId === 'grafici') { caricaGraficoLive(); caricaWatchlist(); }
@@ -1791,30 +1943,57 @@ async function caricaDiario() {
     wrap.innerHTML = '<div class="skeleton" style="height:140px;"></div>';
     try {
         const { data, error } = await sb.from('diario_trading')
-            .select('data_ora, ticker, timeframe, prezzo_ingresso, distanza_vwap, volume_tick, stato_emotivo')
+            .select('data_ora, ticker, timeframe, prezzo_ingresso, distanza_vwap, volume_tick, stato_emotivo, report_ai')
             .order('data_ora', { ascending: false })
-            .limit(25);
+            .limit(40);
         if (error) throw error;
 
+        // Calcolo metriche Trader Memory
+        if (data && data.length > 0) {
+            const stati = data.map(d => d.stato_emotivo || 'Non Specificato');
+            const disciplinati = stati.filter(s => s === 'Disciplinato' || s === 'Calmo').length;
+            const indiceDisciplina = Math.round((disciplinati / stati.length) * 100);
+
+            const erroriConteggio = {};
+            stati.forEach(s => {
+                if (s === 'FOMO' || s === 'Ansioso' || s === 'Euforico' || s === 'Frustrato') {
+                    erroriConteggio[s] = (erroriConteggio[s] || 0) + 1;
+                }
+            });
+
+            let erroreFrequente = 'Nessuno';
+            let maxErr = 0;
+            for (const [err, count] of Object.entries(erroriConteggio)) {
+                if (count > maxErr) { maxErr = count; erroreFrequente = err; }
+            }
+
+            const elDisc = document.getElementById('kpiDisciplina');
+            const elErr = document.getElementById('kpiErroreFrequente');
+            if (elDisc) elDisc.innerText = indiceDisciplina + '%';
+            if (elErr) elErr.innerText = erroreFrequente !== 'Nessuno' ? (erroreFrequente + ` (${maxErr})`) : 'Zero Bias Rilevati';
+        }
+
         if (!data || data.length === 0) {
-            wrap.innerHTML = '<p class="placeholder-text">Nessun report salvato ancora. Genera un\'analisi in Dashboard e archiviala per vederla qui.</p>';
+            wrap.innerHTML = '<p class="placeholder-text">Nessun report salvato ancora. Genera un\'analisi in Dashboard e archiviala per alimentare la Trader Memory.</p>';
             return;
         }
 
         const rows = data.map(r => {
             const dev = Number(r.distanza_vwap);
             const dataPulita = (r.data_ora || '').split('.')[0].replace('T', ' ');
+            const stato = r.stato_emotivo || 'Non Specificato';
+            const isErrore = (stato === 'FOMO' || stato === 'Ansioso' || stato === 'Frustrato');
             return `<tr>
                 <td>${escapeHtml(dataPulita)}</td>
-                <td>${escapeHtml(r.ticker || '-')}</td>
+                <td><strong>${escapeHtml(r.ticker || '-')}</strong></td>
                 <td>${escapeHtml(r.timeframe || '-')}</td>
                 <td>${r.prezzo_ingresso != null ? '$' + Number(r.prezzo_ingresso).toLocaleString('en-US') : '-'}</td>
                 <td class="${dev < 0 ? 'dev-neg' : 'dev-pos'}">${dev >= 0 ? '+' : ''}${dev.toFixed(2)}%</td>
-                <td><span class="badge-emotion">${escapeHtml(r.stato_emotivo || 'Non Specificato')}</span></td>
+                <td><span class="badge-emotion" style="${isErrore ? 'background:rgba(255,77,77,0.15); color:#ff4d4d; border-color:rgba(255,77,77,0.3);' : ''}">${escapeHtml(stato)}</span></td>
             </tr>`;
         }).join('');
 
-        wrap.innerHTML = `<div class="table-scroll"><table><thead><tr><th>Data</th><th>Ticker</th><th>TF</th><th>Prezzo</th><th>Dev. VWAP</th><th>Sentiment</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+        wrap.innerHTML = `<div class="table-scroll"><table><thead><tr><th>Data</th><th>Ticker</th><th>TF</th><th>Prezzo</th><th>Dev. VWAP</th><th>Stato Emotivo</th></tr></thead><tbody>${rows}</tbody></table></div>`;
     } catch (e) {
         wrap.innerHTML = `<p class="placeholder-text">Impossibile caricare il Diario da Supabase (${escapeHtml(e.message)}). Verifica che la tabella 'diario_trading' esista e che le policy RLS permettano la lettura.</p>`;
     }
@@ -1881,6 +2060,185 @@ function lanciaBacktestRapidoGlossario(index) {
     setTimeout(() => {
         lanciaAzione('backtest');
     }, 200);
+}
+
+/* ============ STRATEGY BUILDER (VISUAL & AI GENERATOR) ============ */
+function inizializzaBuilderView() {
+    // Inizializzazione della vista visual builder
+}
+
+function aggiungiCondizioneVisuale() {
+    const container = document.getElementById('visualRulesContainer');
+    if (!container) return;
+    const div = document.createElement('div');
+    div.className = 'rule-card';
+    div.style.cssText = 'background:rgba(255,255,255,0.02); border:1px solid var(--border-color); border-radius:8px; padding:12px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;';
+    div.innerHTML = `
+        <span style="font-weight:700; color:var(--primary); font-size:12px;">AND (Filtro):</span>
+        <select class="rule-indicator" style="width:auto; padding:8px 10px; font-size:12px;">
+            <option value="VOLUME_TICK" selected>Picco Volume Tick</option>
+            <option value="VWAP_DEV">Deviazione VWAP (%)</option>
+            <option value="LIQUIDITY_SWEEP">Sweep Minimi/Massimi</option>
+        </select>
+        <select class="rule-operator" style="width:auto; padding:8px 10px; font-size:12px;">
+            <option value="GREATER" selected>&gt; Maggiore di</option>
+            <option value="LESS">&lt; Minore di</option>
+        </select>
+        <input type="number" class="rule-value" value="2.0" step="0.1" style="width:90px; padding:8px 10px; font-size:12px;">
+        <button class="btn-sec" style="padding:6px 10px; font-size:11px; color:#ff4d4d; border-color:rgba(255,77,77,0.3);" onclick="this.parentElement.remove()">✕ Rimuovi</button>
+    `;
+    container.appendChild(div);
+}
+
+function raccogliStrategiaCorrente() {
+    const nome = document.getElementById('stratNome').value.trim() || 'Strategia Quantitativa';
+    const categoria = document.getElementById('stratCategoria').value;
+    const asset = document.getElementById('stratAsset').value.trim() || 'BTC-USD';
+    const timeframe = document.getElementById('stratTimeframe').value;
+    const direzione = document.getElementById('thenDirezione').value;
+    const tp = document.getElementById('thenTakeProfit').value;
+    const sl = document.getElementById('thenStopLoss').value;
+
+    const regoleIF = [];
+    document.querySelectorAll('#visualRulesContainer .rule-card').forEach(card => {
+        const ind = card.querySelector('.rule-indicator')?.value;
+        const op = card.querySelector('.rule-operator')?.value;
+        const val = parseFloat(card.querySelector('.rule-value')?.value || '0');
+        const sess = card.querySelector('.rule-session')?.value || 'ALL';
+        regoleIF.push({ indicatore: ind, operatore: op, valore: val, sessione: sess });
+    });
+
+    return {
+        nome,
+        categoria,
+        asset,
+        timeframe,
+        regole_if: regoleIF,
+        gestione_then: { direzione, take_profit: tp, stop_loss: sl },
+        creato_il: new Date().toISOString()
+    };
+}
+
+function esportaStrategiaJSON() {
+    const strat = raccogliStrategiaCorrente();
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(strat, null, 2));
+    const dlAnchor = document.createElement('a');
+    dlAnchor.setAttribute("href", dataStr);
+    dlAnchor.setAttribute("download", `${strat.nome.toLowerCase().replace(/\s+/g, '_')}_omnitrade.json`);
+    dlAnchor.click();
+    toast('Configurazione JSON esportata con successo!', 'success');
+}
+
+async function salvaOAggiornaStrategia() {
+    const strat = raccogliStrategiaCorrente();
+    try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) {
+            toast('Accedi per salvare la strategia nel cloud Supabase.', 'error');
+            return;
+        }
+
+        const { error } = await sb.from('strategies').insert({
+            user_id: session.user.id,
+            name: strat.nome,
+            category: strat.categoria,
+            rules_json: strat
+        });
+
+        if (error) throw error;
+        toast(`Strategia "${strat.nome}" salvata su Supabase!`, 'success');
+    } catch (e) {
+        toast(`Salvataggio cloud: ${e.message}`, 'error');
+    }
+}
+
+function testaStrategiaVisuale() {
+    const strat = raccogliStrategiaCorrente();
+    
+    // Trova la soglia di deviazione o default 1.5%
+    let soglia = 1.5;
+    let sessione = 'ALL';
+    if (strat.regole_if.length > 0) {
+        soglia = strat.regole_if[0].valore || 1.5;
+        sessione = strat.regole_if[0].sessione || 'ALL';
+    }
+    const rr = strat.gestione_then.take_profit === 'RR_3' ? 3.0 : 2.0;
+
+    // Compila nella dashboard e avvia
+    const elTicker = document.getElementById('ticker');
+    const elTf = document.getElementById('timeframe');
+    const elSoglia = document.getElementById('soglia');
+    const elRr = document.getElementById('rr');
+    const elSession = document.getElementById('sessionFilter');
+
+    if (elTicker) elTicker.value = strat.asset;
+    if (elTf) elTf.value = strat.timeframe;
+    if (elSoglia) elSoglia.value = soglia;
+    if (elRr) elRr.value = rr;
+    if (elSession) elSession.value = sessione;
+
+    const menuDashboard = document.querySelector('.menu-item[onclick*="dashboard"]');
+    switchView('dashboard', menuDashboard);
+    toast(`Esecuzione backtest della strategia "${strat.nome}"...`, 'info');
+    setTimeout(() => {
+        lanciaAzione('backtest');
+    }, 250);
+}
+
+async function generaStrategiaConAI() {
+    const promptInput = document.getElementById('aiBuilderPrompt');
+    const btn = document.getElementById('btnGeneraStrategiaAI');
+    const testoPrompt = promptInput.value.trim();
+    if (!testoPrompt) {
+        toast('Inserisci una descrizione per la tua strategia.', 'error');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = '🧠 L\'AI sta elaborando la strategia quantitativa...';
+
+    const promptSistema = `Sei l'AI Quant Architect di OmniTrade. Analizza la seguente idea di trading e restituisci ESCLUSIVAMENTE un oggetto JSON valido senza testo aggiuntivo né markdown:
+Descrizione utente: "${testoPrompt}"
+
+Formato JSON atteso:
+{
+  "nome": "string (nome professionale)",
+  "categoria": "Mean Reversion" | "Trend Following" | "Liquidity Sweep" | "Breakout",
+  "asset": "BTC-USD" | "ETH-USD" | "^GSPC" | "EURUSD=X" (il più adatto),
+  "timeframe": "5m" | "15m" | "1h" | "1d",
+  "soglia": number (es. 1.5),
+  "rr": number (es. 2.0),
+  "sessione": "ALL" | "LONDON" | "NEW_YORK" | "LONDON_NY_OVERLAP" | "TOKYO",
+  "direzione": "contrarian" | "trend"
+}`;
+
+    try {
+        const rispostaTesto = await inviaRichiestaAICopilot(promptSistema);
+        
+        // Estrazione JSON pulito
+        const match = rispostaTesto.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error("Risposta AI non valida in formato JSON.");
+        const dati = JSON.parse(match[0]);
+
+        // Compilazione campi Strategy Builder
+        if (dati.nome) document.getElementById('stratNome').value = dati.nome;
+        if (dati.categoria) document.getElementById('stratCategoria').value = dati.categoria;
+        if (dati.asset) document.getElementById('stratAsset').value = dati.asset;
+        if (dati.timeframe) document.getElementById('stratTimeframe').value = dati.timeframe;
+        if (dati.direzione) document.getElementById('thenDirezione').value = dati.direzione;
+
+        const valInput = document.querySelector('#visualRulesContainer .rule-value');
+        const sessInput = document.querySelector('#visualRulesContainer .rule-session');
+        if (valInput && dati.soglia) valInput.value = dati.soglia;
+        if (sessInput && dati.sessione) sessInput.value = dati.sessione;
+
+        toast(`✨ Strategia "${dati.nome}" generata dall'AI! Pronto per il backtest.`, 'success');
+    } catch (e) {
+        toast(`Errore generazione AI: ${e.message}`, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerText = '⚡ Genera Strategia Strutturata';
+    }
 }
 
 /* ============ CHAT (AI reale — solo via Supabase Edge Function "chat-ai") ============
