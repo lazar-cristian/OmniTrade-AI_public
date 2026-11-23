@@ -16,6 +16,7 @@ const corsHeaders = {
 
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+const INVESTING_NEWS_FEED = "https://www.investing.com/rss/news.rss";
 
 function rispostaErrore(messaggio: string, status = 400) {
   return new Response(JSON.stringify({ errore: messaggio }), {
@@ -52,8 +53,10 @@ Deno.serve(async (req: Request) => {
     }
 
     if (tipo === "investing-news") {
-      const feed = url.searchParams.get("feed") || "https://www.investing.com/rss/news.rss";
-      const r = await fetch(feed, { headers: { "User-Agent": USER_AGENT } });
+      const r = await fetch(INVESTING_NEWS_FEED, {
+        headers: { "User-Agent": USER_AGENT },
+        redirect: "error",
+      });
       const testo = await r.text();
       return new Response(testo, {
         status: r.status,
