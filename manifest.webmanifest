@@ -1,0 +1,18 @@
+{
+  "name": "OmniTrade AI",
+  "short_name": "OmniTrade",
+  "description": "Workspace quantitativo OmniTrade AI",
+  "start_url": "./?view=portafoglio",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#06080b",
+  "theme_color": "#06080b",
+  "icons": [
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

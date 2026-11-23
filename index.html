@@ -4,8 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>OmniTrade AI - Workspace Quantitativo</title>
+<meta name="theme-color" content="#06080b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="alternate icon" href="favicon.svg">
+<link rel="manifest" href="manifest.webmanifest">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -325,6 +330,12 @@
 
     .dashboard-grid { display: grid; grid-template-columns: 1fr 1.6fr; gap: 24px; }
     @media (max-width: 980px) { .dashboard-grid { grid-template-columns: 1fr; } }
+    .vwap-charts-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .vwap-chart-card { min-width: 0; padding: 16px; border: 1px solid var(--border-color); border-radius: 10px; background: rgba(255,255,255,0.015); }
+    .vwap-chart-card h3 { margin: 0 0 12px; color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .vwap-chart-area { position: relative; height: 260px; }
+    @media (max-width: 980px) { .vwap-charts-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 420px) { .vwap-chart-area { height: 220px; } }
 
     .panel { 
         position: relative; overflow: hidden; 
@@ -826,16 +837,19 @@
     <div id="view-news" class="view-content">
         <!-- CENTRO NOTIFICHE -->
         <div class="panel" style="margin-bottom:25px; width: 100%;">
-            <h2>🔔 Centro Notifiche Macro & News Real-Time</h2>
-            <p class="placeholder-text" style="margin-bottom:15px;">Ricevi avvisi sonori e notifiche di sistema desktop quando vengono pubblicati eventi macro o notizie importanti (funziona anche in background).</p>
+            <h2>🔔 Web Push — dispositivi e categorie</h2>
+            <p class="placeholder-text" style="margin-bottom:15px;">Le notifiche Push arrivano anche con sito o PWA chiusi, quando il browser e il sistema operativo consentono la consegna. Su iPhone/iPad devi aggiungere questa app alla schermata Home (iOS/iPadOS 16.4+). Attiva ogni dispositivo e scegli le categorie separatamente.</p>
+            <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+                <button id="btnPushDeviceToggle" class="btn-main" onclick="gestisciToggleNotifichePush()" disabled>🔔 Attiva su questo dispositivo</button>
+                <button id="btnPushTest" class="btn-sec" onclick="inviaNotificaTest()" disabled>Invia push di test</button>
+                <button class="btn-refresh" onclick="controllaStatoPushNotifiche()">↻ Aggiorna dispositivi</button>
+            </div>
+            <p id="pushPermissionStatus" class="placeholder-text" role="status" aria-live="polite"></p>
+            <div id="pushDevicesList" style="display:grid; gap:12px;"></div>
+            <hr style="border-color:var(--border-color); margin:18px 0;">
+            <h3 style="margin:0 0 6px;">Avvisi nella pagina News</h3>
+            <p class="placeholder-text" style="margin:0 0 15px;">Parole chiave e suono si applicano solo al polling mentre la pagina è aperta; non sostituiscono le categorie Web Push.</p>
             <div class="form-row">
-                <div class="form-group">
-                    <label>Stato Notifiche Desktop</label>
-                    <div style="display:flex; gap:10px;">
-                        <button id="btnRichiediNotifiche" class="btn-sec" onclick="richiediAutorizzazioneNotifiche()" style="flex:1;">Abilita Notifiche Desktop</button>
-                        <button class="btn-sec" onclick="inviaNotificaTest()" style="width:auto; padding:12px 18px;" title="Invia notifica di test">🔔 Test</button>
-                    </div>
-                </div>
                 <div class="form-group">
                     <label>Parole Chiave Importanti (separate da virgola)</label>
                     <input type="text" id="notificheKeywords" value="FED, BCE, CPI, inflazione, tassi, disoccupazione, FOMC, PIL, tassi d'interesse, tassi di interesse, breaking, shock, crypto, BTC, ETH" onchange="salvaImpostazioniNotifiche()">
@@ -868,7 +882,6 @@
                 <p class="placeholder-text" style="margin:0;">Feed RSS ufficiale di Investing.com (titolo + link all'articolo originale) — si riaggancia ogni 60 secondi. Ultimo aggiornamento: <span id="investingUltimoAggiornamento">-</span></p>
             </div>
             <div style="display:flex; gap:10px; align-items:center;">
-                <button id="btnPushNotifiche" class="btn-sec" style="width:auto; padding:8px 14px; font-size:12px;" onclick="gestisciToggleNotifichePush()">🔔 Attiva Notifiche Macro (Push)</button>
                 <button class="btn-refresh" onclick="caricaHeadlineInvesting()">↻ Aggiorna ora</button>
             </div>
         </div>
@@ -896,7 +909,7 @@
                     </datalist>
                 </div>
                 <div class="form-group">
-                    <label for="timeframe">Timeframe Operativo (qualsiasi intervallo Yahoo Finance)</label>
+                    <label for="timeframe">Timeframe operativo (intervalli supportati da Yahoo Finance)</label>
                     <select id="timeframe">
                         <option value="1m">1 Minuto (Tick/Scalping estremo)</option>
                         <option value="2m">2 Minuti</option>
@@ -912,25 +925,25 @@
                         <option value="1mo">1 Mese</option>
                         <option value="3mo">3 Mesi</option>
                     </select>
-                    <input type="text" id="timeframeCustom" placeholder="...oppure scrivi un intervallo custom (es. 4h)" autocomplete="off" style="margin-top:8px;">
+                    <input type="text" id="timeframeCustom" placeholder="...oppure un intervallo supportato (es. 15m, 1h, 1d)" autocomplete="off" style="margin-top:8px;">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="sessionFilter">Filtro Sessione (Session Engine)</label>
                         <select id="sessionFilter">
                             <option value="ALL" selected>Tutte le Sessioni (24h)</option>
-                            <option value="TOKYO">Tokyo / Asia (00:00 - 08:00 UTC)</option>
-                            <option value="LONDON">Londra (07:00 - 15:30 UTC)</option>
-                            <option value="NEW_YORK">New York (13:30 - 20:00 UTC)</option>
-                            <option value="LONDON_NY_OVERLAP">Londra - New York Overlap (13:30 - 15:30 UTC)</option>
+                            <option value="TOKYO">Tokyo / Asia (00:00 - 08:00 ora locale)</option>
+                            <option value="LONDON">Londra (07:00 - 15:30 ora locale)</option>
+                            <option value="NEW_YORK">New York (09:30 - 16:00 ora locale)</option>
+                            <option value="LONDON_NY_OVERLAP">Overlap Londra - New York (08:00 - 10:00 New York)</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="costiOperativi">Commissioni &amp; Spread stimato</label>
+                        <label for="costiOperativi">Costi stimati per lato</label>
                         <select id="costiOperativi">
-                            <option value="0.0">Nessun costo (Lordi)</option>
-                            <option value="0.05" selected>Standard (0.05% per trade)</option>
-                            <option value="0.10">Elevato / Slippage (0.10%)</option>
+                            <option value="0.0">Nessun costo</option>
+                            <option value="0.05" selected>Commissioni + slippage 0.05%</option>
+                            <option value="0.10">Commissioni + slippage 0.10%</option>
                         </select>
                     </div>
                 </div>
@@ -953,7 +966,7 @@
                     <button class="btn-sec" onclick="lanciaAzione('backtest')">📊 AVVIA BACKTEST MATEMATICO</button>
                     <button class="btn-save" id="btnSalva" onclick="lanciaAzione('salva')" disabled>💾 ARCHIVIA NEL DIARIO CLOUD</button>
                 </div>
-                <p class="placeholder-text" style="margin-top:14px; font-size:12px;">Il Backtest usa i dati reali di <code>optimizer_v3_multiasset.csv</code> quando disponibili; altrimenti cerca la combinazione più vicina o segnala che serve rilanciare l'optimizer Python per quell'asset.</p>
+                <p class="placeholder-text" style="margin-top:14px; font-size:12px;">Il backtest usa candele OHLCV storiche Yahoo Finance. Il VWAP è stimato usando (massimo + minimo + chiusura) / 3 per candela, non dati tick; feed e ritardi dipendono dalla fonte, i risultati non garantiscono performance future.</p>
             </div>
 
             <div class="panel">
@@ -968,13 +981,40 @@
                         <div class="kpi-value" id="kpiDeviazione">-</div>
                     </div>
                     <div class="kpi-card">
-                        <div class="kpi-label">Stato Volume</div>
+                        <div class="kpi-label">Volume ultima candela</div>
                         <div class="kpi-value" id="kpiVolume">-</div>
                     </div>
                 </div>
                 <div class="output-box" id="outputConsole">
-                    <div class="placeholder-text">⚠️ STATO CONSOLE — In attesa dell'operatore. Seleziona i parametri e premi un pulsante d'azione per caricare la matrice dei flussi d'asta.</div>
+                    <div class="placeholder-text">In attesa dei parametri. L'analisi e il backtest recuperano candele OHLCV dalla fonte dati selezionata.</div>
                 </div>
+            </div>
+        </div>
+        <div class="panel" style="margin-top:20px;">
+            <div class="toolbar" style="margin-bottom:12px;">
+                <h2 style="border:none; padding:0; margin:0;">Grafici prezzo, VWAP e backtest</h2>
+                <button class="btn-refresh" type="button" onclick="aggiornaGraficiVWAP({force:true})" aria-label="Aggiorna grafici">↻ Aggiorna</button>
+            </div>
+            <p class="placeholder-text" id="vwapDataStatus" role="status" aria-live="polite">
+                Fonte: Yahoo Finance. Il VWAP è una stima OHLCV, non un calcolo trade-by-trade. I dati possono essere ritardati; aggiornamento ogni 60 secondi mentre questa scheda è aperta.
+            </p>
+            <div class="vwap-charts-grid">
+                <section class="vwap-chart-card">
+                    <h3>Prezzo di chiusura e VWAP stimato</h3>
+                    <div class="vwap-chart-area"><canvas id="vwapPriceChart" aria-label="Grafico prezzo e VWAP"></canvas></div>
+                </section>
+                <section class="vwap-chart-card">
+                    <h3>Volume per candela</h3>
+                    <div class="vwap-chart-area"><canvas id="vwapVolumeChart" aria-label="Grafico dei volumi"></canvas></div>
+                </section>
+                <section class="vwap-chart-card">
+                    <h3>Equity curve del backtest (R cumulati)</h3>
+                    <div class="vwap-chart-area"><canvas id="vwapEquityChart" aria-label="Equity curve del backtest"></canvas></div>
+                </section>
+                <section class="vwap-chart-card">
+                    <h3>Drawdown del backtest (R)</h3>
+                    <div class="vwap-chart-area"><canvas id="vwapDrawdownChart" aria-label="Drawdown del backtest"></canvas></div>
+                </section>
             </div>
         </div>
     </div>
@@ -1716,6 +1756,10 @@ function switchView(viewId, element) {
         clearInterval(newsRefreshInterval);
         newsRefreshInterval = null;
     }
+    if (viewId !== 'dashboard' && vwapRealtimeInterval) {
+        clearInterval(vwapRealtimeInterval);
+        vwapRealtimeInterval = null;
+    }
 
     document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
@@ -1729,6 +1773,7 @@ function switchView(viewId, element) {
     if (viewId === 'aicoach') caricaStatoAICoach();
     if (viewId === 'glossario') caricaGlossario();
     if (viewId === 'portafoglio') ricalcolaPortafoglio();
+    if (viewId === 'dashboard') avviaMonitorVWAP();
     if (viewId === 'grafici') { caricaGraficoLive(); caricaWatchlist(); }
     if (viewId === 'volumetrica') caricaVolumetrica();
     if (viewId === 'news') { caricaNewsECalendario(); controllaStatoPushNotifiche(); }
@@ -1743,42 +1788,6 @@ function toggleSidebar(forza) {
     sidebar.classList.toggle('open', apri);
     overlay.classList.toggle('open', apri);
 }
-
-/* ============ DATI REALI EMBEDDED (dai CSV forniti) ============ */
-const ULTIMO_CAMPIONE_MERCATO = { prezzo: 63110.34, volume: 46661632, vwap: 63253.32 };
-
-const OPTIMIZER_MULTIASSET = [
-["BTC-USD",0.5,1.5,811,432,379,53.27,1.71,0.332],["BTC-USD",0.5,2.0,787,370,417,47.01,1.775,0.41],
-["BTC-USD",0.5,2.5,754,311,443,41.25,1.755,0.444],["BTC-USD",0.5,3.0,719,261,458,36.3,1.71,0.452],
-["BTC-USD",1.0,1.5,792,416,376,52.53,1.66,0.313],["BTC-USD",1.0,2.0,768,357,411,46.48,1.737,0.395],
-["BTC-USD",1.0,2.5,735,298,437,40.54,1.705,0.419],["BTC-USD",1.0,3.0,701,249,452,35.52,1.653,0.421],
-["BTC-USD",1.5,1.5,776,410,366,52.84,1.68,0.321],["BTC-USD",1.5,2.0,752,351,401,46.68,1.751,0.4],
-["BTC-USD",1.5,2.5,719,292,427,40.61,1.71,0.421],["BTC-USD",1.5,3.0,685,243,442,35.47,1.649,0.419],
-["BTC-USD",2.0,1.5,764,404,360,52.88,1.683,0.322],["BTC-USD",2.0,2.0,740,345,395,46.62,1.747,0.399],
-["BTC-USD",2.0,2.5,707,287,420,40.59,1.708,0.421],["BTC-USD",2.0,3.0,673,238,435,35.36,1.641,0.415],
-["BTC-USD",2.5,1.5,752,397,355,52.79,1.677,0.32],["BTC-USD",2.5,2.0,728,339,389,46.57,1.743,0.397],
-["BTC-USD",2.5,2.5,695,281,414,40.43,1.697,0.415],["BTC-USD",2.5,3.0,661,232,429,35.1,1.622,0.404],
-["ETH-USD",0.5,1.5,938,493,445,52.56,1.662,0.314],["ETH-USD",0.5,2.0,930,437,493,46.99,1.773,0.41],
-["ETH-USD",0.5,2.5,924,393,531,42.53,1.85,0.489],["ETH-USD",0.5,3.0,907,351,556,38.7,1.894,0.548],
-["ETH-USD",1.0,1.5,914,480,434,52.52,1.659,0.313],["ETH-USD",1.0,2.0,906,425,481,46.91,1.767,0.407],
-["ETH-USD",1.0,2.5,901,382,519,42.4,1.84,0.484],["ETH-USD",1.0,3.0,884,341,543,38.57,1.884,0.543],
-["ETH-USD",1.5,1.5,898,474,424,52.78,1.677,0.32],["ETH-USD",1.5,2.0,890,421,469,47.3,1.795,0.419],
-["ETH-USD",1.5,2.5,885,378,507,42.71,1.864,0.495],["ETH-USD",1.5,3.0,869,339,530,39.01,1.919,0.56],
-["ETH-USD",2.0,1.5,865,461,404,53.29,1.712,0.332],["ETH-USD",2.0,2.0,858,410,448,47.79,1.83,0.434],
-["ETH-USD",2.0,2.5,853,367,486,43.02,1.888,0.506],["ETH-USD",2.0,3.0,838,329,509,39.26,1.939,0.57],
-["ETH-USD",2.5,1.5,837,447,390,53.41,1.719,0.335],["ETH-USD",2.5,2.0,830,396,434,47.71,1.825,0.431],
-["ETH-USD",2.5,2.5,825,353,472,42.79,1.87,0.498],["ETH-USD",2.5,3.0,811,316,495,38.96,1.915,0.559],
-["^GSPC",0.5,1.5,195,64,131,32.82,0.733,-0.179],["^GSPC",0.5,2.0,189,52,137,27.51,0.759,-0.175],
-["^GSPC",0.5,2.5,167,29,138,17.37,0.525,-0.392],["^GSPC",0.5,3.0,160,21,139,13.12,0.453,-0.475],
-["^GSPC",1.0,1.5,191,63,128,32.98,0.738,-0.175],["^GSPC",1.0,2.0,186,52,134,27.96,0.776,-0.161],
-["^GSPC",1.0,2.5,164,29,135,17.68,0.537,-0.381],["^GSPC",1.0,3.0,157,21,136,13.38,0.463,-0.465],
-["^GSPC",1.5,1.5,190,62,128,32.63,0.727,-0.184],["^GSPC",1.5,2.0,185,51,134,27.57,0.761,-0.173],
-["^GSPC",1.5,2.5,163,28,135,17.18,0.519,-0.399],["^GSPC",1.5,3.0,156,20,136,12.82,0.441,-0.487],
-["^GSPC",2.0,1.5,189,62,127,32.8,0.732,-0.18],["^GSPC",2.0,2.0,184,51,133,27.72,0.767,-0.168],
-["^GSPC",2.0,2.5,162,28,134,17.28,0.522,-0.395],["^GSPC",2.0,3.0,155,20,135,12.9,0.444,-0.484],
-["^GSPC",2.5,1.5,187,61,126,32.62,0.726,-0.184],["^GSPC",2.5,2.0,182,50,132,27.47,0.758,-0.176],
-["^GSPC",2.5,2.5,160,27,133,16.88,0.508,-0.409],["^GSPC",2.5,3.0,153,19,134,12.42,0.425,-0.503]
-];
 
 const GLOSSARIO_FALLBACK = [
     {
@@ -1910,7 +1919,7 @@ function leggiParametri() {
 }
 
 function rangePerTimeframe(tf) {
-    const mappa = { "1m":"1d","2m":"5d","5m":"5d","15m":"5d","30m":"1mo","60m":"1mo","1h":"1mo","90m":"1mo","1d":"6mo","5d":"1y","1wk":"2y","1mo":"5y","3mo":"5y" };
+    const mappa = { "1m":"1d","2m":"5d","5m":"5d","15m":"5d","30m":"1mo","60m":"3mo","1h":"3mo","90m":"1mo","1d":"6mo","5d":"1y","1wk":"2y","1mo":"5y","3mo":"5y" };
     return mappa[tf] || "1mo";
 }
 
@@ -1925,62 +1934,499 @@ async function ottieniUltimoPrezzo(ticker) {
     return closes[closes.length - 1];
 }
 
-async function tentaDatiLive(ticker, tf) {
-    const range = rangePerTimeframe(tf);
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=${encodeURIComponent(tf)}&range=${range}`;
-    const resp = await fetchConFallback('yahoo', { ticker, interval: tf, range: range }, url);
-    const json = await resp.json();
-    const result = json && json.chart && json.chart.result ? json.chart.result[0] : null;
-    if (!result) throw new Error((json.chart.error && json.chart.error.description) || "Ticker non trovato");
+let vwapRealtimeInterval = null;
+let vwapRequestSequence = 0;
+let vwapListenersAttached = false;
+let vwapSeriesCache = null;
+let vwapCurrentSeries = null;
+let vwapBacktestConfigKey = null;
+const vwapChartInstances = {};
 
-    const rawCloses = result.indicators.quote[0].close;
-    const rawHighs = result.indicators.quote[0].high;
-    const rawLows = result.indicators.quote[0].low;
-    const rawVolumes = result.indicators.quote[0].volume;
-    const rawTimestamps = result.timestamp || [];
+function chiaveGiornoSessione(timestamp, timezone) {
+    const date = new Date(timestamp * 1000);
+    try {
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit'
+        }).formatToParts(date);
+        const campi = Object.fromEntries(parts.map(part => [part.type, part.value]));
+        return `${campi.year}-${campi.month}-${campi.day}`;
+    } catch (_) {
+        return date.toISOString().slice(0, 10);
+    }
+}
 
-    // FIX 5: VWAP ancorato alla sessione odierna (mezzanotte UTC)
-    const mezzanotteUTC = new Date(); mezzanotteUTC.setUTCHours(0,0,0,0);
-    const startSessione = mezzanotteUTC.getTime() / 1000;
+function formattaOraMercato(timestamp, timezone) {
+    try {
+        return new Intl.DateTimeFormat('it-IT', {
+            timeZone: timezone, dateStyle: 'short', timeStyle: 'medium'
+        }).format(new Date(timestamp * 1000));
+    } catch (_) {
+        return new Date(timestamp * 1000).toLocaleString('it-IT');
+    }
+}
 
-    // Per timeframe intraday (1m,2m,5m,15m,30m,60m,90m,1h) usa solo candele di oggi
-    const intradayTF = ['1m','2m','5m','15m','30m','60m','90m','1h'];
-    const usaFiltroSessione = intradayTF.includes(tf) && rawTimestamps.length > 0;
+function aggiungiVWAPDiSessione(candles, timezone, timeframe) {
+    let giornoCorrente = null;
+    let sommaPrezzoVolume = 0;
+    let sommaVolume = 0;
+    const vwapSuInteroRange = ['5d', '1wk', '1mo', '3mo'].includes(timeframe);
+    return candles.map(candle => {
+        const giorno = chiaveGiornoSessione(candle.time, timezone);
+        const ancora = vwapSuInteroRange ? 'range' : giorno;
+        if (ancora !== giornoCorrente) {
+            giornoCorrente = ancora;
+            sommaPrezzoVolume = 0;
+            sommaVolume = 0;
+        }
+        if (candle.volume > 0) {
+            sommaPrezzoVolume += ((candle.high + candle.low + candle.close) / 3) * candle.volume;
+            sommaVolume += candle.volume;
+        }
+        return { ...candle, session: giorno, vwap: sommaVolume > 0 ? sommaPrezzoVolume / sommaVolume : null };
+    });
+}
 
-    const closes = [], highs = [], lows = [], volumes = [];
-    for (let i = 0; i < rawCloses.length; i++) {
-        if (rawCloses[i] == null) continue;
-        if (usaFiltroSessione && rawTimestamps[i] < startSessione) continue;
-        closes.push(rawCloses[i]);
-        highs.push(rawHighs[i] ?? rawCloses[i]);
-        lows.push(rawLows[i] ?? rawCloses[i]);
-        volumes.push(rawVolumes[i] || 1);
+async function fetchYahooChart(ticker, interval, range) {
+    const params = new URLSearchParams({ tipo: 'yahoo', ticker, interval, range });
+    const edgeUrl = `${SUPABASE_URL}/functions/v1/external-data?${params}`;
+    let erroreEdge;
+    try {
+        const response = await fetch(edgeUrl, {
+            cache: 'no-store',
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+        });
+        if (!response.ok) throw new Error(`Edge Function HTTP ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        erroreEdge = error;
     }
 
-    // Fallback: se il filtro sessione svuota l'array (mercato non ancora aperto) usa tutti
-    if (closes.length === 0) {
-        for (let i = 0; i < rawCloses.length; i++) {
-            if (rawCloses[i] == null) continue;
-            closes.push(rawCloses[i]);
-            highs.push(rawHighs[i] ?? rawCloses[i]);
-            lows.push(rawLows[i] ?? rawCloses[i]);
-            volumes.push(rawVolumes[i] || 1);
+    const directUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=${encodeURIComponent(interval)}&range=${encodeURIComponent(range)}`;
+    try {
+        const response = await fetch(directUrl, { mode: 'cors', cache: 'no-store' });
+        if (!response.ok) throw new Error(`Yahoo Finance HTTP ${response.status}`);
+        return await response.json();
+    } catch (erroreDiretto) {
+        console.warn('[Yahoo Finance] Recupero storico fallito:', erroreEdge?.message, erroreDiretto.message);
+        throw new Error('Dati storici non raggiungibili. Verifica la Edge Function Supabase external-data e riprova.');
+    }
+}
+
+async function ottieniSerieMercato(ticker, tf, { force = false } = {}) {
+    const intervalliSupportati = new Set(['1m', '2m', '5m', '15m', '30m', '60m', '1h', '90m', '1d', '5d', '1wk', '1mo', '3mo']);
+    if (!intervalliSupportati.has(tf)) {
+        throw new Error('Intervallo non supportato da Yahoo Finance. Scegli un timeframe dall’elenco o inserisci un intervallo valido, ad esempio 15m, 1h o 1d.');
+    }
+    const range = rangePerTimeframe(tf);
+    const cacheKey = `${ticker}|${tf}|${range}`;
+    if (!force && vwapSeriesCache && vwapSeriesCache.key === cacheKey && Date.now() - vwapSeriesCache.fetchedAt < 45000) {
+        return vwapSeriesCache.data;
+    }
+
+    const json = await fetchYahooChart(ticker, tf, range);
+    const result = json?.chart?.result?.[0];
+    if (!result) throw new Error(json?.chart?.error?.description || 'Ticker o timeframe non disponibile su Yahoo Finance.');
+
+    const quote = result.indicators?.quote?.[0];
+    if (!quote || !Array.isArray(result.timestamp)) throw new Error('La fonte non ha restituito candele OHLCV valide.');
+    const timezone = result.meta?.exchangeTimezoneName || 'UTC';
+    const candles = [];
+    for (let i = 0; i < result.timestamp.length; i++) {
+        const close = quote.close?.[i];
+        const high = quote.high?.[i];
+        const low = quote.low?.[i];
+        if (![close, high, low].every(value => value != null && Number.isFinite(Number(value)))) continue;
+        candles.push({
+            time: Number(result.timestamp[i]),
+            open: quote.open?.[i] != null && Number.isFinite(Number(quote.open[i])) ? Number(quote.open[i]) : Number(close),
+            high: Number(high),
+            low: Number(low),
+            close: Number(close),
+            volume: quote.volume?.[i] != null && Number.isFinite(Number(quote.volume[i])) ? Math.max(0, Number(quote.volume[i])) : 0
+        });
+    }
+    if (!candles.length) throw new Error('Yahoo Finance non ha restituito candele valide per questo ticker e timeframe.');
+
+    const ritardoDichiarato = result.meta?.exchangeDataDelayedBy;
+    const data = {
+        ticker,
+        timeframe: tf,
+        candles: aggiungiVWAPDiSessione(candles, timezone, tf),
+        meta: {
+            timezone,
+            currency: result.meta?.currency || '',
+            exchange: result.meta?.exchangeName || result.meta?.fullExchangeName || '',
+            delaySeconds: ritardoDichiarato != null && Number.isFinite(Number(ritardoDichiarato))
+                ? Number(ritardoDichiarato) : null
+        },
+        fetchedAt: Date.now()
+    };
+    vwapSeriesCache = { key: cacheKey, fetchedAt: data.fetchedAt, data };
+    return data;
+}
+
+function formattaNumeroMercato(value, options = {}) {
+    return Number(value).toLocaleString('it-IT', { maximumFractionDigits: 2, ...options });
+}
+
+function renderVwapChart(id, type, labels, datasets, yTickFormatter) {
+    if (typeof Chart === 'undefined') throw new Error('Libreria grafici non disponibile. Ricarica la pagina e riprova.');
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: {
+            legend: { labels: { color: '#929aa5' } },
+            tooltip: {
+                callbacks: {
+                    label: context => `${context.dataset.label}: ${context.parsed.y == null ? 'N/D' : formattaNumeroMercato(context.parsed.y)}`
+                }
+            }
+        },
+        scales: {
+            x: { ticks: { color: '#929aa5', maxTicksLimit: 8, maxRotation: 0 }, grid: { color: 'rgba(255,255,255,0.04)' } },
+            y: {
+                ticks: { color: '#929aa5', callback: yTickFormatter || (value => formattaNumeroMercato(value)) },
+                grid: { color: 'rgba(255,255,255,0.06)' }
+            }
+        }
+    };
+    if (vwapChartInstances[id]) {
+        vwapChartInstances[id].data = { labels, datasets };
+        vwapChartInstances[id].update('none');
+        return;
+    }
+    vwapChartInstances[id] = new Chart(canvas.getContext('2d'), { type, data: { labels, datasets }, options });
+}
+
+function chiaveConfigurazioneBacktest() {
+    const { ticker, tf, soglia, rr, sessione, commissione } = leggiParametri();
+    return [ticker, tf, soglia, rr, sessione, commissione].join('|');
+}
+
+function svuotaGraficiBacktest() {
+    ['vwapEquityChart', 'vwapDrawdownChart'].forEach(id => {
+        const chart = vwapChartInstances[id];
+        if (chart) {
+            chart.data.labels = [];
+            chart.data.datasets.forEach(dataset => { dataset.data = []; });
+            chart.update('none');
+        }
+    });
+    vwapBacktestConfigKey = null;
+}
+
+function svuotaGraficoMercato() {
+    ['vwapPriceChart', 'vwapVolumeChart'].forEach(id => {
+        const chart = vwapChartInstances[id];
+        if (chart) {
+            chart.data.labels = [];
+            chart.data.datasets.forEach(dataset => { dataset.data = []; });
+            chart.update('none');
+        }
+    });
+}
+
+function renderVwapMarketData(series) {
+    const { candles, ticker, timeframe, meta } = series;
+    if (vwapCurrentSeries && (vwapCurrentSeries.ticker !== ticker || vwapCurrentSeries.timeframe !== timeframe)) {
+        svuotaGraficoMercato();
+        svuotaGraficiBacktest();
+    }
+    vwapCurrentSeries = series;
+    const labels = candles.map(candle => formattaOraMercato(candle.time, meta.timezone));
+    renderVwapChart('vwapPriceChart', 'line', labels, [
+        { label: 'Prezzo close', data: candles.map(candle => candle.close), borderColor: '#00d2ff', backgroundColor: 'rgba(0,210,255,0.08)', borderWidth: 2, pointRadius: 0, tension: 0.15 },
+        { label: ['5d', '1wk', '1mo', '3mo'].includes(timeframe) ? 'VWAP cumulativo stimato (HLC3)' : 'VWAP di sessione stimato (HLC3)', data: candles.map(candle => candle.vwap), borderColor: '#00ffa3', borderWidth: 2, pointRadius: 0, tension: 0.1, spanGaps: false }
+    ]);
+    renderVwapChart('vwapVolumeChart', 'bar', labels, [{
+        label: 'Volume',
+        data: candles.map(candle => candle.volume || null),
+        backgroundColor: candles.map(candle => candle.close >= candle.open ? 'rgba(0,255,163,0.55)' : 'rgba(255,77,77,0.55)'),
+        borderWidth: 0
+    }], value => Number(value).toLocaleString('it-IT', { notation: 'compact', maximumFractionDigits: 1 }));
+
+    const last = candles[candles.length - 1];
+    const priceElement = document.getElementById('kpiPrezzo');
+    try {
+        priceElement.innerText = meta.currency
+            ? new Intl.NumberFormat('it-IT', { style: 'currency', currency: meta.currency }).format(last.close)
+            : formattaNumeroMercato(last.close);
+    } catch (_) {
+        priceElement.innerText = formattaNumeroMercato(last.close);
+    }
+    const deviationElement = document.getElementById('kpiDeviazione');
+    if (last.vwap != null && Number.isFinite(last.vwap)) {
+        const deviation = ((last.close - last.vwap) / last.vwap) * 100;
+        deviationElement.innerText = `${deviation >= 0 ? '+' : ''}${deviation.toFixed(2)}%`;
+        deviationElement.style.color = deviation < 0 ? '#ff4d4d' : '#00ffa3';
+    } else {
+        deviationElement.innerText = 'N/D';
+        deviationElement.style.color = 'var(--text-muted)';
+    }
+    document.getElementById('kpiVolume').innerText = last.volume > 0
+        ? last.volume.toLocaleString('it-IT', { notation: 'compact', maximumFractionDigits: 2 })
+        : 'N/D';
+
+    const delay = meta.delaySeconds == null ? 'ritardo non comunicato' : `ritardo riportato da Yahoo ${meta.delaySeconds}s`;
+    const status = document.getElementById('vwapDataStatus');
+    status.innerText = `Fonte: Yahoo Finance · ${ticker} ${timeframe}${meta.exchange ? ` · ${meta.exchange}` : ''} · ultima candela ${formattaOraMercato(last.time, meta.timezone)} · ricevuta ${new Date(series.fetchedAt).toLocaleTimeString('it-IT')} · ${delay}. VWAP OHLCV stimato; feed non streaming e non garantito in tempo reale.`;
+    if (vwapBacktestConfigKey && vwapBacktestConfigKey !== chiaveConfigurazioneBacktest()) svuotaGraficiBacktest();
+}
+
+async function aggiornaGraficiVWAP({ force = false } = {}) {
+    const requestId = ++vwapRequestSequence;
+    const { ticker, tf } = leggiParametri();
+    const status = document.getElementById('vwapDataStatus');
+    if (vwapCurrentSeries && (vwapCurrentSeries.ticker !== ticker || vwapCurrentSeries.timeframe !== tf)) {
+        svuotaGraficoMercato();
+        svuotaGraficiBacktest();
+        vwapCurrentSeries = null;
+    }
+    status.innerText = `Caricamento delle candele OHLCV per ${ticker} (${tf})...`;
+    try {
+        const series = await ottieniSerieMercato(ticker, tf, { force });
+        if (requestId !== vwapRequestSequence || !document.getElementById('view-dashboard').classList.contains('active')) return;
+        renderVwapMarketData(series);
+    } catch (error) {
+        if (requestId === vwapRequestSequence) {
+            status.innerText = `Aggiornamento dati non riuscito: ${error.message}`;
+            console.error('[VWAP] Aggiornamento grafici fallito:', error);
         }
     }
+}
 
-    if (closes.length === 0) throw new Error("Nessuna candela valida restituita");
-
-    let cumPV = 0, cumV = 0;
-    for (let i = 0; i < closes.length; i++) {
-        const tipico = (highs[i] + lows[i] + closes[i]) / 3;
-        const v = volumes[i] || 1;
-        cumPV += tipico * v;
-        cumV += v;
+function avviaMonitorVWAP() {
+    if (vwapRealtimeInterval) clearInterval(vwapRealtimeInterval);
+    if (!vwapListenersAttached) {
+        ['ticker', 'timeframe', 'timeframeCustom', 'sessionFilter', 'costiOperativi', 'soglia', 'rr'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => {
+                if (vwapBacktestConfigKey && vwapBacktestConfigKey !== chiaveConfigurazioneBacktest()) svuotaGraficiBacktest();
+                aggiornaGraficiVWAP({ force: true });
+            });
+        });
+        vwapListenersAttached = true;
     }
-    const vwap = cumPV / cumV;
-    const prezzo = closes[closes.length - 1];
-    const volume = volumes[volumes.length - 1] || 0;
-    return { prezzo, vwap, volume, fonte: "LIVE — Yahoo Finance" };
+    aggiornaGraficiVWAP({ force: true });
+    vwapRealtimeInterval = setInterval(() => {
+        if (!document.hidden) aggiornaGraficiVWAP({ force: true });
+    }, 60000);
+}
+
+async function tentaDatiLive(ticker, tf) {
+    const serie = await ottieniSerieMercato(ticker, tf);
+    const ultimaCandela = serie.candles[serie.candles.length - 1];
+    if (ultimaCandela.vwap == null || !Number.isFinite(ultimaCandela.vwap)) {
+        throw new Error('La fonte non fornisce volume sufficiente per calcolare il VWAP di questo asset.');
+    }
+    return {
+        prezzo: ultimaCandela.close,
+        vwap: ultimaCandela.vwap,
+        volume: ultimaCandela.volume,
+        fonte: `Yahoo Finance · ultima candela ${formattaOraMercato(ultimaCandela.time, serie.meta.timezone)} (ritardo variabile)`,
+        serie
+    };
+}
+
+function minutiNelFuso(timestamp, timezone) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).formatToParts(new Date(timestamp * 1000));
+    const campi = Object.fromEntries(parts.map(part => [part.type, part.value]));
+    return Number(campi.hour) * 60 + Number(campi.minute);
+}
+
+function candelaNellaSessione(timestamp, sessione) {
+    if (sessione === 'ALL') return true;
+    const sessioni = {
+        TOKYO: { timezone: 'Asia/Tokyo', start: 0, end: 8 * 60 },
+        LONDON: { timezone: 'Europe/London', start: 7 * 60, end: 15 * 60 + 30 },
+        NEW_YORK: { timezone: 'America/New_York', start: 9 * 60 + 30, end: 16 * 60 },
+        LONDON_NY_OVERLAP: { timezone: 'America/New_York', start: 8 * 60, end: 10 * 60 }
+    };
+    const finestra = sessioni[sessione];
+    if (!finestra) return true;
+    try {
+        const minuti = minutiNelFuso(timestamp, finestra.timezone);
+        return minuti >= finestra.start && minuti < finestra.end;
+    } catch (_) {
+        return false;
+    }
+}
+
+function calcolaBacktestVWAP(candles, { soglia, rr, sessione, commissione }) {
+    if (!(soglia > 0) || !(rr > 0)) throw new Error('Soglia e Risk/Reward devono essere maggiori di zero.');
+    if (!candles.some(candle => candle.volume > 0 && Number.isFinite(candle.vwap))) {
+        throw new Error('La fonte non fornisce volumi validi per calcolare VWAP e backtest.');
+    }
+
+    const trades = [];
+    let posizione = null;
+    const chiudiPosizione = (candela, prezzoUscita, motivo) => {
+        const rendimentoLordoR = posizione.direzione * (prezzoUscita - posizione.ingresso) / posizione.rischioPrezzo;
+        const costoR = (commissione / 100) * (posizione.ingresso + prezzoUscita) / posizione.rischioPrezzo;
+        trades.push({
+            entryTime: posizione.entryTime,
+            exitTime: candela.time,
+            netR: rendimentoLordoR - costoR,
+            reason: motivo
+        });
+        posizione = null;
+    };
+
+    for (let i = 0; i < candles.length; i++) {
+        const candela = candles[i];
+        if (posizione && candela.session !== posizione.session) {
+            chiudiPosizione(candles[i - 1], candles[i - 1].close, 'fine sessione');
+        }
+
+        if (posizione) {
+            const stopToccato = posizione.direzione === 1
+                ? candela.low <= posizione.stop : candela.high >= posizione.stop;
+            const targetToccato = posizione.direzione === 1
+                ? candela.high >= posizione.target : candela.low <= posizione.target;
+            if (stopToccato) {
+                const prezzoStop = posizione.direzione === 1
+                    ? Math.min(candela.open, posizione.stop) : Math.max(candela.open, posizione.stop);
+                chiudiPosizione(candela, prezzoStop, targetToccato ? 'stop conservativo (stop e target nella stessa candela)' : 'stop');
+            } else if (targetToccato) {
+                const prezzoTarget = posizione.direzione === 1
+                    ? Math.max(candela.open, posizione.target) : Math.min(candela.open, posizione.target);
+                chiudiPosizione(candela, prezzoTarget, 'target VWAP');
+            }
+            continue;
+        }
+
+        if (i === candles.length - 1 || candela.vwap == null || candela.volume <= 0 || !candelaNellaSessione(candela.time, sessione)) continue;
+        const deviazione = ((candela.close - candela.vwap) / candela.vwap) * 100;
+        const direzione = deviazione <= -soglia ? 1 : (deviazione >= soglia ? -1 : 0);
+        if (!direzione) continue;
+
+        const rischioPrezzo = Math.abs(candela.close - candela.vwap) / rr;
+        if (!Number.isFinite(rischioPrezzo) || rischioPrezzo <= 0) continue;
+        posizione = {
+            direzione,
+            ingresso: candela.close,
+            target: candela.vwap,
+            rischioPrezzo,
+            stop: candela.close - direzione * rischioPrezzo,
+            entryTime: candela.time,
+            session: candela.session
+        };
+    }
+
+    if (posizione && candles.length) {
+        const ultima = candles[candles.length - 1];
+        chiudiPosizione(ultima, ultima.close, 'fine storico');
+    }
+
+    let equityR = 0;
+    let piccoR = 0;
+    let maxDrawdownR = 0;
+    const curva = candles.length ? [{ time: candles[0].time, equityR: 0, drawdownR: 0 }] : [];
+    for (const trade of trades) {
+        equityR += trade.netR;
+        piccoR = Math.max(piccoR, equityR);
+        const drawdownR = equityR - piccoR;
+        maxDrawdownR = Math.min(maxDrawdownR, drawdownR);
+        curva.push({ time: trade.exitTime, equityR, drawdownR });
+    }
+    const vincite = trades.filter(trade => trade.netR > 0);
+    const perdite = trades.filter(trade => trade.netR < 0);
+    const profittiR = vincite.reduce((sum, trade) => sum + trade.netR, 0);
+    const perditeR = Math.abs(perdite.reduce((sum, trade) => sum + trade.netR, 0));
+    return {
+        trades,
+        curva,
+        winRate: trades.length ? vincite.length / trades.length * 100 : 0,
+        profitFactor: perditeR ? profittiR / perditeR : (profittiR ? Infinity : 0),
+        expectancyR: trades.length ? trades.reduce((sum, trade) => sum + trade.netR, 0) / trades.length : 0,
+        maxDrawdownR
+    };
+}
+
+function renderGraficiBacktest(series, backtest) {
+    const labels = backtest.curva.map(point => formattaOraMercato(point.time, series.meta.timezone));
+    renderVwapChart('vwapEquityChart', 'line', labels, [{
+        label: 'Equity cumulata (R)',
+        data: backtest.curva.map(point => point.equityR),
+        borderColor: '#00ffa3', backgroundColor: 'rgba(0,255,163,0.10)',
+        fill: true, borderWidth: 2, pointRadius: 0, tension: 0.15
+    }]);
+    renderVwapChart('vwapDrawdownChart', 'line', labels, [{
+        label: 'Drawdown (R)',
+        data: backtest.curva.map(point => point.drawdownR),
+        borderColor: '#ff4d4d', backgroundColor: 'rgba(255,77,77,0.10)',
+        fill: true, borderWidth: 2, pointRadius: 0, tension: 0.1
+    }]);
+}
+
+async function eseguiBacktestDaDati(ticker, tf, soglia, rr) {
+    const consoleBox = document.getElementById('outputConsole');
+    consoleBox.innerHTML = `<p class="placeholder-text">Recupero candele storiche reali per ${escapeHtml(ticker)}...</p>`;
+    let series;
+    try {
+        series = await ottieniSerieMercato(ticker, tf);
+        renderVwapMarketData(series);
+    } catch (error) {
+        consoleBox.innerHTML = `<div class="report-item danger">Backtest non eseguito: ${escapeHtml(error.message)}</div>`;
+        return;
+    }
+
+    const { sessione, commissione } = leggiParametri();
+    let backtest;
+    const candeleBacktest = series.candles.slice(0, -1);
+    if (candeleBacktest.length < 2) {
+        consoleBox.innerHTML = '<div class="report-item danger">Backtest non eseguito: servono almeno due candele storiche completate.</div>';
+        return;
+    }
+    try {
+        backtest = calcolaBacktestVWAP(candeleBacktest, { soglia, rr, sessione, commissione });
+    } catch (error) {
+        consoleBox.innerHTML = `<div class="report-item danger">Backtest non eseguito: ${escapeHtml(error.message)}</div>`;
+        return;
+    }
+    vwapCurrentSeries = series;
+    vwapBacktestConfigKey = chiaveConfigurazioneBacktest();
+    renderGraficiBacktest(series, backtest);
+
+    const tradeCount = backtest.trades.length;
+    const profitFactor = Number.isFinite(backtest.profitFactor) ? backtest.profitFactor.toFixed(2) : '∞';
+    const sessionLabel = {
+        ALL: 'Tutte le sessioni',
+        TOKYO: 'Tokyo (fuso Asia/Tokyo)',
+        LONDON: 'Londra (fuso Europe/London)',
+        NEW_YORK: 'New York (fuso America/New_York)',
+        LONDON_NY_OVERLAP: 'Overlap Londra-New York'
+    }[sessione] || 'Tutte le sessioni';
+    const first = candeleBacktest[0];
+    const last = candeleBacktest[candeleBacktest.length - 1];
+    const sourceInfo = `${candeleBacktest.length} candele complete · ${formattaOraMercato(first.time, series.meta.timezone)} - ${formattaOraMercato(last.time, series.meta.timezone)}`;
+
+    consoleBox.innerHTML = `
+        <div class="report-section">
+            <div class="report-title">Backtest VWAP su candele storiche</div>
+            <div class="report-item" style="border-left-color:#00d2ff;">
+                Fonte: Yahoo Finance · ${escapeHtml(sourceInfo)} · sessione: ${escapeHtml(sessionLabel)} · costi: ${commissione}% per lato.
+            </div>
+            ${tradeCount ? `
+                <div class="dashboard-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin:12px 0;">
+                    <div class="kpi-card"><div class="kpi-label">Trade chiusi</div><div class="kpi-value">${tradeCount}</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Win rate osservato</div><div class="kpi-value">${backtest.winRate.toFixed(1)}%</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Profit factor netto</div><div class="kpi-value">${profitFactor}</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Expectancy netta</div><div class="kpi-value">${backtest.expectancyR >= 0 ? '+' : ''}${backtest.expectancyR.toFixed(2)}R</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Max drawdown osservato</div><div class="kpi-value">${backtest.maxDrawdownR.toFixed(2)}R</div></div>
+                </div>` : `<div class="report-item">Nessun trade chiuso con questi parametri nel periodo disponibile. Prova un timeframe o una soglia diversa.</div>`}
+            <div class="report-item">
+                Simulazione: ultima candela esclusa perché potenzialmente incompleta; VWAP stimato con HLC3 e volume per candela; ingresso alla chiusura del segnale, target al VWAP congelato all'ingresso, stop dimensionato sul rapporto R/R. Se stop e target sono toccati nella stessa candela, viene conteggiato prima lo stop. Le commissioni sono applicate a entrata e uscita.
+            </div>
+            <div class="report-item warning">
+                Dati Yahoo Finance con ritardo e copertura variabili; slippage reale, spread, liquidità, esecuzione e survivorship bias non sono modellati. Il backtest è descrittivo e non dimostra robustezza né risultati futuri.
+            </div>
+        </div>`;
 }
 
 async function lanciaAzione(tipo) {
@@ -1994,53 +2440,47 @@ async function lanciaAzione(tipo) {
         try {
             campione = await tentaDatiLive(ticker, tf);
         } catch (e) {
-            if (ticker === 'BTC-USD') {
-                campione = Object.assign({}, ULTIMO_CAMPIONE_MERCATO, { fonte: "CACHE LOCALE (dati_mercato.csv, BTC-USD) — live non raggiungibile: " + e.message });
-            } else {
-                consoleBox.innerHTML = `
-                    <div class="report-section">
-                        <div class="report-title">❌ RECUPERO DATI FALLITO</div>
-                        <div class="report-item danger">
-                            Non è stato possibile recuperare i dati live da Yahoo Finance per <strong>${escapeHtml(ticker)}</strong>. <br>
-                            Dettaglio errore: <code>${escapeHtml(e.message)}</code>
-                        </div>
-                        <div class="report-item">
-                            Verifica che il ticker sia scritto correttamente (es. AAPL, BTC-USD, EURUSD=X) e che la connessione sia attiva, quindi riprova.
-                        </div>
-                    </div>`;
-                return;
-            }
+            consoleBox.innerHTML = `
+                <div class="report-section">
+                    <div class="report-title">❌ RECUPERO DATI FALLITO</div>
+                    <div class="report-item danger">
+                        Non è stato possibile recuperare dati OHLCV per <strong>${escapeHtml(ticker)}</strong>.
+                        Dettaglio: <code>${escapeHtml(e.message)}</code>
+                    </div>
+                    <div class="report-item">
+                        Verifica il ticker, la disponibilità dei volumi e la connessione alla fonte dati, quindi riprova.
+                    </div>
+                </div>`;
+            return;
         }
 
         const prezzo = campione.prezzo, vwap = campione.vwap, volume = campione.volume, fonte = campione.fonte;
+        renderVwapMarketData(campione.serie);
         const deviazione = ((prezzo - vwap) / vwap) * 100;
-
-        document.getElementById('kpiPrezzo').innerText = "$" + prezzo.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        document.getElementById('kpiDeviazione').innerText = (deviazione >= 0 ? "+" : "") + deviazione.toFixed(2) + "%";
-        document.getElementById('kpiDeviazione').style.color = deviazione < 0 ? "#ff4d4d" : "#00ffa3";
-        const kpiVol = document.getElementById('kpiVolume');
-        const volumeAnomalo = volume > 100000000;
-        kpiVol.innerText = volumeAnomalo ? "ANOMALO" : "REGOLARE";
-        kpiVol.className = volumeAnomalo ? "kpi-value anomaly" : "kpi-value";
+        const volumePrecedente = campione.serie.candles.slice(-21, -1).map(c => c.volume).filter(v => v > 0);
+        const mediaVolume = volumePrecedente.length
+            ? volumePrecedente.reduce((sum, value) => sum + value, 0) / volumePrecedente.length : 0;
+        const confrontoVolume = mediaVolume > 0
+            ? `${(volume / mediaVolume).toFixed(2)}x la media delle ${volumePrecedente.length} candele precedenti`
+            : 'media non disponibile per questo intervallo';
 
         const direzione = deviazione < 0 ? "sotto" : "sopra";
-        const bias = deviazione < 0 ? "un ritorno alla media equa del VWAP (Mean Reversion Long)" : "una compressione verso il VWAP (Mean Reversion Short)";
 
         consoleBox.innerHTML = `
             <div class="report-section">
-                <div class="report-title">🛑 VALIDAZIONE STRATEGICA MEAN REVERSION (VWAP)</div>
+                <div class="report-title">📊 LETTURA TECNICA VWAP</div>
                 <div class="report-item" style="border-left-color:#474d57;"><strong>Fonte dati:</strong> ${escapeHtml(fonte)}</div>
                 <div class="report-item ${Math.abs(deviazione) > soglia ? 'danger' : ''}">
                     <strong>Estensione:</strong> Il prezzo di ${escapeHtml(ticker)} si trova ${direzione} il VWAP del timeframe [${escapeHtml(tf)}].
-                    Estensione pari a ${deviazione.toFixed(2)}%, ${Math.abs(deviazione) > soglia ? 'oltre la soglia impostata (' + soglia + '%): anomalia statistica presente.' : 'entro la soglia impostata (' + soglia + '%): nessun segnale attivo.'}
+                    Deviazione ${deviazione.toFixed(2)}%; ${Math.abs(deviazione) > soglia ? 'supera la soglia configurata' : 'resta entro la soglia configurata'} (${soglia}%).
                 </div>
                 <div class="report-item success">
-                    <strong>Struttura Volumi:</strong> Volume rilevato: ${volume.toLocaleString('en-US')}. ${volumeAnomalo ? 'Picco anomalo, coerente con assorbimento istituzionale.' : 'Volume nella norma.'}
+                    <strong>Volume ultima candela:</strong> ${volume.toLocaleString('it-IT')} (${confrontoVolume}). Il volume delle candele non identifica da solo aggressore, assorbimento o flussi istituzionali.
                 </div>
             </div>
             <div class="report-section">
-                <div class="report-title">🎯 VERDETTO CONFLUENZA INTERMARKET</div>
-                <div class="report-item">Il bias è favorevole per ${bias}. R/R impostato: 1:${rr}. Attendere inversione dei volumi aggressivi sul book prima di procedere.</div>
+                <div class="report-title">ℹ️ CONTESTO</div>
+                <div class="report-item">Osservazione descrittiva, non una previsione né una conferma di edge. R/R configurato per il backtest: 1:${rr}. Il feed può essere ritardato; verifica i dati presso il tuo broker prima di qualsiasi decisione.</div>
             </div>`;
 
         ultimaAnalisi = { ticker, timeframe: tf, prezzo, deviazione, volume };
@@ -2071,13 +2511,14 @@ Dati correnti:
 - Deviazione dal VWAP: ${deviazione.toFixed(2)}%
 - Soglia impostata: ${soglia}%
 - Volume attuale: ${volume.toLocaleString('en-US')}
+- Fonte e timestamp: ${fonte}
 - Notizie macro economiche recenti: ${notizieTesto}
 
 Istruzioni per l'auto-dialogo dell'AI:
-1. Poni a te stessa delle domande critiche sul trend e sulla deviazione: è una vera estensione statistica dovuta ad un'anomalia o c'è un driver fondamentale che spinge il prezzo?
-2. Rispondi a te stessa confrontando le notizie macroeconomiche con il movimento (ad es. se ci sono notizie sui tassi d'interesse o sull'inflazione).
-3. Ragiona sul potenziale assorbimento istituzionale o aggressione volumetrica sul book (teoria dell'asta di Andrea Cimi).
-4. Concludi sintetizzando la decisione: scenario ad alta o bassa probabilità e i rischi concreti di auto-inganno.
+1. Distingui sempre i dati osservati dalle interpretazioni e ricorda che il feed può essere ritardato.
+2. Confronta le notizie macroeconomiche con il movimento, senza attribuire loro causalità non dimostrata.
+3. Non dedurre aggressore, assorbimento istituzionale o order flow dal solo volume OHLCV; il VWAP mostrato è una stima su candele, non tick-by-tick.
+4. Non assegnare probabilità, dichiarare un edge o presentare la soglia come anomalia statistica senza un test adeguato. Concludi indicando i limiti e i rischi di interpretazione.
 IMPORTANTE: Sii analitica ma ben dosata nel volume di testo (componi esattamente 3 scambi D/R completi). Assicurati assolutamente di concludere ogni frase, chiudere i periodi e non lasciare mai frasi a metà o risposte incomplete.`;
 
                     const risposta = await inviaRichiestaAICopilot(promptEsame);
@@ -2103,107 +2544,7 @@ IMPORTANTE: Sii analitica ma ben dosata nel volume di testo (componi esattamente
         }
 
     } else if (tipo === 'backtest') {
-        const righeAsset = OPTIMIZER_MULTIASSET.filter(r => r[0] === ticker);
-
-        if (righeAsset.length === 0) {
-            consoleBox.innerHTML = `
-                <div class="report-item danger">Nessun backtest storico presente per <strong>${escapeHtml(ticker)}</strong> in <code>optimizer_v3_multiasset.csv</code> (contiene solo BTC-USD, ETH-USD, ^GSPC).</div>
-                <div class="report-item">Per ottenere risultati reali su questo asset, rilancia l'optimizer Python impostando ticker=${escapeHtml(ticker)}, soglia=${soglia}, rr=${rr}, e importa il CSV risultante qui.</div>`;
-            return;
-        }
-
-        let riga = righeAsset.find(r => r[1] === soglia && r[2] === rr);
-        let approssimato = false;
-        if (!riga) {
-            approssimato = true;
-            riga = righeAsset.reduce((migliore, r) => {
-                const dist = Math.abs(r[1] - soglia) + Math.abs(r[2] - rr);
-                const distMigliore = Math.abs(migliore[1] - soglia) + Math.abs(migliore[2] - rr);
-                return dist < distMigliore ? r : migliore;
-            }, righeAsset[0]);
-        }
-
-        const sogliaRiga = riga[1], rrRiga = riga[2], totale = riga[3], vincite = riga[4], perdite = riga[5], winrate = riga[6], profitFactor = riga[7], expectancy = riga[8];
-
-        // SESSION ENGINE: Calcolo impatto sessione e costi/commissioni
-        const { sessione, commissione } = leggiParametri();
-        let sessionMultiplier = 1.0;
-        let sessionLabel = "Tutte le Sessioni (24h)";
-        if (sessione === 'LONDON') { sessionMultiplier = 1.12; sessionLabel = "Sessione di Londra (07:00-15:30 UTC)"; }
-        else if (sessione === 'NEW_YORK') { sessionMultiplier = 1.18; sessionLabel = "Sessione New York (13:30-20:00 UTC)"; }
-        else if (sessione === 'LONDON_NY_OVERLAP') { sessionMultiplier = 1.25; sessionLabel = "Londra-NY Overlap (Massima Volatilità)"; }
-        else if (sessione === 'TOKYO') { sessionMultiplier = 0.85; sessionLabel = "Tokyo / Asia (Consolidamento)"; }
-
-        // Applicazione costi e spread su expectancy netta
-        const expectancyNetta = parseFloat((expectancy - (commissione * 2)).toFixed(2));
-        const profitFactorNetto = parseFloat((profitFactor * (1 - commissione * 0.5)).toFixed(2));
-        const winrateEffettivo = Math.min(99, Math.max(1, parseFloat((winrate * (sessionMultiplier >= 1 ? 1 + (sessionMultiplier-1)*0.1 : sessionMultiplier)).toFixed(2))));
-
-        // Metriche Avanzate (Sharpe, Sortino, Risk of Ruin, Max Drawdown stimato)
-        const tradesStimati = Math.round(totale * (sessione === 'ALL' ? 1.0 : (sessione === 'LONDON_NY_OVERLAP' ? 0.35 : 0.6)));
-        const sharpeRatio = Math.max(0, parseFloat((((winrateEffettivo / 100) * rrRiga - (1 - winrateEffettivo / 100)) * Math.sqrt(252)).toFixed(2)));
-        const sortinoRatio = parseFloat((sharpeRatio * 1.35).toFixed(2));
-        const maxDrawdownStimato = parseFloat((Math.max(5, (100 - winrateEffettivo) * 0.45 + (rrRiga > 2 ? 8 : 4))).toFixed(1));
-        
-        // Risk of Ruin Formula: ((1 - Edge) / (1 + Edge))^Units
-        const pWin = winrateEffettivo / 100;
-        const edge = (pWin * rrRiga) - (1 - pWin);
-        let riskOfRuin = 0.0;
-        if (edge > 0) {
-            riskOfRuin = parseFloat((Math.pow((1 - (edge / rrRiga)) / (1 + (edge / rrRiga)), 10) * 100).toFixed(2));
-        } else {
-            riskOfRuin = 99.9;
-        }
-
-        const valida = profitFactorNetto > 1.1 && tradesStimati >= 100;
-
-        consoleBox.innerHTML = `
-            <div class="report-section">
-                <div class="report-title">📊 METRICHE ENGINE QUANTITATIVO (Dati Storici + Session Engine)</div>
-                <div class="report-item" style="border-left-color:#00d2ff; background: rgba(0,210,255,0.03);">
-                    🌐 <strong>Filtro Sessione Attivo:</strong> ${sessionLabel} | <strong>Costi/Slippage:</strong> ${commissione}% per operazione
-                </div>
-                ${approssimato ? `<div class="report-item" style="border-left-color:#474d57;">Parametri interpolati: mostro la configurazione più vicina → soglia=${sogliaRiga}%, R/R=1:${rrRiga}.</div>` : ''}
-                
-                <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 12px 0;">
-                    <div class="kpi-card" style="padding:12px;">
-                        <div class="kpi-label">Win Rate Effettivo</div>
-                        <div class="kpi-value" style="font-size:18px; color:${winrateEffettivo >= 50 ? '#00ffa3' : '#ff4d4d'}">${winrateEffettivo}%</div>
-                    </div>
-                    <div class="kpi-card" style="padding:12px;">
-                        <div class="kpi-label">Profit Factor Netto</div>
-                        <div class="kpi-value" style="font-size:18px; color:${profitFactorNetto >= 1.1 ? '#00ffa3' : '#ff4d4d'}">${profitFactorNetto}</div>
-                    </div>
-                    <div class="kpi-card" style="padding:12px;">
-                        <div class="kpi-label">Expectancy Netta</div>
-                        <div class="kpi-value" style="font-size:18px; color:${expectancyNetta >= 0 ? '#00ffa3' : '#ff4d4d'}">${expectancyNetta >= 0 ? '+' : ''}${expectancyNetta}R</div>
-                    </div>
-                    <div class="kpi-card" style="padding:12px;">
-                        <div class="kpi-label">Sharpe Ratio</div>
-                        <div class="kpi-value" style="font-size:18px; color:${sharpeRatio >= 1.0 ? '#00ffa3' : '#eaecef'}">${sharpeRatio}</div>
-                    </div>
-                    <div class="kpi-card" style="padding:12px;">
-                        <div class="kpi-label">Sortino Ratio</div>
-                        <div class="kpi-value" style="font-size:18px; color:${sortinoRatio >= 1.2 ? '#00ffa3' : '#eaecef'}">${sortinoRatio}</div>
-                    </div>
-                    <div class="kpi-card" style="padding:12px;">
-                        <div class="kpi-label">Max Drawdown</div>
-                        <div class="kpi-value" style="font-size:18px; color:#ff4d4d;">-${maxDrawdownStimato}%</div>
-                    </div>
-                    <div class="kpi-card" style="padding:12px;">
-                        <div class="kpi-label">Risk of Ruin</div>
-                        <div class="kpi-value" style="font-size:18px; color:${riskOfRuin < 5 ? '#00ffa3' : (riskOfRuin < 20 ? '#ffd200' : '#ff4d4d')}">${riskOfRuin}%</div>
-                    </div>
-                    <div class="kpi-card" style="padding:12px;">
-                        <div class="kpi-label">Campione Operazioni</div>
-                        <div class="kpi-value" style="font-size:18px;">${tradesStimati} trade</div>
-                    </div>
-                </div>
-
-                <div class="report-item ${valida ? 'success' : 'danger'}">
-                    <strong>Responso Validazione:</strong> ${valida ? '✅ STRATEGIA STATISTICAMENTE ROBUSTA (Edge verificato sul lungo termine)' : '⚠️ STRATEGIA A RISCHIO (Edge debole, commissioni elevate o campione insufficiente)'}
-                </div>
-            </div>`;
+        await eseguiBacktestDaDati(ticker, tf, soglia, rr);
     } else if (tipo === 'salva') {
         salvaNelDiario();
     }
@@ -3476,76 +3817,359 @@ function urlBase64ToUint8Array(base64String) {
     return outputArray;
 }
 
-async function controllaStatoPushNotifiche() {
-    const btn = document.getElementById('btnPushNotifiche');
-    if (!btn || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
-    try {
-        const reg = await navigator.serviceWorker.getRegistration();
-        if (reg) {
-            const sub = await reg.pushManager.getSubscription();
-            if (sub) {
-                btn.innerText = '🔕 Disattiva Notifiche Macro';
-                btn.classList.add('active');
-            } else {
-                btn.innerText = '🔔 Attiva Notifiche Macro (Push)';
-                btn.classList.remove('active');
-            }
-        }
-    } catch (_) {}
+const PUSH_DEVICE_ID_KEY = 'omnitrade_push_device_id';
+const PUSH_CATEGORIES = [
+    { id: 'news', label: 'News' },
+    { id: 'trading_alerts', label: 'Trading Alerts' },
+    { id: 'macroeconomy', label: 'Macroeconomia' },
+    { id: 'earnings', label: 'Earnings' },
+    { id: 'system', label: 'Sistema' }
+];
+const PUSH_VIEW_BY_RESOURCE = {
+    news: 'news',
+    analysis: 'dashboard',
+    macro_event: 'news',
+    strategy_alert: 'dashboard',
+    trading_alerts: 'dashboard',
+    earnings: 'news',
+    system: 'news'
+};
+let pushDeviceRows = [];
+let currentPushSubscription = null;
+
+function getPushDeviceId() {
+    let deviceId = localStorage.getItem(PUSH_DEVICE_ID_KEY);
+    if (!deviceId) {
+        deviceId = crypto.randomUUID();
+        localStorage.setItem(PUSH_DEVICE_ID_KEY, deviceId);
+    }
+    return deviceId;
 }
 
-async function gestisciToggleNotifichePush() {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        toast('Le notifiche Push non sono supportate da questo browser.', 'error');
+function getPushDeviceInfo() {
+    const userAgent = navigator.userAgent || '';
+    const isIPadOS = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+    let platform = 'desktop';
+    if (/iPhone|iPad|iPod/i.test(userAgent) || isIPadOS) platform = 'iphone';
+    else if (/Android/i.test(userAgent)) platform = 'android';
+
+    let browser = 'Browser';
+    if (/Edg\//i.test(userAgent)) browser = 'Edge';
+    else if (/Firefox\//i.test(userAgent)) browser = 'Firefox';
+    else if (/CriOS|Chrome\//i.test(userAgent)) browser = 'Chrome';
+    else if (/Safari\//i.test(userAgent)) browser = 'Safari';
+
+    const platformName = { iphone: 'iPhone / iPad', android: 'Android', desktop: 'Desktop' }[platform];
+    return { platform, deviceName: `${platformName} · ${browser}` };
+}
+
+async function registraServiceWorkerPush() {
+    if (!('serviceWorker' in navigator)) throw new Error('Service Worker non supportato da questo browser.');
+    const scriptUrl = new URL('sw.js', document.baseURI);
+    await navigator.serviceWorker.register(scriptUrl.href, { updateViaCache: 'none' });
+    return navigator.serviceWorker.ready;
+}
+
+function appendPushCategoryControls(container, row) {
+    const wrapper = document.createElement('div');
+    wrapper.setAttribute('role', 'group');
+    wrapper.setAttribute('aria-label', `Categorie per ${row.device_name}`);
+    wrapper.style.cssText = 'display:flex; flex-wrap:wrap; gap:8px 14px; margin-top:10px;';
+    const selected = new Set(Array.isArray(row.categories) ? row.categories : []);
+
+    PUSH_CATEGORIES.forEach(category => {
+        const label = document.createElement('label');
+        label.style.cssText = 'display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = selected.has(category.id);
+        checkbox.style.cssText = 'width:16px; height:16px; margin:0;';
+        checkbox.addEventListener('change', () => {
+            const previous = row.categories;
+            const categories = new Set(Array.isArray(row.categories) ? row.categories : []);
+            if (checkbox.checked) categories.add(category.id);
+            else categories.delete(category.id);
+            row.categories = [...categories];
+            checkbox.disabled = true;
+            aggiornaPreferenzeDispositivoPush(row, { categories: row.categories }).catch(error => {
+                row.categories = previous;
+                toast(`Preferenza Push non aggiornata: ${error.message}`, 'error');
+                renderPushDevices();
+            });
+        });
+        label.append(checkbox, document.createTextNode(category.label));
+        wrapper.appendChild(label);
+    });
+    container.appendChild(wrapper);
+}
+
+function renderPushDevices() {
+    const container = document.getElementById('pushDevicesList');
+    if (!container) return;
+    container.replaceChildren();
+
+    if (!pushDeviceRows.length) {
+        container.textContent = 'Nessun dispositivo registrato. Attiva le notifiche su questo dispositivo per iniziare.';
+        container.className = 'placeholder-text';
+        return;
+    }
+    container.className = '';
+
+    const currentDeviceId = getPushDeviceId();
+    pushDeviceRows.forEach(row => {
+        const card = document.createElement('section');
+        card.className = 'panel';
+        card.style.cssText = 'padding:14px; margin:0;';
+
+        const header = document.createElement('div');
+        header.style.cssText = 'display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;';
+        const name = document.createElement('strong');
+        const isCurrent = row.device_id === currentDeviceId;
+        const platformName = { iphone: 'iPhone / iPad', android: 'Android', desktop: 'Desktop' }[row.platform] || row.platform;
+        name.textContent = `${row.device_name || platformName} · ${row.device_id.slice(0, 6)}${isCurrent ? ' · Questo dispositivo' : ''}`;
+
+        const enabledLabel = document.createElement('label');
+        enabledLabel.style.cssText = 'display:flex; align-items:center; gap:7px; cursor:pointer;';
+        const enabled = document.createElement('input');
+        enabled.type = 'checkbox';
+        enabled.checked = row.enabled === true;
+        enabled.style.cssText = 'width:18px; height:18px; margin:0;';
+        enabled.setAttribute('aria-label', `Notifiche attive per ${row.device_name || platformName}`);
+        enabled.addEventListener('change', () => aggiornaPreferenzeDispositivoPush(row, { enabled: enabled.checked }).catch(error => {
+            toast(`Stato Push non aggiornato: ${error.message}`, 'error');
+            renderPushDevices();
+        }));
+        enabledLabel.append(enabled, document.createTextNode(enabled.checked ? 'Attive' : 'In pausa'));
+        header.append(name, enabledLabel);
+        card.appendChild(header);
+
+        const lastSeen = row.last_seen_at ? new Date(row.last_seen_at).toLocaleString('it-IT') : 'data non disponibile';
+        const description = document.createElement('p');
+        description.className = 'placeholder-text';
+        description.style.margin = '6px 0 0';
+        description.textContent = `${platformName} · ultimo aggiornamento ${lastSeen}`;
+        card.appendChild(description);
+        appendPushCategoryControls(card, row);
+
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'btn-sec';
+        remove.style.cssText = 'width:auto; margin-top:10px; padding:7px 12px; font-size:12px;';
+        remove.textContent = 'Rimuovi dispositivo';
+        remove.addEventListener('click', () => rimuoviDispositivoPush(row));
+        card.appendChild(remove);
+        container.appendChild(card);
+    });
+}
+
+async function controllaStatoPushNotifiche() {
+    const status = document.getElementById('pushPermissionStatus');
+    const toggle = document.getElementById('btnPushDeviceToggle');
+    const test = document.getElementById('btnPushTest');
+    if (!status || !toggle) return;
+    toggle.disabled = true;
+    const userAgent = navigator.userAgent || '';
+    const isIOS = /iPhone|iPad|iPod/i.test(userAgent)
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+
+    if (!supported) {
+        status.textContent = isIOS
+            ? 'Per ricevere Push su iPhone/iPad, aggiorna a iOS/iPadOS 16.4+ e aggiungi prima la web app alla schermata Home.'
+            : 'Questo browser non supporta tutte le API necessarie per Web Push.';
+        toggle.disabled = true;
+        if (test) test.disabled = true;
         return;
     }
 
     try {
-        let reg = await navigator.serviceWorker.getRegistration();
-        if (!reg) {
-            reg = await navigator.serviceWorker.register('/sw.js');
-        }
-
-        const subEsistente = await reg.pushManager.getSubscription();
-        if (subEsistente) {
-            // Disiscrizione
-            await subEsistente.unsubscribe();
-            await sb.from('push_subscriptions').delete().eq('endpoint', subEsistente.endpoint);
-            toast('Notifiche push disattivate.', 'success');
-            controllaStatoPushNotifiche();
+        const { data: { session }, error: sessionError } = await sb.auth.getSession();
+        if (sessionError) throw sessionError;
+        if (!session?.user) {
+            status.textContent = 'Accedi per salvare e gestire le subscription dei tuoi dispositivi.';
+            toggle.disabled = true;
+            if (test) test.disabled = true;
             return;
         }
 
-        // Iscrizione
-        const perm = await Notification.requestPermission();
-        if (perm !== 'granted') {
-            toast('Permesso notifiche negato nel browser.', 'error');
-            return;
-        }
-
-        const sub = await reg.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-        });
-
-        const keyObj = sub.toJSON();
-        const { data: { session } } = await sb.auth.getSession();
-        const userId = session?.user?.id || null;
-
-        const { error } = await sb.from('push_subscriptions').upsert({
-            endpoint: sub.endpoint,
-            p256dh: keyObj.keys.p256dh,
-            auth: keyObj.keys.auth,
-            user_id: userId
-        }, { onConflict: 'endpoint' });
-
+        const scope = new URL('./', document.baseURI).href;
+        const registration = await navigator.serviceWorker.getRegistration(scope);
+        currentPushSubscription = registration ? await registration.pushManager.getSubscription() : null;
+        const { data, error } = await sb.from('push_subscriptions')
+            .select('device_id,device_name,platform,categories,enabled,last_seen_at')
+            .eq('user_id', session.user.id)
+            .order('last_seen_at', { ascending: false });
         if (error) throw error;
 
-        toast('🔔 Notifiche Macro Push attivate con successo!', 'success');
-        controllaStatoPushNotifiche();
-    } catch (err) {
-        toast('Errore attivazione push: ' + err.message, 'error');
+        pushDeviceRows = data || [];
+        const current = pushDeviceRows.find(row => row.device_id === getPushDeviceId());
+        if (current?.enabled) toggle.textContent = '🔕 Disattiva su questo dispositivo';
+        else if (current) toggle.textContent = '🔔 Riattiva su questo dispositivo';
+        else if (currentPushSubscription) toggle.textContent = '🔔 Completa registrazione';
+        else toggle.textContent = '🔔 Attiva su questo dispositivo';
+
+        toggle.disabled = Notification.permission === 'denied' && (!current || !current.enabled);
+        if (test) test.disabled = !pushDeviceRows.some(row => row.enabled && row.categories?.includes('system'));
+        const permissionLabel = Notification.permission === 'granted'
+            ? 'Permesso browser: attivo.'
+            : Notification.permission === 'denied'
+                ? 'Permesso browser bloccato: abilitalo dalle impostazioni del browser.'
+                : 'Il browser chiederà il permesso quando attivi questo dispositivo.';
+        const installLabel = isIOS && !(navigator.standalone || matchMedia('(display-mode: standalone)').matches)
+            ? ' Su iPhone/iPad installa prima l’app con “Aggiungi alla schermata Home”.'
+            : '';
+        status.textContent = `${permissionLabel}${installLabel}`;
+        renderPushDevices();
+    } catch (error) {
+        status.textContent = `Impossibile leggere i dispositivi Push: ${error.message}`;
+        if (test) test.disabled = true;
+        console.error('[Web Push] Lettura dispositivi fallita:', error);
     }
+}
+
+async function gestisciToggleNotifichePush() {
+    try {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+            throw new Error('Questo browser non supporta Web Push.');
+        }
+
+        const current = pushDeviceRows.find(row => row.device_id === getPushDeviceId());
+        if (current) {
+            if (!current.enabled && Notification.permission !== 'granted') {
+                throw new Error('Riattiva prima il permesso notifiche dalle impostazioni del browser.');
+            }
+            const wasEnabled = current.enabled;
+            await aggiornaPreferenzeDispositivoPush(current, { enabled: !current.enabled });
+            toast(wasEnabled ? 'Notifiche in pausa su questo dispositivo.' : 'Notifiche riattivate su questo dispositivo.', 'success');
+            return;
+        }
+
+        let permission = Notification.permission;
+        if (permission === 'default') permission = await Notification.requestPermission();
+        if (permission !== 'granted') throw new Error('Permesso notifiche negato o bloccato nel browser.');
+
+        const { data: { session }, error: sessionError } = await sb.auth.getSession();
+        if (sessionError) throw sessionError;
+        if (!session?.user) throw new Error('Accedi per associare la subscription al tuo account.');
+
+        const registration = await registraServiceWorkerPush();
+        let subscription = await registration.pushManager.getSubscription();
+        if (!subscription) {
+            subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            });
+        }
+
+        const subscriptionJson = subscription.toJSON();
+        if (!subscriptionJson.keys?.p256dh || !subscriptionJson.keys?.auth) {
+            throw new Error('Il browser non ha restituito le chiavi della subscription Push.');
+        }
+        const deviceId = getPushDeviceId();
+        const deviceInfo = getPushDeviceInfo();
+        const { error: deleteError } = await sb.from('push_subscriptions')
+            .delete()
+            .eq('user_id', session.user.id)
+            .eq('device_id', deviceId);
+        if (deleteError) throw deleteError;
+        const { error } = await sb.from('push_subscriptions').upsert({
+            endpoint: subscription.endpoint,
+            p256dh: subscriptionJson.keys.p256dh,
+            auth: subscriptionJson.keys.auth,
+            user_id: session.user.id,
+            device_id: deviceId,
+            device_name: deviceInfo.deviceName,
+            platform: deviceInfo.platform,
+            categories: PUSH_CATEGORIES.map(category => category.id),
+            enabled: true,
+            expiration_time: subscription.expirationTime ? new Date(subscription.expirationTime).toISOString() : null,
+            last_seen_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'endpoint' });
+        if (error) throw error;
+
+        currentPushSubscription = subscription;
+        toast('Web Push attivato per questo dispositivo.', 'success');
+        await controllaStatoPushNotifiche();
+    } catch (err) {
+        toast('Attivazione Push non riuscita: ' + err.message, 'error');
+        console.error('[Web Push] Attivazione fallita:', err);
+        await controllaStatoPushNotifiche();
+    }
+}
+
+async function aggiornaPreferenzeDispositivoPush(row, changes) {
+    const { data: { session }, error: sessionError } = await sb.auth.getSession();
+    if (sessionError) throw sessionError;
+    if (!session?.user) throw new Error('Accedi per modificare le preferenze dei dispositivi.');
+    const { error } = await sb.from('push_subscriptions')
+        .update({ ...changes, updated_at: new Date().toISOString() })
+        .eq('user_id', session.user.id)
+        .eq('device_id', row.device_id);
+    if (error) throw error;
+    if (changes.enabled !== undefined) row.enabled = changes.enabled;
+    if (changes.categories !== undefined) row.categories = changes.categories;
+    await controllaStatoPushNotifiche();
+}
+
+async function rimuoviDispositivoPush(row) {
+    if (!confirm(`Rimuovere ${row.device_name || 'questo dispositivo'} dalle notifiche?`)) return;
+    try {
+        const { data: { session }, error: sessionError } = await sb.auth.getSession();
+        if (sessionError) throw sessionError;
+        if (!session?.user) throw new Error('Accedi per rimuovere un dispositivo.');
+        const isCurrent = row.device_id === getPushDeviceId();
+        if (isCurrent) {
+            const { error: disableError } = await sb.from('push_subscriptions')
+                .update({ enabled: false, updated_at: new Date().toISOString() })
+                .eq('user_id', session.user.id)
+                .eq('device_id', row.device_id);
+            if (disableError) throw disableError;
+            const registration = await navigator.serviceWorker.getRegistration(new URL('./', document.baseURI).href);
+            const subscription = registration ? await registration.pushManager.getSubscription() : null;
+            if (subscription && !(await subscription.unsubscribe())) {
+                throw new Error('Il browser non ha confermato la disiscrizione.');
+            }
+            currentPushSubscription = null;
+        }
+        const { error } = await sb.from('push_subscriptions')
+            .delete()
+            .eq('user_id', session.user.id)
+            .eq('device_id', row.device_id);
+        if (error) throw error;
+        toast('Dispositivo rimosso dalle notifiche Push.', 'success');
+        await controllaStatoPushNotifiche();
+    } catch (error) {
+        toast(`Rimozione dispositivo non riuscita: ${error.message}`, 'error');
+        await controllaStatoPushNotifiche();
+    }
+}
+
+async function inviaNotificaTest() {
+    try {
+        const { data, error } = await sb.functions.invoke('push-notifications', { body: { test: true } });
+        if (error) throw error;
+        if (!data?.delivered) {
+            toast('Nessun dispositivo attivo ha la categoria Sistema abilitata.', 'info');
+            return;
+        }
+        toast(`Push di test inviata a ${data.delivered} dispositivo/i.`, 'success');
+    } catch (error) {
+        toast(`Push di test non riuscita: ${error.message}`, 'error');
+    }
+}
+
+function applicaDeepLinkNotifica() {
+    const params = new URLSearchParams(window.location.search);
+    const resourceType = params.get('resourceType');
+    const resourceId = params.get('resourceId');
+    const view = params.get('view') || PUSH_VIEW_BY_RESOURCE[resourceType];
+    if (!view || !/^(portafoglio|grafici|volumetrica|news|regime|dashboard|builder|papertrading|marketplace|integrations|aicoach|chat|diario|glossario)$/.test(view)) return;
+
+    const menuItem = Array.from(document.querySelectorAll('.menu-item'))
+        .find(item => item.getAttribute('onclick') === `switchView('${view}', this)`);
+    if (menuItem) switchView(view, menuItem);
+    if (resourceId) toast(`Aperta sezione ${view}: ${resourceType || 'risorsa'} ${resourceId}`, 'info');
 }
 
 function caricaTickerTapeGlobale() {
@@ -3605,7 +4229,6 @@ function caricaImpostazioniNotifiche() {
     if (elSuono) elSuono.checked = suono;
     if (elSoloKeywords) elSoloKeywords.checked = soloKeywords;
 
-    aggiornaPulsanteNotifiche();
 }
 
 function salvaImpostazioniNotifiche() {
@@ -3618,54 +4241,6 @@ function salvaImpostazioniNotifiche() {
     localStorage.setItem('notifiche_solokeywords', soloKeywords);
     
     toast("Impostazioni notifiche salvate.", "info");
-}
-
-function aggiornaPulsanteNotifiche() {
-    const btn = document.getElementById('btnRichiediNotifiche');
-    if (!btn) return;
-
-    if (Notification.permission === 'granted') {
-        btn.innerText = '🟢 Notifiche Abilitate';
-        btn.disabled = true;
-        btn.className = 'btn-sec';
-    } else if (Notification.permission === 'denied') {
-        btn.innerText = '🔴 Notifiche Bloccate dal Browser';
-        btn.disabled = true;
-        btn.className = 'btn-sec';
-    } else {
-        btn.innerText = 'Abilita Notifiche Desktop';
-        btn.disabled = false;
-        btn.className = 'btn-main';
-    }
-}
-
-async function richiediAutorizzazioneNotifiche() {
-    if (!('Notification' in window)) {
-        toast("Questo browser non supporta le notifiche desktop.", "error");
-        return;
-    }
-    const permission = await Notification.requestPermission();
-    aggiornaPulsanteNotifiche();
-    if (permission === 'granted') {
-        toast("Notifiche desktop abilitate correttamente!", "success");
-        new Notification("OmniTrade AI", { body: "Le notifiche macro e di news in tempo reale sono ora attive.", icon: "favicon.ico" });
-    }
-}
-
-function inviaNotificaTest() {
-    if (!('Notification' in window)) {
-        toast("Notifiche non supportate.", "error");
-        return;
-    }
-    if (Notification.permission !== 'granted') {
-        toast("Devi prima abilitare le notifiche desktop cliccando sul pulsante a sinistra.", "error");
-        return;
-    }
-    new Notification("OmniTrade AI - Notifica Test", {
-        body: "Questa è una notifica di test. Il sistema invierà avvisi come questo per le notizie importanti.",
-        icon: "favicon.ico"
-    });
-    riproduciSuonoNotifica();
 }
 
 function riproduciSuonoNotifica() {
@@ -3690,7 +4265,7 @@ function riproduciSuonoNotifica() {
     }
 }
 
-async function avviaPollingNotizieBackground() {
+async function avviaPollingNotizieInPagina() {
     try {
         const feedUrl = 'https://www.investing.com/rss/news.rss';
         const resp = await fetchConFallback('investing-news', { feed: feedUrl }, feedUrl);
@@ -3741,14 +4316,6 @@ async function avviaPollingNotizieBackground() {
 
                     if (!soloKeywords || matchKeywords) {
                          const corpoNotifica = matchKeywords ? `[Focus: ${keywordTrovata}] ${titolo}` : titolo;
-                         
-                         if (Notification.permission === 'granted') {
-                             new Notification("OmniTrade AI - News Importante", {
-                                 body: corpoNotifica,
-                                 icon: 'favicon.ico'
-                             });
-                         }
-
                          toast(`🔔 NOTIZIA: ${corpoNotifica}`, "info");
 
                          if (suono) riproduciSuonoNotifica();
@@ -3771,7 +4338,10 @@ function avviaApp() {
     caricaTickerTapeGlobale();
     ricalcolaPortafoglio();
     caricaImpostazioniNotifiche();
-    avviaPollingNotizieBackground();
+    registraServiceWorkerPush().catch(error => console.error('[Service Worker] Registrazione fallita:', error));
+    controllaStatoPushNotifiche();
+    applicaDeepLinkNotifica();
+    avviaPollingNotizieInPagina();
 }
 
 // Controllo iniziale della sessione già esistente (utente già loggato in precedenza)
