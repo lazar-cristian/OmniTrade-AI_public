@@ -1,5 +1,5 @@
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.119.2";
-import * as webpush from "https://esm.sh/web-push@3.6.7";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.119.2";
+import * as webpush from "npm:web-push@3.6.7";
 import { isAllowedPushEndpoint } from "./push-endpoint.ts";
 
 export const PUSH_CATEGORIES = [
