@@ -459,6 +459,13 @@
     .dev-neg { color: var(--danger); text-shadow: 0 0 8px rgba(255,77,77,0.2); }
     .btn-refresh { width: auto; padding: 10px 18px; background: rgba(255,255,255,0.03); color: var(--primary); border: 1px solid var(--border-color); border-radius: 6px; }
     .btn-refresh:hover { background: var(--primary-glow); }
+    .orderbook-notice {
+        margin: 18px 0 0; padding: 14px 16px;
+        border: 1px solid rgba(0,210,255,0.2); border-left: 3px solid var(--accent-blue);
+        border-radius: 8px; background: rgba(0,210,255,0.04);
+        color: var(--text-muted); font-size: 13px; line-height: 1.55;
+    }
+    .orderbook-notice strong { color: var(--text-main); }
 
     /* GLOSSARY */
     .glossary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
@@ -809,7 +816,10 @@
             <div class="kpi-grid" id="volumeStatsWrap" style="margin-bottom:16px;"></div>
             <div id="orderBookWrap"><div class="skeleton" style="height:180px;"></div></div>
         </div>
-        <p class="placeholder-text" id="orderBookAssenteMsg" style="display:none; margin-top:20px;">📊 L'order book live è disponibile solo per coppie crypto quotate su Binance (es. BTC-USD, ETH-USD, BNB-USD). Per "<span id="orderBookAssenteTicker"></span>" (azione, forex, ETF o indice) l'order book non è disponibile tramite Binance — per l'analisi del book usa i widget TradingView nella sezione "Grafici", oppure prova il ticker nella forma <code>BTCUSDT</code> per le crypto.</p>
+        <div class="orderbook-notice" id="orderBookAssenteMsg" role="status" aria-live="polite" style="display:none;">
+            ℹ️ <strong>Order book non disponibile per <span id="orderBookAssenteTicker"></span>.</strong>
+            Il book live è supportato per coppie crypto quotate su Binance (es. BTCUSDT); azioni, ETF e forex non sono supportati. Grafico e volumi restano disponibili.
+        </div>
     </div>
 
     <!-- NEWS & CALENDARIO -->
