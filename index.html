@@ -4315,8 +4315,11 @@ async function inviaNotificaTest() {
         if (failed > 0) {
             const failureCodes = data?.failureStatusCodes || {};
             const codes = Object.keys(failureCodes);
-            if (codes.some(code => code === '401' || code === '403')) {
-                toast(`Il provider ha rifiutato l’autenticazione VAPID (HTTP ${codes.join(', ')}). Rinnova la subscription su ogni dispositivo; se persiste, la coppia VAPID pubblica/privata del server non corrisponde.`, 'error');
+            const authCodes = codes.filter(code => code === '401' || code === '403');
+            if (authCodes.length) {
+                toast(`Il provider ha rifiutato l’autenticazione VAPID (HTTP ${authCodes.join(', ')}). Rinnova la subscription su ogni dispositivo; se persiste, la coppia VAPID pubblica/privata del server non corrisponde.`, 'error');
+            } else if (failureCodes.blocked_endpoint) {
+                toast(`${failureCodes.blocked_endpoint} subscription usano un provider Push non supportato o non consentito. Rimuovi e riattiva il dispositivo con un browser supportato.`, 'error');
             } else {
                 const detail = codes.length ? ` Codici: ${codes.join(', ')}.` : '';
                 toast(`Il server ha trovato ${attempted} dispositivo/i, ma ${failed} invii sono falliti.${detail} Verifica configurazione VAPID e provider push.`, 'error');
