@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import webpush from "https://esm.sh/web-push@3.6.7";
+import { isAllowedPushEndpoint } from "./push-endpoint.ts";
 
 export const PUSH_CATEGORIES = [
   "news",
@@ -134,6 +135,11 @@ export async function sendPushNotifications(
       const batch = subscriptions.slice(index, index + 20);
       result.attempted += batch.length;
       const outcomes = await Promise.all(batch.map(async subscription => {
+        if (!isAllowedPushEndpoint(subscription.endpoint)) {
+          failureStatusCodes.blocked_endpoint = (failureStatusCodes.blocked_endpoint || 0) + 1;
+          console.error("[Web Push] Destinazione subscription non consentita.");
+          return { type: "failed" as const };
+        }
         try {
           await webpush.sendNotification({
             endpoint: subscription.endpoint,
