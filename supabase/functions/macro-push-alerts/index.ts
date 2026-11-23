@@ -3,8 +3,8 @@
 // Edge Function periodica (chiamata via pg_cron ogni 5 minuti o via webhook).
 // Controlla le ultime notizie macroeconomiche, filtra quelle importanti
 // (CPI, NFP, Fed, BCE, Tassi, Inflazione, Guerre, ecc.), registra quelle
-// già inviate nella tabella 'macro_news_inviate' e invia Web Push a tutte le
-// iscrizioni registrate in 'push_subscriptions'.
+// già elaborate nella tabella 'macro_news_sent' e invia Web Push
+// ai dispositivi attivi iscritti alla categoria 'macroeconomy'.
 //
 // Secrets richiesti su Supabase:
 //   supabase secrets set VAPID_PRIVATE_KEY="..."
@@ -12,34 +12,20 @@
 //   supabase secrets set VAPID_SUBJECT="mailto:support@omnitrade.ai"
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import webpush from "https://esm.sh/web-push@3.6.7";
+import {
+  configureWebPush,
+  createPushPayload,
+  isMacroHeadline,
+  sendPushNotifications,
+} from "../_shared/push.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY");
-const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY");
-const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") || "mailto:admin@omnitrade.ai";
-
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-// Parole chiave macro ad alto impatto per il mercato
-const PAROLE_CHIAVE = [
-  "cpi", "inflation", "inflazione",
-  "fed", "fomc", "powell", "interest rate", "tassi", "taglio tassi",
-  "ecb", "bce", "lagarde",
-  "nfp", "non-farm", "disoccupazione", "unemployment",
-  "gdp", "pil",
-  "war", "guerra", "missile", "escalation", "dazi", "tariff"
-];
-
-function isNotiziaImportante(titolo: string): boolean {
-  const t = titolo.toLowerCase();
-  return PAROLE_CHIAVE.some((k) => t.includes(k));
-}
 
 function estraiTitoliRss(xmlText: string): Array<{ id: string; title: string; link: string }> {
   const items: Array<{ id: string; title: string; link: string }> = [];
@@ -66,14 +52,14 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
-      return new Response(
-        JSON.stringify({ errore: "Chiavi VAPID non configurate nei secrets di Supabase." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (req.headers.get("Authorization") !== `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`) {
+      return new Response(JSON.stringify({ errore: "Operazione riservata al servizio interno." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+    configureWebPush();
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -93,7 +79,7 @@ Deno.serve(async (req: Request) => {
     const notizie = estraiTitoliRss(xml);
 
     // 2. Filtra notizie importanti
-    const importanti = notizie.filter((n) => isNotiziaImportante(n.title));
+    const importanti = notizie.filter((n) => isMacroHeadline(n.title));
     if (importanti.length === 0) {
       return new Response(JSON.stringify({ messaggio: "Nessuna notizia ad alto impatto trovata." }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -102,10 +88,11 @@ Deno.serve(async (req: Request) => {
 
     // 3. Controlla quali sono già state inviate
     const ids = importanti.map((n) => n.id);
-    const { data: giaInviate } = await supabase
-      .from("macro_news_inviate")
+    const { data: giaInviate, error: erroreGiaInviate } = await supabase
+      .from("macro_news_sent")
       .select("news_id")
       .in("news_id", ids);
+    if (erroreGiaInviate) throw erroreGiaInviate;
 
     const giaInviateSet = new Set((giaInviate || []).map((r: { news_id: string }) => r.news_id));
     const daInviare = importanti.filter((n) => !giaInviateSet.has(n.id));
@@ -116,64 +103,45 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // 4. Prendi tutte le iscrizioni push attive
-    const { data: subs, error: subErr } = await supabase.from("push_subscriptions").select("*");
-    if (subErr) throw subErr;
-
-    if (!subs || subs.length === 0) {
-      // Salva comunque come già processate per evitare spam successivo
-      for (const item of daInviare) {
-        await supabase.from("macro_news_inviate").insert({ news_id: item.id, titolo: item.title });
-      }
-      return new Response(JSON.stringify({ messaggio: "Nessun utente iscritto alle notifiche push.", notizie: daInviare.length }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // 5. Invia Web Push per ciascuna notizia a ciascun iscritto
+    // 4. Invia solo ai dispositivi attivi iscritti alla categoria macroeconomia
     let inviateConSuccesso = 0;
-    const subsDaRimuovere: string[] = [];
+    let inviiFalliti = 0;
+    let notizieProcessate = 0;
 
     for (const notizia of daInviare) {
-      const payload = JSON.stringify({
-        title: "⚡ OmniTrade AI — Flash Macro",
+      const payload = createPushPayload({
+        category: "macroeconomy",
+        title: "OmniTrade AI — Flash Macro",
         body: notizia.title,
-        url: notizia.link || "/",
+        url: notizia.link || undefined,
+        resourceType: "macro_event",
+        resourceId: notizia.id,
+        tag: `macro:${notizia.id}`,
       });
+      const delivery = await sendPushNotifications(supabase, payload, { broadcast: true });
+      inviateConSuccesso += delivery.delivered;
+      inviiFalliti += delivery.failed;
 
-      for (const sub of subs) {
-        try {
-          const pushSubscription = {
-            endpoint: sub.endpoint,
-            keys: {
-              p256dh: sub.p256dh,
-              auth: sub.auth,
-            },
-          };
-          await webpush.sendNotification(pushSubscription, payload);
-          inviateConSuccesso++;
-        } catch (err: any) {
-          // Se la sottoscrizione è scaduta (410 o 404), la segniamo per rimozione
-          if (err.statusCode === 410 || err.statusCode === 404) {
-            subsDaRimuovere.push(sub.endpoint);
-          }
-        }
+      if (delivery.failed === 0) {
+        const { error: erroreInserimento } = await supabase
+          .from("macro_news_sent")
+          .upsert({
+            news_id: notizia.id,
+            title: notizia.title,
+            source_url: notizia.link || null,
+          }, { onConflict: "news_id", ignoreDuplicates: true });
+        if (erroreInserimento) throw erroreInserimento;
+        notizieProcessate++;
       }
-
-      // Segna notizia come inviata
-      await supabase.from("macro_news_inviate").insert({ news_id: notizia.id, titolo: notizia.title });
-    }
-
-    // Pulisci le iscrizioni scadute
-    if (subsDaRimuovere.length > 0) {
-      await supabase.from("push_subscriptions").delete().in("endpoint", subsDaRimuovere);
     }
 
     return new Response(
       JSON.stringify({
         messaggio: "Processo completato con successo",
-        notizieInviate: daInviare.length,
+        notizieProcessate,
+        notizieInAttesa: daInviare.length - notizieProcessate,
         notificheConsegnate: inviateConSuccesso,
+        inviiFalliti,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

@@ -140,7 +140,47 @@ create table if not exists public.alerts (
     created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 10. RISULTATI AGGREGATI PER SESSIONE (SESSION ANALYTICS)
+-- 10. WEB PUSH SUBSCRIPTIONS (una riga per browser/dispositivo)
+create table if not exists public.push_subscriptions (
+    endpoint text primary key,
+    p256dh text not null,
+    auth text not null,
+    user_id uuid not null references auth.users(id) on delete cascade,
+    device_id uuid not null default gen_random_uuid(),
+    device_name text not null default 'Dispositivo',
+    platform text not null check (platform in ('iphone', 'android', 'desktop')),
+    categories text[] not null default array[
+        'news', 'trading_alerts', 'macroeconomy', 'earnings', 'system'
+    ]::text[],
+    enabled boolean not null default true,
+    expiration_time timestamp with time zone,
+    last_seen_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create unique index if not exists push_subscriptions_user_device_uidx
+    on public.push_subscriptions (user_id, device_id);
+
+create index if not exists push_subscriptions_enabled_user_idx
+    on public.push_subscriptions (enabled, user_id);
+
+create table if not exists public.news_push_sent (
+    news_id text primary key,
+    title text not null,
+    source_url text,
+    published_at timestamp with time zone,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create table if not exists public.macro_news_sent (
+    news_id text primary key,
+    title text not null,
+    source_url text,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 11. RISULTATI AGGREGATI PER SESSIONE (SESSION ANALYTICS)
 create table if not exists public.session_results (
     id uuid primary key default gen_random_uuid(),
     strategy_id uuid references public.strategies(id) on delete cascade,
@@ -166,6 +206,9 @@ alter table public.trades enable row level security;
 alter table public.journals enable row level security;
 alter table public.market_regimes enable row level security;
 alter table public.alerts enable row level security;
+alter table public.push_subscriptions enable row level security;
+alter table public.news_push_sent enable row level security;
+alter table public.macro_news_sent enable row level security;
 alter table public.session_results enable row level security;
 
 -- Policy per user_profiles
@@ -196,9 +239,22 @@ create policy "Gli utenti visualizzano e gestiscono il proprio diario"
 create policy "Gli utenti gestiscono i propri alert"
     on public.alerts for all using (auth.uid() = user_id);
 
+create policy "Users manage their own push devices"
+    on public.push_subscriptions for all to authenticated
+    using (auth.uid() = user_id)
+    with check (auth.uid() = user_id);
+
 -- Policy per market_regimes (pubblici in sola lettura)
 create policy "Regimi di mercato consultabili da tutti"
     on public.market_regimes for select using (true);
+
+revoke all on public.push_subscriptions from anon;
+grant select, insert, update, delete on public.push_subscriptions to authenticated;
+grant all on public.push_subscriptions to service_role;
+revoke all on public.news_push_sent from anon, authenticated;
+grant all on public.news_push_sent to service_role;
+revoke all on public.macro_news_sent from anon, authenticated;
+grant all on public.macro_news_sent to service_role;
 
 -- Popolamento Asset Iniziali di Default
 insert into public.assets (symbol, name, asset_class, tick_size, default_spread) values
