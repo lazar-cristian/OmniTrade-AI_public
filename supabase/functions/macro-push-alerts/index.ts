@@ -11,7 +11,7 @@
 //   supabase secrets set VAPID_PUBLIC_KEY="..."
 //   supabase secrets set VAPID_SUBJECT="mailto:support@omnitrade.ai"
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.119.2";
 import {
   configureWebPush,
   createPushPayload,
