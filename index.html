@@ -12,7 +12,7 @@
 <style>
     :root {
         --bg-main: #06080b;
-        --bg-panel: rgba(18, 22, 28, 0.65);
+        --bg-panel: rgba(18, 22, 28, 0.88);
         --bg-panel-solid: #12161c;
         --border-color: rgba(255, 255, 255, 0.07);
         --primary: #00ffa3;
@@ -24,8 +24,8 @@
         --text-main: #eaecef;
         --text-muted: #929aa5;
         --text-dark: #55606c;
-        --glass-blur: blur(16px);
-        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        --glass-blur: blur(8px);
+        --transition: all 0.2s ease-out;
     }
 
     * { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: var(--border-color) transparent; }
@@ -1201,40 +1201,58 @@ function animaContatore(id, valoreFinale, opts) {
 function initParticles() {
     const canvas = document.getElementById('particleCanvas');
     if (!canvas) return;
+    // Se lo schermo è mobile o ridotto, evita particelle per azzerare il carico GPU/CPU
+    if (window.innerWidth <= 768) {
+        canvas.style.display = 'none';
+        return;
+    }
     const ctx = canvas.getContext('2d');
     const motionRidotto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let w, h, punti;
     function ridimensiona() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
     function creaPunti() {
-        const n = motionRidotto ? 0 : Math.min(70, Math.floor((w * h) / 18000));
+        const n = motionRidotto ? 0 : Math.min(25, Math.floor((w * h) / 45000));
         punti = Array.from({ length: n }, () => ({ x: Math.random() * w, y: Math.random() * h, vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25 }));
     }
     ridimensiona(); creaPunti();
     window.addEventListener('resize', () => { ridimensiona(); creaPunti(); });
-    function disegnaFrame() {
+    let lastTime = 0;
+    function disegnaFrame(time) {
+        if (!motionRidotto) requestAnimationFrame(disegnaFrame);
+        // Limita a ~30 fps per non affaticare GPU/CPU
+        if (time - lastTime < 32) return;
+        lastTime = time;
+
         ctx.clearRect(0, 0, w, h);
         punti.forEach(p => { p.x += p.vx; p.y += p.vy; if (p.x < 0 || p.x > w) p.vx *= -1; if (p.y < 0 || p.y > h) p.vy *= -1; });
-        ctx.fillStyle = 'rgba(0,255,163,0.5)';
-        punti.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2); ctx.fill(); });
-        ctx.strokeStyle = 'rgba(0,255,163,0.08)';
+        ctx.fillStyle = 'rgba(0,255,163,0.4)';
+        punti.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 1.4, 0, Math.PI * 2); ctx.fill(); });
+        ctx.strokeStyle = 'rgba(0,255,163,0.06)';
         for (let i = 0; i < punti.length; i++) {
             for (let j = i + 1; j < punti.length; j++) {
                 const dx = punti[i].x - punti[j].x, dy = punti[i].y - punti[j].y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < 120) {
-                    ctx.globalAlpha = 1 - dist / 120;
+                const dist2 = dx * dx + dy * dy;
+                if (dist2 < 10000) { // 100px raggio
                     ctx.beginPath(); ctx.moveTo(punti[i].x, punti[i].y); ctx.lineTo(punti[j].x, punti[j].y); ctx.stroke();
                 }
             }
         }
-        ctx.globalAlpha = 1;
-        if (!motionRidotto) requestAnimationFrame(disegnaFrame);
     }
-    disegnaFrame();
+    if (!motionRidotto) requestAnimationFrame(disegnaFrame);
 }
 
 /* ============ NAVIGAZIONE SPA ============ */
 function switchView(viewId, element) {
+    // Sospende intervalli pesanti se si esce dalla rispettiva pagina
+    if (viewId !== 'volumetrica' && typeof orderBookInterval !== 'undefined' && orderBookInterval) {
+        clearInterval(orderBookInterval);
+        orderBookInterval = null;
+    }
+    if (viewId !== 'news' && typeof newsRefreshInterval !== 'undefined' && newsRefreshInterval) {
+        clearInterval(newsRefreshInterval);
+        newsRefreshInterval = null;
+    }
+
     document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
     document.getElementById('view-' + viewId).classList.add('active');
@@ -1489,7 +1507,7 @@ Istruzioni per l'auto-dialogo dell'AI:
 2. Rispondi a te stessa confrontando le notizie macroeconomiche con il movimento (ad es. se ci sono notizie sui tassi d'interesse o sull'inflazione).
 3. Ragiona sul potenziale assorbimento istituzionale o aggressione volumetrica sul book (teoria dell'asta di Andrea Cimi).
 4. Concludi sintetizzando la decisione: scenario ad alta o bassa probabilità e i rischi concreti di auto-inganno.
-Sii concisa, incisiva e completa (massimo 3 scambi D/R completi e chiari), senza troncare il discorso o lasciare frasi a metà.`;
+IMPORTANTE: Sii analitica ma ben dosata nel volume di testo (componi esattamente 3 scambi D/R completi). Assicurati assolutamente di concludere ogni frase, chiudere i periodi e non lasciare mai frasi a metà o risposte incomplete.`;
 
                     const risposta = await inviaRichiestaAICopilot(promptEsame);
                     
@@ -2466,7 +2484,7 @@ async function avviaPollingNotizieBackground() {
         } catch (e) {
             console.warn("Errore durante il background polling notizie:", e);
         }
-    }, 30000);
+    }, 120000); // Polling ogni 2 minuti per non saturare la CPU in background
 }
 
 /* ============ AVVIO ============ */
