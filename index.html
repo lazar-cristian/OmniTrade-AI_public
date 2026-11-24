@@ -337,6 +337,13 @@
     .home-action strong { display:block; margin-bottom:5px; color:var(--primary); }
     .home-action:hover { border-color:var(--primary); background:var(--primary-glow); }
     .analysis-path-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .copilot-level-control { display:flex; align-items:center; gap:8px; margin:10px 18px 0; }
+    .copilot-level-control label { margin:0; color:var(--text-muted); font-size:12px; }
+    .copilot-level-control select { width:auto; min-width:190px; padding:8px 10px; }
+    .flow-score-value { font-size:clamp(28px,5vw,42px); font-weight:800; color:var(--primary); }
+    .trader-memory-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px; }
+    .trader-memory-card { min-width:0; padding:12px; border:1px solid var(--border-color); border-radius:9px; background:rgba(255,255,255,.02); }
+    .trader-memory-card strong { display:block; margin-top:5px; overflow-wrap:anywhere; }
     .portfolio-metrics-panel { margin-top:20px; }
     .portfolio-metrics-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); }
     .portfolio-metric { min-width:0; padding:15px 10px; text-align:center; border-right:1px solid var(--border-color); border-bottom:1px solid var(--border-color); }
@@ -758,7 +765,6 @@
         <div class="menu-item" data-workspaces="backtest" tabindex="0" onclick="switchView('papertrading', this)">🎮 Paper Trading</div>
         <div class="menu-item" data-workspaces="performance" tabindex="0" onclick="switchView('portafoglio', this)">💼 Portfolio</div>
         <div class="menu-item" data-workspaces="performance" tabindex="0" onclick="switchView('diario', this)">🗂️ Journal &amp; Trader Memory</div>
-        <div class="menu-item" data-workspaces="performance" tabindex="0" onclick="switchView('aicoach', this)">🧠 AI Debrief</div>
         <div class="menu-item" data-workspaces="learning" tabindex="0" onclick="switchView('glossario', this)">📚 Academy &amp; Glossario</div>
         <div class="menu-item" data-workspaces="account" tabindex="0" onclick="switchView('account', this)">⚙ Profilo &amp; Dispositivi</div>
         <div class="menu-item" data-workspaces="account" tabindex="0" onclick="switchView('integrations', this)">🔌 Integrazioni</div>
@@ -822,8 +828,8 @@
         </section>
         <section class="panel" style="margin-top:14px;">
             <div class="toolbar" style="margin-bottom:8px;">
-                <div><h2 style="border:0; padding:0; margin:0;">🧠 Today Briefing AI</h2><p class="placeholder-text" style="margin:5px 0 0;">Genera una sintesi usando i dati disponibili nel tuo workspace. L'invio all'AI avviene solo su tua richiesta.</p></div>
-                <button class="btn-main" id="btnTodayBriefing" type="button" onclick="generaBriefingGiornaliero()">Genera briefing</button>
+                <div><h2 style="border:0; padding:0; margin:0;">🧠 Today Briefing AI</h2><p class="placeholder-text" style="margin:5px 0 0;">Si aggiorna una volta al giorno usando i dati disponibili nel tuo account; puoi rigenerarlo quando vuoi. Il testo viene elaborato dal provider AI configurato e salvato nel tuo account.</p></div>
+                <button class="btn-main" id="btnTodayBriefing" type="button" onclick="generaBriefingGiornaliero({force:true})">Rigenera briefing</button>
             </div>
             <div class="output-box" id="todayBriefingOutput" role="status" aria-live="polite"><p class="placeholder-text">Il briefing non è stato ancora generato oggi.</p></div>
         </section>
@@ -957,6 +963,12 @@
                 <p class="placeholder-text" style="margin:6px 0 0;">Un punto di partenza per flussi, livelli VWAP, regime e analisi assistita. Per i grafici avanzati usa TradingView.</p>
             </div>
         </div>
+        <div class="form-row" style="align-items:flex-end; max-width:620px;">
+            <div class="form-group">
+                <label for="marketAnalysisAsset">Asset selezionato per Flow Score e AI Analysis</label>
+                <input id="marketAnalysisAsset" type="text" list="tickerSuggestions" value="BTC-USD" maxlength="24" autocomplete="off" onchange="aggiornaFlowScore({refreshOrderBook:true})">
+            </div>
+        </div>
         <div class="analysis-path-grid">
             <button class="home-action" type="button" onclick="apriWorkspace('analysis','volumetrica')">
                 <strong>Flussi &amp; Order Book</strong>
@@ -975,6 +987,26 @@
                 Apri il Copilot globale con una richiesta contestuale.
             </button>
         </div>
+        <section class="panel" style="margin-top:16px;" aria-labelledby="flowScoreTitle">
+            <div class="toolbar">
+                <div>
+                    <h2 id="flowScoreTitle" style="border:0; padding:0; margin:0;">📊 Flow Score</h2>
+                    <p class="placeholder-text" style="margin:5px 0 0;">Sintesi descrittiva di VWAP, volume OHLCV, order book disponibile e Market Regime. Non è un segnale operativo.</p>
+                </div>
+                <button class="btn-refresh" type="button" onclick="aggiornaFlowScore({refreshOrderBook:true})">↻ Aggiorna score</button>
+            </div>
+            <div id="flowScoreOutput" role="status" aria-live="polite"><p class="placeholder-text">Caricamento delle fonti disponibili…</p></div>
+        </section>
+        <section class="panel" style="margin-top:16px;" aria-labelledby="marketAiAnalysisTitle">
+            <div class="toolbar">
+                <div>
+                    <h2 id="marketAiAnalysisTitle" style="border:0; padding:0; margin:0;">✨ AI Analysis</h2>
+                    <p class="placeholder-text" style="margin:5px 0 0;">Analisi contestuale di asset, regime, VWAP e flussi disponibili; i dati mancanti vengono dichiarati.</p>
+                </div>
+                <button class="btn-main" id="btnMarketAIAnalysis" type="button" onclick="generaAIAnalisiMercato()">Analizza contesto</button>
+            </div>
+            <div id="marketAIAnalysisOutput" class="output-box" role="status" aria-live="polite"><p class="placeholder-text">L’analisi AI viene generata su richiesta.</p></div>
+        </section>
         <p class="source-disclosure" data-source-disclosure="yahoo"></p>
         <p class="source-disclosure" data-source-disclosure="tradingview"></p>
     </div>
@@ -1243,6 +1275,14 @@
                 <button class="copilot-close" type="button" aria-label="Chiudi Copilot" onclick="chiudiCopilot()">×</button>
             </header>
             <p class="placeholder-text">Il Copilot riceve la pagina e i dati di trading visibili pertinenti alla richiesta. Evita di includere informazioni che non vuoi inviare all'AI.</p>
+            <div class="copilot-level-control">
+                <label for="copilotResponseLevel">Livello risposta</label>
+                <select id="copilotResponseLevel">
+                    <option value="quick">Quick Answer · definizioni</option>
+                    <option value="trading" selected>Trading Analysis · contesto</option>
+                    <option value="deep">Deep Analysis · storico</option>
+                </select>
+            </div>
             <div class="chat-layout">
                 <div class="chat-box" id="chatBox">
                     <div class="msg ai">Sono il Copilot di OmniTrade AI. Posso aiutarti a interpretare i dati disponibili, distinguendo osservazioni e ipotesi.</div>
@@ -1413,6 +1453,12 @@
             </div>
             <button class="btn-refresh" onclick="caricaDiario()">↻ Aggiorna Dati</button>
         </div>
+        <nav class="workflow-strip" aria-label="Flusso Performance">
+            <button class="workflow-step" type="button" onclick="apriWorkspace('backtest','papertrading')">1 · Trade / Paper Trading</button>
+            <button class="workflow-step" type="button" onclick="document.getElementById('journalTradeForm').scrollIntoView({behavior:'smooth',block:'start'})">2 · Journal</button>
+            <button class="workflow-step" type="button" onclick="document.getElementById('traderMemoryPanel').scrollIntoView({behavior:'smooth',block:'start'})">3 · Trader Memory</button>
+            <button class="workflow-step" type="button" onclick="document.getElementById('dailyDebriefPanel').scrollIntoView({behavior:'smooth',block:'start'})">4 · Daily Debrief</button>
+        </nav>
 
         <section class="panel" style="margin-bottom:20px;">
             <h2>📝 Registra un trade</h2>
@@ -1532,6 +1578,27 @@
                 <div class="kpi-value" id="kpiPnlPersoErrori" title="Non disponibile: il diario attuale non associa il P&amp;L dei singoli trade allo stato emotivo." style="color:var(--danger);">—</div>
             </div>
         </div>
+
+        <section class="panel" id="traderMemoryPanel" style="margin-bottom:20px;">
+            <div class="toolbar">
+                <div>
+                    <h2 style="border:0; padding:0; margin:0;">🧠 Trader Memory</h2>
+                    <p class="placeholder-text" style="margin:5px 0 0;">Pattern descrittivi calcolati sui trade chiusi caricati dal Journal. Le associazioni non dimostrano causalità.</p>
+                </div>
+            </div>
+            <div id="traderMemoryOutput" aria-live="polite"><p class="placeholder-text">In attesa dei trade registrati.</p></div>
+        </section>
+
+        <section class="panel" id="dailyDebriefPanel" style="margin-bottom:20px;">
+            <div class="toolbar">
+                <div>
+                    <h2 style="border:0; padding:0; margin:0;">📅 Daily Debrief</h2>
+                    <p class="placeholder-text" style="margin:5px 0 0;">Si genera automaticamente una volta al giorno dai trade del Journal; puoi rigenerarlo dopo aver aggiornato i dati. Il provider AI elabora il contesto e il report viene salvato nel tuo account.</p>
+                </div>
+                <button class="btn-refresh" id="btnDailyDebrief" type="button" onclick="generaDailyDebrief({force:true})">Rigenera debrief</button>
+            </div>
+            <div id="dailyDebriefOutput" class="output-box" role="status" aria-live="polite"><p class="placeholder-text">Caricamento del debrief giornaliero…</p></div>
+        </section>
 
         <div class="panel">
             <h2>Trade registrati</h2>
@@ -1734,24 +1801,6 @@
                 <h2>🔔 TradingView Webhook — non operativo</h2>
                 <p class="placeholder-text" style="font-size:12.5px; line-height:1.5;">Ricezione webhook non implementata: non esiste un endpoint OmniTrade operativo. Non configurare alert per inviare ordini o segnali all’app.</p>
                 <div class="report-item warning" role="status">Stato: endpoint e gestione sicura dei payload non disponibili.</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- FUTURE AI COACH & STATISTICAL REVIEW -->
-    <div id="view-aicoach" class="view-content">
-        <div class="toolbar">
-            <div>
-                <h2 style="border:none; margin:0; padding:0;">🧠 AI Debrief</h2>
-                <p class="placeholder-text" style="margin:4px 0 0 0;">Analizza portfolio e report disponibili. Senza risultati dei trade non vengono inferiti performance o vantaggi statistici.</p>
-            </div>
-            <button class="btn-main" id="btnRichiediDiagnosiCoach" onclick="avviaDiagnosiAICoach()">🧠 Genera AI Debrief</button>
-        </div>
-
-        <div class="panel" style="margin-bottom:20px;">
-            <h2>Revisione del Journal e dei dati disponibili</h2>
-            <div id="aiCoachOutputWrap" class="output-box" style="min-height:280px;">
-                <div class="placeholder-text">Genera un debrief per ricevere osservazioni basate sui trade e sulle metriche effettivamente registrati. I risultati mancanti non verranno stimati.</div>
             </div>
         </div>
     </div>
@@ -2227,7 +2276,7 @@ const DAILY_FOCUS_ACTIONS = {
     improve: [
         { title: 'Portfolio', detail: 'Rivedi saldo e metriche registrate.', workspace: 'performance', view: 'portafoglio' },
         { title: 'Journal & Trader Memory', detail: 'Registra contesto, disciplina e trade.', workspace: 'performance', view: 'diario' },
-        { title: 'AI Debrief', detail: 'Esamina i dati disponibili con l’AI.', workspace: 'performance', view: 'aicoach' }
+        { title: 'Daily Debrief', detail: 'Rivedi trade, risultati ed errori del giorno.', workspace: 'performance', view: 'diario' }
     ],
     learn: [
         { title: 'Academy & Glossario', detail: 'Approfondisci concetti, pattern e strategie.', workspace: 'learning', view: 'glossario' },
@@ -2352,7 +2401,6 @@ function switchView(viewId, element) {
     if (viewId === 'builder') inizializzaBuilderView();
     if (viewId === 'papertrading') aggiornaTabellaPaperTrading();
     if (viewId === 'marketplace') caricaMarketplaceEEncyclopedia();
-    if (viewId === 'aicoach') caricaStatoAICoach();
     if (viewId === 'glossario') caricaGlossario();
     if (viewId === 'glossario') renderStrategieAcademy();
     if (viewId === 'portafoglio') ricalcolaPortafoglio();
@@ -2362,9 +2410,13 @@ function switchView(viewId, element) {
     if (viewId === 'account') aggiornaAccountCenter();
     if (viewId === 'dashboardHome') {
         aggiornaFocusGiornaliero();
-        ricalcolaPortafoglio();
-        calcolaMarketRegime(true);
         renderCalendarioEconomico('homeMacroCalendar');
+        Promise.allSettled([ricalcolaPortafoglio(), calcolaMarketRegime(true)])
+            .then(() => generaBriefingGiornaliero());
+    }
+    if (viewId === 'market-analysis') {
+        Promise.allSettled([calcolaMarketRegime(true)])
+            .then(() => aggiornaFlowScore({ refreshOrderBook: true }));
     }
     if (window.innerWidth <= 768) toggleSidebar(false);
 }
@@ -3256,7 +3308,10 @@ Istruzioni per l'auto-dialogo dell'AI:
 4. Non assegnare probabilità, dichiarare un edge o presentare la soglia come anomalia statistica senza un test adeguato. Concludi indicando i limiti e i rischi di interpretazione.
 IMPORTANTE: Sii analitica ma ben dosata nel volume di testo (componi esattamente 3 scambi D/R completi). Assicurati assolutamente di concludere ogni frase, chiudere i periodi e non lasciare mai frasi a metà o risposte incomplete.`;
 
-                    const risposta = await inviaRichiestaAICopilot(promptEsame);
+                    const risposta = await inviaRichiestaAICopilot(promptEsame, {
+                        level: 'deep',
+                        format: 'free'
+                    });
                     
                     const divEsame = document.getElementById(idEsame);
                     if (divEsame) {
@@ -3478,7 +3533,7 @@ async function salvaTradeJournal(event) {
         form.reset();
         inizializzaModuloDiario();
         toast('Trade salvato nel Journal.', 'success');
-        await caricaDiario();
+        await caricaDiario({ refreshDebrief: true });
         await notificaPersonale(
             'journal',
             `Trade registrato: ${ticker}`,
@@ -3528,11 +3583,11 @@ async function notificaPersonale(category, title, body, resourceType, resourceId
     }
 }
 
-async function caricaDiario() {
-    await Promise.all([caricaTradeJournal(), caricaReportAnalisi()]);
+async function caricaDiario({ refreshDebrief = false } = {}) {
+    await Promise.all([caricaTradeJournal({ refreshDebrief }), caricaReportAnalisi()]);
 }
 
-async function caricaTradeJournal() {
+async function caricaTradeJournal({ refreshDebrief = false } = {}) {
     const wrap = document.getElementById('diarioWrap');
     const elDisc = document.getElementById('kpiDisciplina');
     const elEmotion = document.getElementById('kpiErroreFrequente');
@@ -3548,9 +3603,14 @@ async function caricaTradeJournal() {
         const { data, error } = await sb.from('journals')
             .select('id,ticker,direction,timeframe,strategy_name,entry_time,entry_price,stop_loss,take_profit,risk_reward,exit_price,pnl,result,session_tag,emotional_state,mistake_tag,notes,screenshot_url')
             .order('entry_time', { ascending: false })
-            .limit(100);
+            .limit(500);
         if (error) throw error;
         const trades = data || [];
+        const journalSnapshot = costruisciTraderMemory(trades);
+        journalSnapshot.loadedAt = Date.now();
+        window.omnitradeJournalSnapshot = journalSnapshot;
+        delete window.omnitradeJournalContextError;
+        renderTraderMemory(journalSnapshot);
         const recordedEmotions = trades.map(trade => trade.emotional_state)
             .filter(state => state && state !== 'Non Specificato');
         if (recordedEmotions.length) {
@@ -3575,9 +3635,10 @@ async function caricaTradeJournal() {
 
         if (!trades.length) {
             wrap.innerHTML = '<p class="placeholder-text">Nessun trade registrato. Aggiungi la prima operazione per iniziare a costruire statistiche basate sui tuoi dati.</p>';
+            await generaDailyDebrief({ automatic: true, trades, force: refreshDebrief });
             return;
         }
-        const rows = trades.map(trade => {
+        const rows = trades.slice(0, 100).map(trade => {
             const date = trade.entry_time ? new Date(trade.entry_time).toLocaleString('it-IT') : '—';
             let screenshot = '';
             try {
@@ -3599,9 +3660,135 @@ async function caricaTradeJournal() {
             </tr>`;
         }).join('');
         wrap.innerHTML = `<div class="table-scroll"><table><thead><tr><th>Ingresso</th><th>Asset / direzione</th><th>Strategia / TF</th><th>Entry / rischio</th><th>Uscita</th><th>R/R piano</th><th>P&amp;L / esito</th><th>Stato / pattern</th><th>Sessione</th><th>Revisione</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+        await generaDailyDebrief({ automatic: true, trades, force: refreshDebrief });
     } catch (error) {
+        window.omnitradeJournalSnapshot = null;
+        window.omnitradeJournalContextError = error.message;
+        const memoryOutput = document.getElementById('traderMemoryOutput');
+        if (memoryOutput) memoryOutput.innerHTML = `<p class="placeholder-text">Trader Memory non disponibile: ${escapeHtml(error.message)}.</p>`;
         wrap.innerHTML = `<p class="placeholder-text">Impossibile caricare il Journal (${escapeHtml(error.message)}). Verifica che la migration del diario sia stata applicata e che le policy RLS consentano l’accesso al proprietario.</p>`;
     }
+}
+
+function costruisciTraderMemory(trades) {
+    const closedTrades = trades.filter(trade =>
+        trade.result !== 'open' && trade.pnl != null && Number.isFinite(Number(trade.pnl))
+    );
+    const groupBy = key => {
+        const groups = new Map();
+        closedTrades.forEach(trade => {
+            const value = String(trade[key] || '').trim();
+            if (!value) return;
+            const group = groups.get(value) || { name: value, count: 0, wins: 0, pnl: 0 };
+            group.count += 1;
+            group.wins += Number(trade.pnl) > 0 ? 1 : 0;
+            group.pnl += Number(trade.pnl);
+            groups.set(value, group);
+        });
+        return [...groups.values()].map(group => ({
+            ...group,
+            averagePnl: group.pnl / group.count,
+            winRate: group.wins / group.count * 100
+        }));
+    };
+    const strategies = groupBy('strategy_name');
+    const sessions = groupBy('session_tag');
+    const strategySessionGroups = new Map();
+    closedTrades.forEach(trade => {
+        if (!trade.strategy_name || !trade.session_tag) return;
+        const name = `${trade.strategy_name} · ${trade.session_tag}`;
+        const group = strategySessionGroups.get(name) || { name, count: 0, wins: 0, pnl: 0 };
+        group.count += 1;
+        group.wins += Number(trade.pnl) > 0 ? 1 : 0;
+        group.pnl += Number(trade.pnl);
+        strategySessionGroups.set(name, group);
+    });
+    const strategySessions = [...strategySessionGroups.values()].map(group => ({
+        ...group,
+        averagePnl: group.pnl / group.count,
+        winRate: group.wins / group.count * 100
+    }));
+    const mistakes = new Map();
+    trades.forEach(trade => {
+        const mistake = String(trade.mistake_tag || '').trim();
+        if (!mistake) return;
+        const item = mistakes.get(mistake) || { name: mistake, count: 0, closedCount: 0, pnl: 0 };
+        item.count += 1;
+        if (trade.result !== 'open' && trade.pnl != null && Number.isFinite(Number(trade.pnl))) {
+            item.closedCount += 1;
+            item.pnl += Number(trade.pnl);
+        }
+        mistakes.set(mistake, item);
+    });
+    const comparable = groups => groups.filter(group => group.count >= 3);
+    const bestOf = groups => comparable(groups).sort((a, b) => b.averagePnl - a.averagePnl)[0] || null;
+    const worstOf = groups => comparable(groups).sort((a, b) => a.averagePnl - b.averagePnl)[0] || null;
+    return {
+        sampleSize: trades.length,
+        closedCount: closedTrades.length,
+        winRate: closedTrades.length
+            ? closedTrades.filter(trade => Number(trade.pnl) > 0).length / closedTrades.length * 100
+            : null,
+        realizedPnl: closedTrades.reduce((sum, trade) => sum + Number(trade.pnl), 0),
+        bestStrategy: bestOf(strategies),
+        worstStrategy: worstOf(strategies),
+        bestSession: bestOf(sessions),
+        worstSession: worstOf(sessions),
+        bestPattern: bestOf(strategySessions),
+        worstPattern: worstOf(strategySessions),
+        recurringMistakes: [...mistakes.values()].sort((a, b) => b.count - a.count).slice(0, 3),
+        todayTrades: trades.filter(trade => dataLocaleIso(trade.entry_time) === dataLocaleIso()).map(trade => ({
+            date: trade.entry_time,
+            ticker: trade.ticker,
+            direction: trade.direction,
+            strategy: trade.strategy_name,
+            session: trade.session_tag,
+            result: trade.result,
+            pnl: trade.pnl == null ? null : Number(trade.pnl),
+            emotionalState: trade.emotional_state,
+            mistake: trade.mistake_tag,
+            notes: String(trade.notes || '').slice(0, 180)
+        })),
+        recentTrades: trades.slice(0, 12).map(trade => ({
+            date: trade.entry_time,
+            ticker: trade.ticker,
+            direction: trade.direction,
+            strategy: trade.strategy_name,
+            session: trade.session_tag,
+            result: trade.result,
+            pnl: trade.pnl == null ? null : Number(trade.pnl),
+            emotionalState: trade.emotional_state,
+            mistake: trade.mistake_tag,
+            notes: String(trade.notes || '').slice(0, 240)
+        }))
+    };
+}
+
+function renderTraderMemory(memory) {
+    const output = document.getElementById('traderMemoryOutput');
+    if (!output) return;
+    if (!memory?.sampleSize) {
+        output.innerHTML = '<p class="placeholder-text">La memoria si popolerà con le operazioni registrate nel Journal.</p>';
+        return;
+    }
+    const formatGroup = group => group
+        ? `${escapeHtml(group.name)} · ${group.count} trade · P&amp;L medio ${escapeHtml(formatJournalPnl(group.averagePnl))}`
+        : 'Servono almeno 3 trade chiusi per gruppo.';
+    const mistakes = memory.recurringMistakes.length
+        ? memory.recurringMistakes.map(item => `<li>${escapeHtml(item.name)} · ${item.count} occorrenze</li>`).join('')
+        : '<li>Nessun errore/pattern registrato.</li>';
+    output.innerHTML = `
+        <div class="trader-memory-grid">
+            <div class="trader-memory-card"><span class="kpi-label">Campione caricato</span><strong>${memory.sampleSize} trade · ${memory.closedCount} chiusi</strong></div>
+            <div class="trader-memory-card"><span class="kpi-label">P&amp;L realizzato / Win rate</span><strong>${escapeHtml(formatJournalPnl(memory.realizedPnl))} · ${memory.winRate == null ? 'N/D' : `${memory.winRate.toFixed(1)}%`}</strong></div>
+            <div class="trader-memory-card"><span class="kpi-label">Strategia con media migliore</span><strong>${formatGroup(memory.bestStrategy)}</strong></div>
+            <div class="trader-memory-card"><span class="kpi-label">Strategia con media peggiore</span><strong>${formatGroup(memory.worstStrategy)}</strong></div>
+            <div class="trader-memory-card"><span class="kpi-label">Sessione con media migliore</span><strong>${formatGroup(memory.bestSession)}</strong></div>
+            <div class="trader-memory-card"><span class="kpi-label">Sessione con media peggiore</span><strong>${formatGroup(memory.worstSession)}</strong></div>
+            <div class="trader-memory-card"><span class="kpi-label">Pattern strategia/sessione migliore</span><strong>${formatGroup(memory.bestPattern)}</strong></div>
+            <div class="trader-memory-card"><span class="kpi-label">Pattern/errori più registrati</span><ul>${mistakes}</ul></div>
+        </div>
+        <p class="placeholder-text">Statistiche sugli ultimi ${memory.sampleSize} trade caricati; confronti per gruppo mostrati solo con almeno 3 trade. Correlazioni descrittive, non prova di causalità o vantaggio futuro.</p>`;
 }
 
 async function caricaReportAnalisi() {
@@ -3997,7 +4184,10 @@ Formato JSON atteso:
 }`;
 
     try {
-        const rispostaTesto = await inviaRichiestaAICopilot(promptSistema);
+        const rispostaTesto = await inviaRichiestaAICopilot(promptSistema, {
+            level: 'trading',
+            format: 'json'
+        });
         
         // Estrazione JSON pulito
         const match = rispostaTesto.match(/\{[\s\S]*\}/);
@@ -4110,10 +4300,27 @@ async function calcolaMarketRegime(quiet = false) {
             label: regime.label,
             score,
             updatedAt,
-            changes: `S&P 500 ${changeLabel(sp500Change)}, DXY ${changeLabel(dxyChange)}, BTC ${changeLabel(btcChange)}, US 10Y ${yieldChangeBps.toFixed(0)} bp`
+            fetchedAt: Date.now(),
+            changes: `S&P 500 ${changeLabel(sp500Change)}, DXY ${changeLabel(dxyChange)}, BTC ${changeLabel(btcChange)}, US 10Y ${yieldChangeBps.toFixed(0)} bp`,
+            assetChanges: [
+                { asset: 'S&P 500', change: sp500Change },
+                { asset: 'Bitcoin', change: btcChange }
+            ],
+            components: {
+                vix: values.vix.current,
+                dxyChange,
+                yieldPercent,
+                yieldChangeBps,
+                sp500Change,
+                btcChange
+            }
         };
+        window.omnitradeRegimeCheckedAt = Date.now();
+        delete window.omnitradeRegimeContextError;
         if (!quiet) toast('Market Regime aggiornato con le cinque fonti.', 'success');
     } catch (e) {
+        window.omnitradeRegimeCheckedAt = Date.now();
+        window.omnitradeRegimeContextError = e.message;
         if (banner) banner.style.borderLeftColor = 'var(--border-color)';
         if (elTitolo) {
             elTitolo.textContent = 'DATI NON DISPONIBILI';
@@ -4491,55 +4698,46 @@ function aggiornaTabellaPaperTrading() {
     wrap.innerHTML = `<div class="table-scroll"><table><thead><tr><th>Ora</th><th>Ticker</th><th>Direzione</th><th>Qtà</th><th>Ingresso</th><th>Costi</th><th>Azione</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
-/* ============ FASE 4: FUTURE AI COACH & STATISTICAL DOCTOR ============ */
-function caricaStatoAICoach() {
-    // Inizializzazione o controllo dati pronti
+/* ============ COPILOT CONTESTUALE E REPORT GIORNALIERI ============ */
+function dataLocaleIso(value = new Date()) {
+    const date = value instanceof Date ? value : new Date(value);
+    if (!Number.isFinite(date.getTime())) return '';
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
-async function avviaDiagnosiAICoach() {
-    const wrap = document.getElementById('aiCoachOutputWrap');
-    const btn = document.getElementById('btnRichiediDiagnosiCoach');
-    if (!wrap) return;
-
-    btn.disabled = true;
-    btn.innerText = '🧠 Il Debrief AI sta analizzando i dati...';
-    wrap.innerHTML = '<div class="skeleton" style="height:180px;"></div>';
-
-    await caricaDiario();
-    const accountContext = costruisciContestoCopilot();
-    const journalText = document.getElementById('diarioWrap')?.innerText?.trim() || '';
-    const journalContext = journalText.startsWith('Impossibile caricare il Journal') ? '' : journalText.slice(0, 1200);
-    const promptCoach = `Agisci come coach di trading di OmniTrade AI. Analizza solo i dati effettivamente forniti:
-
-${accountContext || 'Non sono disponibili metriche di account.'}
-${journalContext ? `Estratto del journal: ${journalContext}` : 'Non sono disponibili voci del journal.'}
-
-Non inventare saldo, risultati, win rate, edge, errori o abitudini. Se i dati non bastano per una conclusione, dichiaralo chiaramente e indica quali dati servono. Distingui sempre i report di analisi dai trade eseguiti: i report non dimostrano un risultato economico.
-
-Restituisci un report conciso con: osservazioni supportate dai dati, limiti dell'analisi e prossimi passi misurabili per migliorare la raccolta dei dati. Non presentare raccomandazioni come consulenza finanziaria. Rispondi in italiano professionale.`;
-
-    try {
-        const rispostaCoach = await inviaRichiestaAICopilot(promptCoach);
-        wrap.innerHTML = `
-            <div class="report-section">
-                <div class="report-title">🧠 AI DEBRIEF OMNITRADE</div>
-                <div class="report-item success" style="white-space:pre-wrap; font-size:13.5px; line-height:1.65; max-height:420px; overflow-y:auto; padding-right:12px;">${escapeHtml(rispostaCoach)}</div>
-            </div>`;
-        toast('AI Debrief completato.', 'success');
-    } catch (e) {
-        wrap.innerHTML = `<div class="report-item danger">Impossibile completare l’AI Debrief: <code>${escapeHtml(e.message)}</code>.</div>`;
-    } finally {
-        btn.disabled = false;
-        btn.innerText = '🧠 Genera AI Debrief';
-    }
+async function getCopilotSession() {
+    const { data, error } = await sb.auth.getSession();
+    if (error) throw error;
+    if (!data?.session?.user) throw new Error('Accedi per usare il Copilot e salvare i report giornalieri.');
+    return data.session;
 }
 
-/* ============ CHAT (AI reale — solo via Supabase Edge Function "chat-ai") ============
-   Per sicurezza (Opzione A), le chiavi OpenRouter sono custodite SOLO nei segreti
-   Supabase (Dashboard → Settings → Secrets). Nessuna chiave transita nel browser. */
-async function inviaRichiestaAICopilot(promptText) {
-    const { data: { session } } = await sb.auth.getSession();
+async function leggiReportGiornaliero(session, reportType, reportDate) {
+    const { data, error } = await sb.from('copilot_daily_reports')
+        .select('content,created_at')
+        .eq('user_id', session.user.id)
+        .eq('report_date', reportDate)
+        .eq('report_type', reportType)
+        .maybeSingle();
+    if (error) throw error;
+    return data;
+}
+
+async function salvaReportGiornaliero(session, reportType, reportDate, content) {
+    const { error } = await sb.from('copilot_daily_reports').upsert({
+        user_id: session.user.id,
+        report_date: reportDate,
+        report_type: reportType,
+        content
+    }, { onConflict: 'user_id,report_date,report_type' });
+    if (error) throw error;
+}
+
+async function inviaRichiestaAICopilot(promptText, { level = 'trading', context = null, format = 'compact' } = {}) {
+    const { data: { session }, error: sessionError } = await sb.auth.getSession();
+    if (sessionError) throw sessionError;
     if (!session) throw new Error('Sessione non attiva. Effettua l\'accesso per usare l\'AI Copilot.');
+    const contextText = context == null ? await preparaContestoCopilot() : context;
 
     const resp = await fetch(`${SUPABASE_URL}/functions/v1/chat-ai`, {
         method: 'POST',
@@ -4547,11 +4745,72 @@ async function inviaRichiestaAICopilot(promptText) {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + session.access_token
         },
-        body: JSON.stringify({ messaggio: promptText })
+        body: JSON.stringify({ messaggio: promptText, livello: level, contesto: String(contextText).slice(0, 15000), formato: format })
     });
     const dati = await resp.json().catch(() => ({}));
     if (!resp.ok || dati.errore) throw new Error(dati.errore || ('HTTP ' + resp.status));
     return dati.risposta;
+}
+
+async function preparaContestoCopilot() {
+    const now = Date.now();
+    const tasks = [];
+    if (!window.omnitradePortfolioSnapshot || now - Number(window.omnitradePortfolioSnapshot.updatedAt || 0) > 60000) {
+        tasks.push(ricalcolaPortafoglio({ quiet: true }).catch(error => {
+            window.omnitradePortfolioContextError = error.message;
+        }));
+    }
+    const regimeCheckedAt = Number(window.omnitradeRegimeSnapshot?.fetchedAt || window.omnitradeRegimeCheckedAt || 0);
+    if (!window.omnitradeRegimeSnapshot || now - regimeCheckedAt > 180000) {
+        tasks.push(calcolaMarketRegime(true));
+    }
+    if (!window.omnitradeJournalSnapshot || now - Number(window.omnitradeJournalSnapshot.loadedAt || 0) > 120000) {
+        tasks.push((async () => {
+            try {
+                const { data, error } = await sb.from('journals')
+                    .select('id,ticker,direction,timeframe,strategy_name,entry_time,entry_price,stop_loss,take_profit,risk_reward,exit_price,pnl,result,session_tag,emotional_state,mistake_tag,notes')
+                    .order('entry_time', { ascending: false })
+                    .limit(500);
+                if (error) throw error;
+                window.omnitradeJournalSnapshot = costruisciTraderMemory(data || []);
+                window.omnitradeJournalSnapshot.loadedAt = Date.now();
+                delete window.omnitradeJournalContextError;
+            } catch (error) {
+                window.omnitradeJournalSnapshot = null;
+                window.omnitradeJournalContextError = error.message;
+            }
+        })());
+    }
+    const reportDate = dataLocaleIso();
+    const macroSnapshot = window.omnitradeMacroEventsSnapshot;
+    if (!macroSnapshot || macroSnapshot.date !== reportDate || now - Number(macroSnapshot.fetchedAt || 0) > 300000) {
+        tasks.push((async () => {
+            const current = new Date();
+            const endOfDay = new Date(current);
+            endOfDay.setHours(23, 59, 59, 999);
+            try {
+                const { data, error } = await sb.from('macro_calendar_events')
+                    .select('title,currency,impact,event_at')
+                    .eq('is_active', true)
+                    .gte('event_at', current.toISOString())
+                    .lte('event_at', endOfDay.toISOString())
+                    .order('event_at', { ascending: true })
+                    .limit(20);
+                if (error) throw error;
+                window.omnitradeMacroEventsSnapshot = {
+                    date: reportDate,
+                    fetchedAt: Date.now(),
+                    events: data || []
+                };
+                delete window.omnitradeMacroEventsContextError;
+            } catch (error) {
+                window.omnitradeMacroEventsSnapshot = { date: reportDate, fetchedAt: Date.now(), events: [] };
+                window.omnitradeMacroEventsContextError = error.message;
+            }
+        })());
+    }
+    await Promise.allSettled(tasks);
+    return costruisciContestoCopilot();
 }
 
 function costruisciContestoCopilot() {
@@ -4559,28 +4818,60 @@ function costruisciContestoCopilot() {
     const viewTitles = {
         dashboardHome: 'Dashboard', portafoglio: 'Portfolio', 'market-analysis': 'Analisi Mercato',
         volumetrica: 'Analisi volumetrica', news: 'Macro & News', regime: 'Market Regime',
-        dashboard: 'VWAP / Backtest Lab', builder: 'Strategy Builder', diario: 'Trading Journal',
-        marketplace: 'Marketplace', integrations: 'Integrazioni', aicoach: 'AI Debrief',
+        dashboard: 'VWAP / Backtest Lab', builder: 'Strategy Builder', papertrading: 'Paper Trading', diario: 'Trading Journal',
+        marketplace: 'Marketplace', integrations: 'Integrazioni',
         glossario: 'Academy', account: 'Account'
     };
     const getValue = id => document.getElementById(id)?.value?.trim() || '';
     const getText = id => document.getElementById(id)?.innerText?.trim() || '';
-    const asset = getValue('ticker') || getValue('volTicker');
-    const strategy = [getValue('stratNome'), getValue('stratAsset'), getValue('stratTimeframe')].filter(Boolean).join(' · ');
+    const asset = activeView?.id === 'view-market-analysis'
+        ? (getValue('marketAnalysisAsset') || getValue('volTicker') || getValue('ticker'))
+        : activeView?.id === 'view-volumetrica'
+        ? (getValue('volTicker') || getValue('ticker'))
+        : (getValue('ticker') || getValue('volTicker'));
+    const strategy = [
+        getValue('stratNome'),
+        getValue('stratCategoria'),
+        getValue('stratAsset'),
+        getValue('stratTimeframe'),
+        getValue('thenDirezione')
+    ].filter(Boolean).join(' · ');
     const portfolio = window.omnitradePortfolioSnapshot || null;
     const regime = window.omnitradeRegimeSnapshot || null;
+    const flow = window.omnitradeFlowSnapshot || null;
+    const journal = window.omnitradeJournalSnapshot || null;
+    const sessionFilter = getValue('sessionFilter');
+    const timeframe = getValue('timeframeCustom') || getValue('timeframe');
+    const orderBook = window.omnitradeOrderBookSnapshot || null;
+    const calendarText = getText('homeMacroCalendar');
+    const macroEvents = window.omnitradeMacroEventsSnapshot?.events || [];
     const context = [
         `Pagina: ${viewTitles[activeView?.id?.replace('view-', '')] || 'OmniTrade AI'}`,
         asset ? `Asset selezionato: ${asset}` : '',
         strategy ? `Strategia corrente: ${strategy}` : '',
-        getText('outputConsole') ? `Analisi/backtest visibile: ${getText('outputConsole').slice(0, 1200)}` : '',
+        timeframe ? `Timeframe: ${timeframe}` : '',
+        sessionFilter ? `Sessione backtest: ${sessionFilter}` : '',
+        getText('outputConsole') ? `Risultati/analisi backtest visibili: ${getText('outputConsole').slice(0, 1800)}` : '',
         portfolio ? `Portfolio: saldo ${portfolio.balance}; P&L realizzato ${portfolio.pnl}; win rate ${portfolio.winRate}; profit factor ${portfolio.profitFactor}; max drawdown realizzato ${portfolio.drawdown}.` : '',
-        regime ? `Market regime: ${regime.label}, score ${regime.score}/100, aggiornato ${regime.updatedAt}; variazioni a 5 sedute: ${regime.changes}.` : '',
-        activeView?.id === 'view-diario' && getText('diarioWrap')
-            ? `Estratto del Journal attualmente visualizzato: ${getText('diarioWrap').slice(0, 800)}`
+        window.omnitradePortfolioContextError ? `Portfolio non disponibile: ${window.omnitradePortfolioContextError}` : '',
+        regime ? `Market Regime: ${regime.label}, score ${regime.score}/100, aggiornato ${regime.updatedAt}; variazioni osservate: ${regime.changes}; variazioni dei soli proxy tracciati: ${regime.assetChanges.map(item => `${item.asset} ${item.change >= 0 ? '+' : ''}${item.change.toFixed(2)}%`).join(', ')}.` : 'Market Regime: non disponibile.',
+        window.omnitradeRegimeContextError ? `Errore Market Regime: ${window.omnitradeRegimeContextError}` : '',
+        calendarText && !/caricamento|loading/i.test(calendarText)
+            ? `Calendario macro visibile: ${calendarText.slice(0, 1000)}`
+            : 'Calendario macro: widget TradingView incorporato; eventi non disponibili per estrazione automatica.',
+        macroEvents.length
+            ? `Promemoria macro manuali ancora in programma oggi (non verificati automaticamente): ${JSON.stringify(macroEvents.map(event => ({ title: event.title, currency: event.currency, impact: event.impact, localTime: new Date(event.event_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) })))}.`
+            : 'Promemoria macro manuali di oggi: nessuno disponibile o nessun evento futuro inserito.',
+        window.omnitradeMacroEventsContextError ? `Eventi macro manuali non leggibili: ${window.omnitradeMacroEventsContextError}` : '',
+        flow ? `Flow Score: ${flow.bias} ${flow.score}/100 per ${flow.asset}; copertura ${flow.coverage}; componenti ${flow.components.map(item => `${item.name} ${item.score}/100`).join(', ')}.` : '',
+        orderBook ? `Order book: snapshot ${orderBook.symbol} delle ${new Date(orderBook.updatedAt).toLocaleTimeString('it-IT')}; limitato alle prime 8 fasce Binance.` : '',
+        journal ? `Trader Memory basata sugli ultimi ${journal.sampleSize} trade caricati: ${journal.closedCount} chiusi, P&L realizzato ${formatJournalPnl(journal.realizedPnl)}, win rate ${journal.winRate == null ? 'N/D' : `${journal.winRate.toFixed(1)}%`}; gruppi migliori/peggiori: ${JSON.stringify({ bestStrategy: journal.bestStrategy, worstStrategy: journal.worstStrategy, bestSession: journal.bestSession, worstSession: journal.worstSession, bestPattern: journal.bestPattern, recurringMistakes: journal.recurringMistakes })}; trade recenti: ${JSON.stringify(journal.recentTrades).slice(0, 5200)}.` : 'Trader Memory: Journal non caricato o non disponibile.',
+        window.omnitradeJournalContextError ? `Errore Journal/Trader Memory: ${window.omnitradeJournalContextError}` : '',
+        activeView?.id === 'view-diario' && getText('analysisJournalWrap')
+            ? `Report di analisi archiviati visibili: ${getText('analysisJournalWrap').slice(0, 800)}`
             : ''
     ].filter(Boolean);
-    return context.join('\n');
+    return context.join('\n').slice(0, 15000);
 }
 
 let copilotLastFocus = null;
@@ -4622,7 +4913,7 @@ document.addEventListener('keydown', event => {
         return;
     }
     if (event.key !== 'Tab') return;
-    const focusable = Array.from(dialog.querySelectorAll('button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+    const focusable = Array.from(dialog.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'))
         .filter(element => !element.hidden);
     if (!focusable.length) return;
     const first = focusable[0];
@@ -4636,23 +4927,128 @@ document.addEventListener('keydown', event => {
     }
 });
 
-async function generaBriefingGiornaliero() {
+async function generaBriefingGiornaliero({ force = false } = {}) {
     const button = document.getElementById('btnTodayBriefing');
     const output = document.getElementById('todayBriefingOutput');
-    if (!button || !output) return;
+    if (!button || !output || button.disabled) return;
     button.disabled = true;
     button.textContent = 'Generazione…';
     output.textContent = 'Sto preparando il briefing con i dati disponibili…';
     try {
-        const prompt = `Prepara un briefing giornaliero conciso usando solo il contesto verificato qui sotto. Non inventare eventi macro, prezzi, asset forti/deboli o allocazioni; se un dato manca, dichiaralo. Non fornire istruzioni personalizzate di acquisto/vendita. Struttura obbligatoria: Analisi, Rischi, Azione consigliata, Motivazione.\n\n${costruisciContestoCopilot()}`;
-        const briefing = await inviaRichiestaAICopilot(prompt);
+        const session = await getCopilotSession();
+        const reportDate = dataLocaleIso();
+        if (!force) {
+            const existing = await leggiReportGiornaliero(session, 'briefing', reportDate);
+            if (existing?.content) {
+                output.textContent = existing.content;
+                return;
+            }
+        }
+        const metadata = session.user.user_metadata || {};
+        const displayName = String(metadata.full_name || metadata.name || metadata.username || '').trim().split(/\s+/)[0] || 'Trader';
+        const context = await preparaContestoCopilot();
+        const prompt = `Prepara il briefing di oggi (${reportDate}) per ${displayName}, usando solo i dati nel contesto. Includi regime, asset forti/deboli soltanto se misurabili dai dati forniti, evento macro solo se disponibile e stato del portfolio. Non inventare prezzi, notizie, eventi, percentuali o esposizioni. Se il calendario macro non è accessibile o un indicatore manca, scrivilo. Non suggerire un'allocazione né ordini personalizzati. Mantieni la risposta breve, nel formato OmniTrade standard.`;
+        const briefing = await inviaRichiestaAICopilot(prompt, { level: 'trading', context });
+        await salvaReportGiornaliero(session, 'briefing', reportDate, briefing);
         output.textContent = briefing;
     } catch (error) {
-        output.textContent = `Briefing non disponibile: ${error.message}`;
+        output.textContent = `Briefing non disponibile: ${error.message}. Verifica accesso, configurazione AI e migration copilot_daily_reports su Supabase.`;
     } finally {
         button.disabled = false;
-        button.textContent = 'Genera briefing';
+        button.textContent = 'Rigenera briefing';
     }
+}
+
+async function generaDailyDebrief({ automatic = false, force = false, trades = null } = {}) {
+    const output = document.getElementById('dailyDebriefOutput');
+    const button = document.getElementById('btnDailyDebrief');
+    if (!output || button?.disabled) return;
+    if (button) {
+        button.disabled = true;
+        if (force) button.textContent = 'Generazione…';
+    }
+    if (automatic) output.innerHTML = '<p class="placeholder-text">Preparazione del debrief giornaliero…</p>';
+    try {
+        const session = await getCopilotSession();
+        const reportDate = dataLocaleIso();
+        if (!force) {
+            const existing = await leggiReportGiornaliero(session, 'debrief', reportDate);
+            if (existing?.content) {
+                output.textContent = existing.content;
+                return;
+            }
+        }
+        const journalTrades = trades || window.omnitradeJournalSnapshot?.todayTrades || window.omnitradeJournalSnapshot?.recentTrades || [];
+        const todayTrades = journalTrades.filter(trade => dataLocaleIso(trade.entry_time || trade.date) === reportDate);
+        const closedTrades = todayTrades.filter(trade =>
+            trade.result !== 'open' && trade.pnl != null && Number.isFinite(Number(trade.pnl))
+        );
+        if (!todayTrades.length) {
+            output.innerHTML = '<p class="placeholder-text">Nessun trade registrato oggi. Il debrief si aggiornerà automaticamente dopo il primo inserimento nel Journal.</p>';
+            return;
+        }
+        const wins = closedTrades.filter(trade => Number(trade.pnl) > 0);
+        const netPnl = closedTrades.reduce((sum, trade) => sum + Number(trade.pnl), 0);
+        const bestTrade = [...closedTrades].sort((a, b) => Number(b.pnl) - Number(a.pnl))[0];
+        const mistakeCounts = new Map();
+        todayTrades.map(trade => String(trade.mistake_tag || trade.mistake || '').trim())
+            .filter(Boolean)
+            .forEach(mistake => mistakeCounts.set(mistake, (mistakeCounts.get(mistake) || 0) + 1));
+        const mostFrequentMistake = [...mistakeCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+        const debriefContext = [
+            `Data locale: ${reportDate}`,
+            `Trade registrati oggi: ${todayTrades.length}`,
+            `Trade chiusi con P&L: ${closedTrades.length}`,
+            `Win rate sui soli trade chiusi: ${closedTrades.length ? `${(wins.length / closedTrades.length * 100).toFixed(1)}%` : 'N/D'}`,
+            `P&L realizzato: ${closedTrades.length ? formatJournalPnl(netPnl) : 'N/D'}`,
+            `Errore/pattern più frequente registrato: ${mostFrequentMistake ? `${mostFrequentMistake[0]} (${mostFrequentMistake[1]})` : 'nessuno registrato'}`,
+            `Miglior trade chiuso: ${bestTrade ? `${bestTrade.ticker || 'asset non specificato'} ${bestTrade.direction || ''}, P&L ${formatJournalPnl(bestTrade.pnl)}` : 'N/D: nessun trade chiuso con P&L'}`,
+            `Trade del giorno: ${JSON.stringify(todayTrades.slice(0, 20).map(trade => ({
+                ticker: trade.ticker,
+                direction: trade.direction,
+                strategy: trade.strategy_name || trade.strategy,
+                session: trade.session_tag || trade.session,
+                result: trade.result,
+                pnl: trade.pnl == null ? null : Number(trade.pnl),
+                emotion: trade.emotional_state || trade.emotionalState,
+                mistake: trade.mistake_tag || trade.mistake,
+                notes: String(trade.notes || '').slice(0, 180)
+            })))}`
+        ].join('\n');
+        const accountContext = await preparaContestoCopilot();
+        const memory = window.omnitradeJournalSnapshot;
+        const context = `${accountContext.slice(0, 6500)}\n\nDati verificati per il Daily Debrief:\n${debriefContext}\n\nTrader Memory: ${memory ? JSON.stringify({ sampleSize: memory.sampleSize, bestStrategy: memory.bestStrategy, worstStrategy: memory.worstStrategy, bestSession: memory.bestSession, worstSession: memory.worstSession, bestPattern: memory.bestPattern, worstPattern: memory.worstPattern, recurringMistakes: memory.recurringMistakes }) : 'non disponibile'}`;
+        const prompt = `Scrivi un Daily Debrief conciso per la data indicata, usando solo il contesto. Riporta trade eseguiti, win rate sui soli trade chiusi, P&L, errore principale, miglior trade e valutazione della giornata. Non inferire errori o prestazioni non presenti nei campi; se il campione è insufficiente, dichiaralo e non attribuire causalità. Nessuna consulenza finanziaria. Mantieni il formato OmniTrade standard.`;
+        const debrief = await inviaRichiestaAICopilot(prompt, { level: 'deep', context });
+        await salvaReportGiornaliero(session, 'debrief', reportDate, debrief);
+        output.textContent = debrief;
+    } catch (error) {
+        output.textContent = `Daily Debrief non disponibile: ${error.message}. Verifica accesso, configurazione AI e migration copilot_daily_reports su Supabase.`;
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Rigenera debrief';
+        }
+    }
+}
+
+function rispostaRapidaDaGlossario(query) {
+    const normalized = query.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (!/(cos['’`]?e|che cos|cosa significa|definizion|definisci|spiegami|formula)/i.test(normalized)) return null;
+    const terms = [
+        { names: ['vwap'], definition: 'Prezzo medio ponderato per i volumi: somma(prezzo × volume) / somma(volume). Nei grafici OmniTrade è una stima OHLCV per candela, non un calcolo tick-by-tick.' },
+        { names: ['profit factor'], definition: 'Profitti lordi divisi per il valore assoluto delle perdite lorde, calcolati sul campione selezionato. Se non ci sono perdite, il rapporto può non essere definito.' },
+        { names: ['win rate', 'tasso di vincita'], definition: 'Percentuale di trade chiusi in profitto sul totale dei trade chiusi considerati; i trade aperti non dovrebbero entrare nel denominatore.' },
+        { names: ['drawdown'], definition: 'Riduzione dell’equity da un picco precedente al successivo minimo, prima di un nuovo massimo. Specifica sempre se la misura è assoluta o percentuale.' },
+        { names: ['expectancy', 'valore atteso'], definition: 'P&L medio per trade nel campione. Una stima storica dipende dalla qualità dei dati e non garantisce risultati futuri.' },
+        { names: ['risk reward', 'risk/reward', 'r/r'], definition: 'Rapporto tra ricompensa potenziale e rischio pianificato, misurati rispetto a entry, target e stop; non è una probabilità di successo.' },
+        { names: ['market regime'], definition: 'Sintesi del contesto di mercato basata su indicatori e proxy scelti. In OmniTrade è descrittiva e non determina operazioni o allocazioni.' },
+        { names: ['order book', 'book ordini'], definition: 'Snapshot degli ordini limite bid e ask presenti su uno specifico exchange; può cambiare rapidamente e non rappresenta tutti i mercati né garantisce esecuzioni.' },
+        { names: ['flow score'], definition: 'Punteggio composito descrittivo di OmniTrade, ponderato sulle componenti disponibili (VWAP, volume OHLCV, order book e Market Regime). La copertura può variare e non è un segnale predittivo.' }
+    ];
+    const match = terms.find(term => term.names.some(name => normalized.includes(name)));
+    if (!match) return null;
+    return `📊 Analisi\n${match.definition}\n\n⚠ Rischi\nÈ una definizione didattica, non una previsione né una raccomandazione.\n\n✅ Azione consigliata\nControlla formula, timeframe e campione prima di interpretare la metrica.\n\n🎯 Motivazione\nRisposta locale dal glossario: pronta senza chiamate al provider AI.`;
 }
 
 async function inviaInChat() {
@@ -4669,8 +5065,10 @@ async function inviaInChat() {
     chatBox.scrollTop = chatBox.scrollHeight;
 
     try {
-        const prompt = `Sei l'AI Copilot contestuale di OmniTrade AI. Usa soltanto i dati del contesto, dichiara le incertezze e non inventare valori o eventi. Non formulare promesse di rendimento. Struttura la risposta con le sezioni: Analisi, Rischi, Azione consigliata, Motivazione.\n\nContesto workspace:\n${costruisciContestoCopilot() || 'Nessun dato aggiuntivo disponibile.'}\n\nRichiesta dell'utente:\n${userText}`;
-        const risposta = await inviaRichiestaAICopilot(prompt);
+        const level = document.getElementById('copilotResponseLevel')?.value || 'trading';
+        const risposta = level === 'quick'
+            ? rispostaRapidaDaGlossario(userText) || await inviaRichiestaAICopilot(userText, { level })
+            : await inviaRichiestaAICopilot(userText, { level });
         document.getElementById(idAttesa).innerHTML = escapeHtml(risposta).replace(/\n/g, '<br>');
     } catch (e) {
         const elAttesa = document.getElementById(idAttesa);
@@ -4684,6 +5082,7 @@ let modalitaCorrente = 'reale';
 let equityChart = null;
 
 function aggiornaDashboardPortfolio(snapshot) {
+    snapshot.updatedAt = Date.now();
     window.omnitradePortfolioSnapshot = snapshot;
     const values = {
         homeKpiSaldo: snapshot.balance,
@@ -4808,7 +5207,7 @@ function disegnaEquity(labels, valori) {
     });
 }
 
-async function ricalcolaPortafoglio() {
+async function ricalcolaPortafoglio({ quiet = false } = {}) {
     const wrapAperte = document.getElementById('posizioniAperteWrap');
     const wrapStorico = document.getElementById('storicoWrap');
     wrapAperte.innerHTML = '<div class="skeleton" style="height:100px;"></div>';
@@ -4867,6 +5266,7 @@ async function ricalcolaPortafoglio() {
             profitFactor: chiuse.length ? profitFactorLabel : '—',
             drawdown: chiuse.length ? '-$' + drawdownMassimo.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'
         });
+        delete window.omnitradePortfolioContextError;
 
         animaContatore('kpiSaldo', saldo, { prefisso: '$', decimali: 2 });
         const segnoPnl = pnlTot >= 0 ? '+$' : '-$';
@@ -4953,12 +5353,13 @@ async function ricalcolaPortafoglio() {
         disegnaEquity(labels, valori);
 
     } catch (e) {
+        window.omnitradePortfolioContextError = e.message;
         aggiornaDashboardPortfolio({
             mode: modalitaCorrente, balance: '—', pnl: '—', winRate: '—', profitFactor: '—', drawdown: '—'
         });
         const status = document.getElementById('homePortfolioStatus');
         if (status) status.textContent = 'Metriche portfolio non disponibili: verifica connessione e schema Supabase.';
-        toast('Errore nel caricamento del portafoglio: ' + e.message, 'error');
+        if (!quiet) toast('Errore nel caricamento del portafoglio: ' + e.message, 'error');
         wrapAperte.innerHTML = '<p class="placeholder-text">Impossibile caricare — hai eseguito schema_wallet_supabase.sql nel SQL Editor di Supabase?</p>';
         wrapStorico.innerHTML = '';
     }
@@ -5063,12 +5464,13 @@ function tickerVersoSimboloBinance(tickerInput) {
 }
 
 let orderBookInterval = null;
-async function aggiornaOrderBook(tickerInput) {
+async function aggiornaOrderBook(tickerInput, { polling = true } = {}) {
     if (orderBookInterval) clearInterval(orderBookInterval);
     const simboloBinance = tickerVersoSimboloBinance(tickerInput);
     const pannello = document.getElementById('orderBookPanel');
     const msgAssente = document.getElementById('orderBookAssenteMsg');
     if (!simboloBinance) {
+        delete window.omnitradeOrderBookSnapshot;
         pannello.style.display = 'none';
         msgAssente.style.display = 'block';
         document.getElementById('orderBookAssenteTicker').innerText = tickerInput;
@@ -5103,6 +5505,12 @@ async function aggiornaOrderBook(tickerInput) {
             const resp = await fetch(`https://api.binance.com/api/v3/depth?symbol=${simboloBinance}&limit=8`);
             if (!resp.ok) throw new Error('HTTP ' + resp.status);
             const data = await resp.json();
+            window.omnitradeOrderBookSnapshot = {
+                symbol: simboloBinance,
+                bids: data.bids.slice(0, 8).map(([price, quantity]) => [Number(price), Number(quantity)]),
+                asks: data.asks.slice(0, 8).map(([price, quantity]) => [Number(price), Number(quantity)]),
+                updatedAt: new Date().toISOString()
+            };
             const righeVendita = data.asks.slice(0, 8).reverse().map(([prezzo, qta]) =>
                 `<tr><td class="dev-neg">${parseFloat(prezzo).toLocaleString('en-US', {maximumFractionDigits:2})}</td><td>${parseFloat(qta).toFixed(4)}</td></tr>`).join('');
             const righeAcquisto = data.bids.slice(0, 8).map(([prezzo, qta]) =>
@@ -5113,14 +5521,140 @@ async function aggiornaOrderBook(tickerInput) {
                     <div><h2 style="font-size:12px; color:#00ffa3; border:none;">ACQUISTO (Bid)</h2><table><thead><tr><th>Prezzo</th><th>Quantità</th></tr></thead><tbody>${righeAcquisto}</tbody></table></div>
                 </div>`;
         } catch (e) {
+            delete window.omnitradeOrderBookSnapshot;
             wrap.innerHTML = `<p class="placeholder-text">Order book non disponibile in questo momento (${escapeHtml(e.message)}).</p>`;
         }
     }
     await caricaStatistiche24h();
     await caricaSnapshot();
     // FIX 8: polling più lento su mobile per ridurre consumo batteria e lag
-    const intervalloOB = window.innerWidth <= 768 ? 8000 : 4000;
-    orderBookInterval = setInterval(() => { caricaSnapshot(); caricaStatistiche24h(); }, intervalloOB);
+    if (polling) {
+        const intervalloOB = window.innerWidth <= 768 ? 8000 : 4000;
+        orderBookInterval = setInterval(() => { caricaSnapshot(); caricaStatistiche24h(); }, intervalloOB);
+    }
+}
+
+let flowScoreRequestSequence = 0;
+async function aggiornaFlowScore({ refreshOrderBook = false } = {}) {
+    const output = document.getElementById('flowScoreOutput');
+    if (!output) return;
+    const requestId = ++flowScoreRequestSequence;
+    const activeView = document.querySelector('.view-content.active')?.id;
+    const assetInput = activeView === 'view-market-analysis'
+        ? document.getElementById('marketAnalysisAsset')
+        : activeView === 'view-volumetrica'
+        ? document.getElementById('volTicker')
+        : document.getElementById('ticker');
+    const asset = assetInput?.value?.trim().toUpperCase() || 'BTC-USD';
+    const timeframe = document.getElementById('timeframeCustom')?.value?.trim()
+        || document.getElementById('timeframe')?.value
+        || '1h';
+    output.innerHTML = '<p class="placeholder-text">Aggiornamento delle componenti disponibili…</p>';
+    try {
+        let series = vwapCurrentSeries;
+        let seriesError = '';
+        if (!series || series.ticker !== asset || series.timeframe !== timeframe) {
+            try {
+                series = await ottieniSerieMercato(asset, timeframe);
+            } catch (error) {
+                series = null;
+                seriesError = error.message;
+            }
+        }
+        if (refreshOrderBook) await aggiornaOrderBook(asset, { polling: false });
+        if (requestId !== flowScoreRequestSequence) return;
+
+        const candles = series?.candles || [];
+        const last = candles.at(-1);
+        const components = [];
+        const unavailable = [];
+        const weights = { VWAP: 0.3, Volume: 0.25, 'Order book': 0.25, 'Market Regime': 0.2 };
+        if (last && last.vwap != null && Number.isFinite(Number(last.vwap)) && Number(last.vwap) !== 0) {
+            const deviation = (Number(last.close) / Number(last.vwap) - 1) * 100;
+            components.push({ name: 'VWAP', score: Math.max(0, Math.min(100, 50 + Math.max(-2, Math.min(2, deviation)) * 12.5)), detail: `${deviation >= 0 ? '+' : ''}${deviation.toFixed(2)}% dal VWAP stimato` });
+        } else unavailable.push(seriesError ? `VWAP non disponibile: ${seriesError}` : 'VWAP non disponibile');
+        if (last && Number.isFinite(Number(last.volume)) && Number(last.volume) > 0) {
+            const baselineCandles = candles.slice(-21, -1).filter(candle => Number(candle.volume) > 0);
+            const averageVolume = baselineCandles.length
+                ? baselineCandles.reduce((sum, candle) => sum + Number(candle.volume), 0) / baselineCandles.length
+                : 0;
+            if (averageVolume > 0) {
+                const direction = Number(last.close) >= Number(last.open) ? 1 : -1;
+                const relativeVolume = Number(last.volume) / averageVolume;
+                const score = Math.max(0, Math.min(100, 50 + direction * Math.min(relativeVolume, 2) * 12.5));
+                components.push({ name: 'Volume', score, detail: `${relativeVolume.toFixed(2)}× la media delle ${baselineCandles.length} candele precedenti` });
+            } else unavailable.push('Volume OHLCV senza media di confronto');
+        } else if (last) unavailable.push('Volume OHLCV non disponibile');
+        const book = window.omnitradeOrderBookSnapshot;
+        if (book?.symbol === tickerVersoSimboloBinance(asset) && book.bids?.length && book.asks?.length) {
+            const bidNotional = book.bids.reduce((sum, [price, quantity]) => sum + price * quantity, 0);
+            const askNotional = book.asks.reduce((sum, [price, quantity]) => sum + price * quantity, 0);
+            const totalNotional = bidNotional + askNotional;
+            if (totalNotional > 0) {
+                const imbalance = (bidNotional - askNotional) / totalNotional;
+                components.push({
+                    name: 'Order book',
+                    score: Math.max(0, Math.min(100, 50 + imbalance * 50)),
+                    detail: `sbilanciamento top 8 ${(imbalance * 100).toFixed(1)}% · ${new Date(book.updatedAt).toLocaleTimeString('it-IT')}`
+                });
+            }
+        } else unavailable.push('Order book non disponibile per questo asset o non aggiornato');
+        const regime = window.omnitradeRegimeSnapshot;
+        if (Number.isFinite(Number(regime?.score))) {
+            components.push({ name: 'Market Regime', score: Number(regime.score), detail: `${regime.label} · aggiornato ${regime.updatedAt}` });
+        } else unavailable.push('Market Regime non disponibile');
+        if (!components.length) throw new Error(unavailable.join('; ') || 'Nessuna componente dati valida al momento.');
+        const totalWeight = components.reduce((sum, component) => sum + weights[component.name], 0);
+        const score = Math.round(components.reduce((sum, component) => sum + component.score * weights[component.name], 0) / totalWeight);
+        const bias = score >= 55 ? 'Bull Score' : score <= 45 ? 'Bear Score' : 'Neutrale';
+        const color = score >= 55 ? 'var(--primary)' : score <= 45 ? 'var(--danger)' : '#ffd200';
+        const coverage = `${components.length}/4 componenti`;
+        window.omnitradeFlowSnapshot = {
+            asset,
+            score,
+            bias,
+            coverage,
+            updatedAt: new Date().toISOString(),
+            components: components.map(component => ({ ...component, score: Math.round(component.score) }))
+        };
+        output.innerHTML = `
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:8px 0 14px;">
+                <div class="flow-score-value" style="color:${color}">${bias} ${score}/100</div>
+                <span class="placeholder-text">${escapeHtml(asset)} · copertura ${coverage}</span>
+            </div>
+            <div class="trader-memory-grid">${components.map(component => `
+                <div class="trader-memory-card"><span class="kpi-label">${escapeHtml(component.name)} · ${Math.round(component.score)}/100</span>
+                <strong>${escapeHtml(component.detail)}</strong></div>`).join('')}</div>
+            <p class="placeholder-text">Score composito ponderato solo sulle componenti disponibili. VWAP/volume sono stime OHLCV; il book è uno snapshot Binance limitato e specifico dell’exchange. Non indica aggressori, causalità o direzione futura.${unavailable.length ? ` Componenti assenti: ${escapeHtml(unavailable.join('; '))}.` : ''}</p>`;
+    } catch (error) {
+        if (requestId === flowScoreRequestSequence) {
+            delete window.omnitradeFlowSnapshot;
+            output.innerHTML = `<p class="placeholder-text">Flow Score non disponibile: ${escapeHtml(error.message)}. Verifica le fonti e riprova.</p>`;
+        }
+    }
+}
+
+async function generaAIAnalisiMercato() {
+    const output = document.getElementById('marketAIAnalysisOutput');
+    const button = document.getElementById('btnMarketAIAnalysis');
+    if (!output || !button) return;
+    button.disabled = true;
+    button.textContent = 'Analisi in corso…';
+    output.textContent = 'Sto analizzando solo i dati attualmente disponibili…';
+    try {
+        await aggiornaFlowScore({ refreshOrderBook: true });
+        const context = await preparaContestoCopilot();
+        const answer = await inviaRichiestaAICopilot(
+            'Analizza il contesto di mercato mostrato. Distingui osservazioni, rischi, limiti dei dati e possibili interpretazioni; non presentare una previsione o un ordine operativo.',
+            { level: 'trading', context }
+        );
+        output.textContent = answer;
+    } catch (error) {
+        output.textContent = `AI Analysis non disponibile: ${error.message}`;
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Analizza contesto';
+    }
 }
 
 /* ============ NEWS & CALENDARIO ECONOMICO ============ */
@@ -5746,8 +6280,8 @@ function applicaDeepLinkNotifica() {
     const requestedView = params.get('view');
     const view = resourceType === 'analysis'
         ? 'market-analysis'
-        : (requestedView || PUSH_VIEW_BY_RESOURCE[resourceType]);
-    if (!view || !/^(portafoglio|market-analysis|volumetrica|news|regime|dashboard|builder|papertrading|marketplace|integrations|aicoach|diario|glossario)$/.test(view)) return;
+        : ((requestedView === 'aicoach' ? 'diario' : requestedView) || PUSH_VIEW_BY_RESOURCE[resourceType]);
+    if (!view || !/^(portafoglio|market-analysis|volumetrica|news|regime|dashboard|builder|papertrading|marketplace|integrations|diario|glossario)$/.test(view)) return;
 
     const menuItem = Array.from(document.querySelectorAll('.menu-item'))
         .find(item => item.getAttribute('onclick') === `switchView('${view}', this)`);
