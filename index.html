@@ -373,6 +373,8 @@
     @media (max-width: 768px) { .workspace { height: auto; flex: 1; } .view-content { padding: 16px; } }
 
     .ticker-tape-wrap { border-bottom: 1px solid var(--border-color); background-color: #0b0e12; flex-shrink: 0; }
+    #tickerTapeInner { height: 58px; }
+    #tickerTapeInner tv-ticker-tape, .tv-chart-wrap tv-economic-calendar { display: block; width: 100%; height: 100%; }
 
     .view-content { flex: 1; padding: 28px; overflow-y: auto; display: none; }
     .view-content.active { display: block; animation: viewFade .35s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -603,6 +605,7 @@
             padding: calc(10px + env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
         }
         .workspace { min-height: 0; }
+        #tickerTapeInner { height: 48px; }
         .view-content {
             min-height: 0;
             padding: 16px max(14px, env(safe-area-inset-right)) max(92px, calc(76px + env(safe-area-inset-bottom))) max(14px, env(safe-area-inset-left));
@@ -5411,8 +5414,8 @@ const TRADINGVIEW_SCRIPT_INTEGRITY = {
     'embed-widget-technical-analysis.js': 'sha384-2CJECwj2KmxNnVad+hh2boQ1+XzDwOKz6ME+n0piRRQDT0q91iHAIGHMm9V9qM4H',
     'embed-widget-symbol-info.js': 'sha384-/ebsPFP3FqMDo3/dCelqf8NLdPuxoKxY5ZBOZgfT2/LRBKgjkjBDhWCOCEnIlLBE',
     'embed-widget-timeline.js': 'sha384-25J+3GDyLeePhAiOmgq6tncTngAlIbiSXx9xm0j4x5R1nhqQro57mwTKP4E9F/py',
-    'embed-widget-events.js': 'sha384-gfVHIDk1xEMydiAweVWDubuJytV5PtNwi0g28ZUyyRovvX2Hx1MKhpCRt/bgeLcX',
-    'embed-widget-ticker-tape.js': 'sha384-D4HqscDSx7aiWrajeydNX11rRPwq0EWxihBqudR/U+8uUNzDrdCVksegbjC4BfXu'
+    'tv-economic-calendar.js': 'sha384-+PG92u7pnaYw7mBIxG/Kah8qoi37Fi2mKDVuQYBOOu47ASAIQldYF10qJS9vOKoR',
+    'tv-ticker-tape.js': 'sha384-X7k9zWpwHtEcebBIxhdAgjCFoIXnO/NhwcVIhEjDDifKa40/hzQ2zFX+x5dnhYnS'
 };
 
 function proteggiScriptTradingView(script) {
@@ -5421,6 +5424,33 @@ function proteggiScriptTradingView(script) {
     if (!integrity) throw new Error('Integrità TradingView non configurata per questo script.');
     script.integrity = integrity;
     script.crossOrigin = 'anonymous';
+}
+
+const tradingViewModulePromises = new Map();
+function caricaModuloTradingView(fileName, elementName) {
+    if (customElements.get(elementName)) return Promise.resolve();
+    if (tradingViewModulePromises.has(fileName)) return tradingViewModulePromises.get(fileName);
+    const promise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.type = 'module';
+        script.src = `https://widgets.tradingview-widget.com/w/it/${fileName}`;
+        proteggiScriptTradingView(script);
+        script.addEventListener('load', () => customElements.whenDefined(elementName).then(resolve, reject), { once: true });
+        script.addEventListener('error', () => reject(new Error(`Impossibile caricare ${elementName} da TradingView.`)), { once: true });
+        document.head.appendChild(script);
+    }).catch(error => {
+        tradingViewModulePromises.delete(fileName);
+        throw error;
+    });
+    tradingViewModulePromises.set(fileName, promise);
+    return promise;
+}
+
+function mostraErroreWidgetTradingView(container, widgetName, error) {
+    const message = document.createElement('p');
+    message.className = 'placeholder-text';
+    message.textContent = `${widgetName} non disponibile (${error.message}).`;
+    container.replaceChildren(message);
 }
 
 /* ============ VOLUMETRICA: pagina dedicata ============ */
@@ -5686,16 +5716,14 @@ let newsRefreshInterval = null;
 function renderCalendarioEconomico(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    container.innerHTML = '<div class="tradingview-widget-container__widget"></div>';
-    const script = document.createElement('script');
-    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-events.js';
-    proteggiScriptTradingView(script);
-    script.async = true;
-    script.innerHTML = JSON.stringify({
-        width: '100%', height: '100%', colorTheme: 'dark', isTransparent: true, locale: 'it',
-        importanceFilter: '-1,0,1', countryFilter: 'us,eu,gb,jp,cn'
-    });
-    container.appendChild(script);
+    const calendar = document.createElement('tv-economic-calendar');
+    calendar.setAttribute('countries', 'us,eu,gb,jp,cn');
+    calendar.setAttribute('theme', 'dark');
+    container.replaceChildren(calendar);
+    caricaModuloTradingView('tv-economic-calendar.js', 'tv-economic-calendar')
+        .catch(error => {
+            if (calendar.isConnected) mostraErroreWidgetTradingView(container, 'Calendario economico TradingView', error);
+        });
 }
 
 function caricaNewsECalendario() {
@@ -6314,20 +6342,20 @@ function applicaDeepLinkNotifica() {
 
 function caricaTickerTapeGlobale() {
     const container = document.getElementById('tickerTapeInner');
-    const script = document.createElement('script');
-    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
-    proteggiScriptTradingView(script);
-    script.async = true;
-    script.innerHTML = JSON.stringify({
-        symbols: [
-            { proName: "BINANCE:BTCUSDT", title: "BTC" }, { proName: "BINANCE:ETHUSDT", title: "ETH" },
-            { proName: "FOREXCOM:SPXUSD", title: "S&P 500" }, { proName: "FRED:DTWEXBGS", title: "USD Index (Fed)" },
-            { proName: "FRED:DGS10", title: "US10Y (rendimento)" }, { proName: "AMEX:VIXY", title: "VIX (proxy ETF)" },
-            { proName: "TVC:GOLD", title: "Gold" }, { proName: "FX:EURUSD", title: "EUR/USD" }
-        ],
-        colorTheme: "dark", isTransparent: true, displayMode: "adaptive", locale: "it"
-    });
-    container.appendChild(script);
+    if (!container) return;
+    const tickerTape = document.createElement('tv-ticker-tape');
+    tickerTape.setAttribute('symbols', [
+        'BINANCE:BTCUSDT', 'BINANCE:ETHUSDT', 'FOREXCOM:SPXUSD', 'FRED:DTWEXBGS',
+        'FRED:DGS10', 'AMEX:VIXY', 'TVC:GOLD', 'FX:EURUSD'
+    ].join(','));
+    tickerTape.setAttribute('direction', 'horizontal');
+    tickerTape.setAttribute('item-size', window.matchMedia('(max-width: 768px)').matches ? 'compact' : 'normal');
+    tickerTape.setAttribute('theme', 'dark');
+    container.replaceChildren(tickerTape);
+    caricaModuloTradingView('tv-ticker-tape.js', 'tv-ticker-tape')
+        .catch(error => {
+            if (tickerTape.isConnected) mostraErroreWidgetTradingView(container, 'Ticker TradingView', error);
+        });
 }
 
 function apriImpostazioniAI() {
