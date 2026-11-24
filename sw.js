@@ -3,6 +3,9 @@ const CATEGORY_VIEWS = {
     trading_alerts: 'dashboard',
     macroeconomy: 'news',
     earnings: 'news',
+    portfolio: 'portafoglio',
+    journal: 'diario',
+    backtest: 'dashboard',
     system: 'news'
 };
 

@@ -50,7 +50,7 @@ Deno.serve(async (req: Request) => {
       });
     }
     const isServiceRole = !!SUPABASE_SERVICE_ROLE_KEY && authorization === `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`;
-    let userId: string | undefined;
+    let authenticatedUserId: string | undefined;
     if (!isServiceRole) {
       const token = authorization.replace(/^Bearer\s+/i, "");
       if (!token || !SUPABASE_ANON_KEY) {
@@ -67,16 +67,21 @@ Deno.serve(async (req: Request) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (input?.test !== true) {
-        return new Response(JSON.stringify({ error: "Gli utenti possono inviare solo una notifica di test ai propri dispositivi." }), {
+      authenticatedUserId = user.id;
+      const personalCategories = ["portfolio", "journal", "backtest"];
+      if (input.test !== true && (
+        !personalCategories.includes(input.category)
+        || input.userId != null
+        || input.broadcast != null
+      )) {
+        return new Response(JSON.stringify({ error: "Gli utenti possono inviare solo notifiche Portfolio, Journal o Backtest ai propri dispositivi." }), {
           status: 403,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      userId = user.id;
     }
 
-    if (!isServiceRole) {
+    if (!isServiceRole && input.test === true) {
       configureWebPush();
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
       const payload = createPushPayload({
@@ -85,9 +90,9 @@ Deno.serve(async (req: Request) => {
         body: "Questa è una notifica Web Push di prova.",
         resourceType: "system",
         resourceId: "push-test",
-        tag: `system:push-test:${userId}`,
+        tag: `system:push-test:${authenticatedUserId}`,
       });
-      const result = await sendPushNotifications(supabase, payload, { userId });
+      const result = await sendPushNotifications(supabase, payload, { userId: authenticatedUserId });
       return new Response(JSON.stringify({ ok: true, ...result }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -118,19 +123,25 @@ Deno.serve(async (req: Request) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    if (input.excludeDeviceId != null && !isUuid(input.excludeDeviceId)) {
+      return new Response(JSON.stringify({ error: "Identificativo dispositivo da escludere non valido." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     if (input.userId != null && !isUuid(input.userId)) {
       return new Response(JSON.stringify({ error: "Destinatario non valido." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (input.broadcast === true && input.userId) {
+    if (isServiceRole && input.broadcast === true && input.userId) {
       return new Response(JSON.stringify({ error: "Scegli un utente specifico o un broadcast." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (!input.userId && input.broadcast !== true) {
+    if (isServiceRole && !input.userId && input.broadcast !== true) {
       return new Response(JSON.stringify({ error: "Indicare userId o broadcast: true." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -148,10 +159,9 @@ Deno.serve(async (req: Request) => {
       resourceId: input.resourceId,
       tag: typeof input.tag === "string" ? input.tag : undefined,
     });
-    const result = await sendPushNotifications(supabase, payload, {
-      userId: input.userId,
-      broadcast: input.broadcast === true,
-    });
+    const result = await sendPushNotifications(supabase, payload, isServiceRole
+      ? { userId: input.userId, broadcast: input.broadcast === true, excludeDeviceId: input.excludeDeviceId }
+      : { userId: authenticatedUserId, excludeDeviceId: input.excludeDeviceId });
 
     return new Response(JSON.stringify({ ok: true, ...result }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

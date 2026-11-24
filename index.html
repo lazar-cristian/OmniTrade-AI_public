@@ -722,7 +722,7 @@
         <div class="menu-item" data-workspaces="backtest" tabindex="0" onclick="switchView('papertrading', this)">🎮 Paper Trading</div>
         <div class="menu-item" data-workspaces="performance" tabindex="0" onclick="switchView('portafoglio', this)">💼 Portfolio</div>
         <div class="menu-item" data-workspaces="performance" tabindex="0" onclick="switchView('diario', this)">🗂️ Trading Journal</div>
-        <div class="menu-item" data-workspaces="performance" tabindex="0" onclick="switchView('aicoach', this)">📈 Performance Review</div>
+        <div class="menu-item" data-workspaces="performance" tabindex="0" onclick="switchView('aicoach', this)">🧠 AI Debrief</div>
         <div class="menu-item" data-workspaces="learning" tabindex="0" onclick="switchView('glossario', this)">📚 Academy &amp; Glossario</div>
         <div class="menu-item" data-workspaces="learning" tabindex="0" onclick="switchView('marketplace', this)">🏛️ Strategy Marketplace</div>
         <div class="menu-item" data-workspaces="account" tabindex="0" onclick="switchView('account', this)">⚙ Profilo &amp; Dispositivi</div>
@@ -1332,10 +1332,109 @@
         <div class="toolbar">
             <div>
                 <h2 style="border:none; margin:0; padding:0;">🧠 Trader Memory &amp; Trading Journal</h2>
-                <p class="placeholder-text" style="margin:4px 0 0 0;">Analisi oggettiva degli errori ricorrenti, bias emotivi e storico trade sincronizzato con Supabase.</p>
+                <p class="placeholder-text" style="margin:4px 0 0 0;">Registra trade eseguiti e contesto emotivo. Le metriche derivano solo dai dati salvati nel tuo account.</p>
             </div>
             <button class="btn-refresh" onclick="caricaDiario()">↻ Aggiorna Dati</button>
         </div>
+
+        <section class="panel" style="margin-bottom:20px;">
+            <h2>📝 Registra un trade</h2>
+            <form id="journalTradeForm" onsubmit="salvaTradeJournal(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="journalTicker">Asset</label>
+                        <input id="journalTicker" name="ticker" type="text" maxlength="24" required placeholder="es. BTC-USD">
+                    </div>
+                    <div class="form-group">
+                        <label for="journalDirection">Direzione</label>
+                        <select id="journalDirection" name="direction" required>
+                            <option value="long">Long</option>
+                            <option value="short">Short</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="journalTimeframe">Timeframe</label>
+                        <select id="journalTimeframe" name="timeframe">
+                            <option value="">Non specificato</option>
+                            <option value="1m">1m</option><option value="5m">5m</option>
+                            <option value="15m">15m</option><option value="30m">30m</option>
+                            <option value="1h">1h</option><option value="4h">4h</option><option value="1d">1d</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="journalStrategy">Strategia</label>
+                        <input id="journalStrategy" name="strategy_name" type="text" maxlength="120" placeholder="Nome strategia (facoltativo)">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="journalEntryTime">Data e ora ingresso</label>
+                        <input id="journalEntryTime" name="entry_time" type="datetime-local" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="journalEntryPrice">Prezzo ingresso</label>
+                        <input id="journalEntryPrice" name="entry_price" type="number" min="0" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="journalStopLoss">Stop loss</label>
+                        <input id="journalStopLoss" name="stop_loss" type="number" min="0" step="any">
+                    </div>
+                    <div class="form-group">
+                        <label for="journalTakeProfit">Take profit</label>
+                        <input id="journalTakeProfit" name="take_profit" type="number" min="0" step="any">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="journalSession">Sessione</label>
+                        <select id="journalSession" name="session_tag">
+                            <option value="">Non specificata</option><option value="TOKYO">Tokyo</option>
+                            <option value="LONDON">Londra</option><option value="NEW_YORK">New York</option>
+                            <option value="LONDON_NY_OVERLAP">Overlap Londra–New York</option><option value="CUSTOM">Personalizzata</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="journalEmotion">Stato emotivo</label>
+                        <select id="journalEmotion" name="emotional_state">
+                            <option value="Non Specificato">Non specificato</option><option value="Disciplinato">Disciplinato</option>
+                            <option value="Calmo">Calmo</option><option value="Ansioso">Ansioso</option>
+                            <option value="FOMO">FOMO</option><option value="Euforico">Euforico</option><option value="Frustrato">Frustrato</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="journalResult">Esito</label>
+                        <select id="journalResult" name="result" onchange="aggiornaCampiEsitoDiario()">
+                            <option value="open">Aperto</option><option value="win">Vincente</option>
+                            <option value="loss">Perdente</option><option value="breakeven">Pareggio</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="journalExitPrice">Prezzo uscita</label>
+                        <input id="journalExitPrice" name="exit_price" type="number" min="0" step="any" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="journalPnl">P&amp;L realizzato (valuta account)</label>
+                        <input id="journalPnl" name="pnl" type="number" step="any" disabled>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="journalMistake">Regola violata / pattern</label>
+                        <input id="journalMistake" name="mistake_tag" type="text" maxlength="100" placeholder="Facoltativo">
+                    </div>
+                    <div class="form-group">
+                        <label for="journalScreenshot">Link screenshot HTTPS</label>
+                        <input id="journalScreenshot" name="screenshot_url" type="url" maxlength="2048" placeholder="https://...">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="journalNotes">Note e revisione del piano</label>
+                    <textarea id="journalNotes" name="notes" rows="3" maxlength="4000" style="width:100%; resize:vertical;" placeholder="Setup, motivazione, gestione e cosa migliorare"></textarea>
+                </div>
+                <button class="btn-main" id="journalSaveButton" type="submit">Salva trade nel Journal</button>
+                <span id="journalRiskReward" class="placeholder-text" role="status" aria-live="polite" style="margin-left:10px;">R/R pianificato: —</span>
+            </form>
+        </section>
 
         <!-- KPI TRADER MEMORY (ANALISI ERRORI E PATTERN) -->
         <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom:20px;">
@@ -1358,9 +1457,15 @@
         </div>
 
         <div class="panel">
-            <h2>Cronologia Esecuzioni &amp; Note Psico-Attitudinali</h2>
+            <h2>Trade registrati</h2>
             <div id="diarioWrap">
-                <p class="placeholder-text">Caricamento cronologia dal Diario Cloud...</p>
+                <p class="placeholder-text">Caricamento trade dal Journal...</p>
+            </div>
+        </div>
+        <div class="panel" style="margin-top:20px;">
+            <h2>Report di analisi archiviati</h2>
+            <div id="analysisJournalWrap">
+                <p class="placeholder-text">Caricamento report...</p>
             </div>
         </div>
     </div>
@@ -1560,16 +1665,16 @@
     <div id="view-aicoach" class="view-content">
         <div class="toolbar">
             <div>
-                <h2 style="border:none; margin:0; padding:0;">🎓 Future AI Coach &amp; Statistical Performance Doctor</h2>
+                <h2 style="border:none; margin:0; padding:0;">🧠 AI Debrief</h2>
                 <p class="placeholder-text" style="margin:4px 0 0 0;">Analizza portfolio e report disponibili. Senza risultati dei trade non vengono inferiti performance o vantaggi statistici.</p>
             </div>
-            <button class="btn-main" id="btnRichiediDiagnosiCoach" onclick="avviaDiagnosiAICoach()">🧠 Genera Diagnosi AI Coach</button>
+            <button class="btn-main" id="btnRichiediDiagnosiCoach" onclick="avviaDiagnosiAICoach()">🧠 Genera AI Debrief</button>
         </div>
 
         <div class="panel" style="margin-bottom:20px;">
-            <h2>📈 Diagnosi Globale &amp; Riconoscimento Errori Sistematici</h2>
+            <h2>Revisione del Journal e dei dati disponibili</h2>
             <div id="aiCoachOutputWrap" class="output-box" style="min-height:280px;">
-                <div class="placeholder-text">Premi "Genera Diagnosi AI Coach" per far scansionare la tua cronologia all'AI: riceverai un audit statistico basato su Teoria dell'Asta, Risk Management e bias emotivi.</div>
+                <div class="placeholder-text">Genera un debrief per ricevere osservazioni basate sui trade e sulle metriche effettivamente registrati. I risultati mancanti non verranno stimati.</div>
             </div>
         </div>
     </div>
@@ -2106,7 +2211,7 @@ function switchView(viewId, element) {
     document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
     view.classList.add('active');
     element?.classList.add('active');
-    if (viewId === 'diario') caricaDiario();
+    if (viewId === 'diario') { inizializzaModuloDiario(); caricaDiario(); }
     if (viewId === 'regime') calcolaMarketRegime();
     if (viewId === 'builder') inizializzaBuilderView();
     if (viewId === 'papertrading') aggiornaTabellaPaperTrading();
@@ -3069,64 +3174,328 @@ async function eseguiSalvataggioDiario(statoEmotivo) {
     }
 }
 
-/* ============ DIARIO CLOUD ============ */
+/* ============ TRADING JOURNAL ============ */
+function inizializzaModuloDiario() {
+    const form = document.getElementById('journalTradeForm');
+    const timeInput = document.getElementById('journalEntryTime');
+    if (timeInput && !timeInput.value) {
+        const localNow = new Date(Date.now() - new Date().getTimezoneOffset() * 60000);
+        timeInput.value = localNow.toISOString().slice(0, 16);
+    }
+    if (form && form.dataset.listenersReady !== 'true') {
+        ['journalEntryPrice', 'journalStopLoss', 'journalTakeProfit', 'journalDirection'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', aggiornaRRPianificato);
+            document.getElementById(id)?.addEventListener('change', aggiornaRRPianificato);
+        });
+        form.dataset.listenersReady = 'true';
+    }
+    aggiornaCampiEsitoDiario();
+    aggiornaRRPianificato();
+}
+
+function aggiornaCampiEsitoDiario() {
+    const isClosed = document.getElementById('journalResult')?.value !== 'open';
+    const exitInput = document.getElementById('journalExitPrice');
+    const pnlInput = document.getElementById('journalPnl');
+    if (exitInput) {
+        exitInput.disabled = !isClosed;
+        exitInput.required = isClosed;
+    }
+    if (pnlInput) {
+        pnlInput.disabled = !isClosed;
+        pnlInput.required = isClosed;
+    }
+}
+
+function calcolaRRPianificato(direction, entry, stop, target) {
+    if (![entry, stop, target].every(Number.isFinite) || entry <= 0 || stop <= 0 || target <= 0) return null;
+    const risk = direction === 'long' ? entry - stop : stop - entry;
+    const reward = direction === 'long' ? target - entry : entry - target;
+    if (risk <= 0 || reward <= 0) return null;
+    return reward / risk;
+}
+
+function aggiornaRRPianificato() {
+    const direction = document.getElementById('journalDirection')?.value;
+    const entry = Number(document.getElementById('journalEntryPrice')?.value);
+    const stop = Number(document.getElementById('journalStopLoss')?.value);
+    const target = Number(document.getElementById('journalTakeProfit')?.value);
+    const rr = calcolaRRPianificato(direction, entry, stop, target);
+    const output = document.getElementById('journalRiskReward');
+    if (output) output.textContent = `R/R pianificato: ${rr == null ? '— (controlla entry, stop e target)' : `1:${rr.toFixed(2)}`}`;
+}
+
+function formatJournalPrice(value) {
+    return value == null || !Number.isFinite(Number(value))
+        ? '—'
+        : Number(value).toLocaleString('it-IT', { maximumFractionDigits: 8 });
+}
+
+function formatJournalPnl(value) {
+    if (value == null || !Number.isFinite(Number(value))) return '—';
+    const amount = Number(value);
+    return `${amount > 0 ? '+' : ''}${amount.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+async function salvaTradeJournal(event) {
+    event.preventDefault();
+    const form = document.getElementById('journalTradeForm');
+    const button = document.getElementById('journalSaveButton');
+    const fields = new FormData(form);
+    const ticker = String(fields.get('ticker') || '').trim().toUpperCase();
+    const direction = String(fields.get('direction') || '');
+    const entry = Number(fields.get('entry_price'));
+    const stopRaw = String(fields.get('stop_loss') || '').trim();
+    const targetRaw = String(fields.get('take_profit') || '').trim();
+    const stop = stopRaw ? Number(stopRaw) : null;
+    const target = targetRaw ? Number(targetRaw) : null;
+    const result = String(fields.get('result') || 'open');
+    const exitRaw = String(fields.get('exit_price') || '').trim();
+    const pnlRaw = String(fields.get('pnl') || '').trim();
+    const exitPrice = exitRaw ? Number(exitRaw) : null;
+    const pnl = pnlRaw ? Number(pnlRaw) : null;
+    const entryTime = new Date(String(fields.get('entry_time') || ''));
+    const rr = calcolaRRPianificato(direction, entry, stop, target);
+
+    if (!['long', 'short'].includes(direction) || !['open', 'win', 'loss', 'breakeven'].includes(result)) {
+        toast('Direzione o esito del trade non validi.', 'error');
+        return;
+    }
+    if (!/^[A-Z0-9][A-Z0-9.^=_-]{0,23}$/.test(ticker)) {
+        toast('Inserisci un ticker valido (lettere, numeri, punto, trattino o underscore).', 'error');
+        return;
+    }
+    if (!Number.isFinite(entry) || entry <= 0 || !Number.isFinite(entryTime.getTime()) || entryTime.getTime() > Date.now()) {
+        toast('Inserisci un prezzo di ingresso e una data validi.', 'error');
+        return;
+    }
+    if ((stop !== null && (!Number.isFinite(stop) || stop <= 0))
+        || (target !== null && (!Number.isFinite(target) || target <= 0))) {
+        toast('Stop loss e target devono essere prezzi positivi.', 'error');
+        return;
+    }
+    if (stop !== null && (direction === 'long' ? stop >= entry : stop <= entry)) {
+        toast('Lo stop loss deve essere sotto l’entry per un long e sopra per uno short.', 'error');
+        return;
+    }
+    if (target !== null && (direction === 'long' ? target <= entry : target >= entry)) {
+        toast('Il target deve essere sopra l’entry per un long e sotto per uno short.', 'error');
+        return;
+    }
+    if (result !== 'open') {
+        if (!Number.isFinite(exitPrice) || exitPrice <= 0 || !Number.isFinite(pnl)) {
+            toast('Per un trade chiuso inserisci prezzo di uscita e P&L realizzato.', 'error');
+            return;
+        }
+        if ((result === 'win' && pnl <= 0) || (result === 'loss' && pnl >= 0) || (result === 'breakeven' && pnl !== 0)) {
+            toast('L’esito selezionato non coincide con il segno del P&L inserito.', 'error');
+            return;
+        }
+    }
+    if (result === 'open' && (exitPrice !== null || pnl !== null)) {
+        toast('Per registrare prezzo di uscita o P&L, seleziona un esito chiuso.', 'error');
+        return;
+    }
+
+    const screenshotUrl = String(fields.get('screenshot_url') || '').trim();
+    if (screenshotUrl) {
+        try {
+            if (new URL(screenshotUrl).protocol !== 'https:') throw new Error();
+        } catch {
+            toast('Il link allo screenshot deve usare HTTPS.', 'error');
+            return;
+        }
+    }
+    const { data: { session }, error: sessionError } = await sb.auth.getSession();
+    if (sessionError) {
+        toast(`Sessione non verificabile: ${sessionError.message}`, 'error');
+        return;
+    }
+    if (!session?.user) {
+        toast('Accedi per salvare un trade nel Journal.', 'error');
+        return;
+    }
+
+    button.disabled = true;
+    try {
+        const { data: savedTrade, error } = await sb.from('journals').insert({
+            user_id: session.user.id,
+            ticker,
+            direction,
+            timeframe: fields.get('timeframe') || '',
+            strategy_name: String(fields.get('strategy_name') || '').trim(),
+            entry_time: entryTime.toISOString(),
+            entry_price: entry,
+            stop_loss: stop,
+            take_profit: target,
+            risk_reward: rr,
+            session_tag: fields.get('session_tag') || null,
+            emotional_state: fields.get('emotional_state') || 'Non Specificato',
+            result,
+            exit_price: exitPrice,
+            pnl,
+            mistake_tag: String(fields.get('mistake_tag') || '').trim() || null,
+            screenshot_url: screenshotUrl || null,
+            notes: String(fields.get('notes') || '').trim() || null
+        }).select('id').single();
+        if (error) throw error;
+        form.reset();
+        inizializzaModuloDiario();
+        toast('Trade salvato nel Journal.', 'success');
+        await caricaDiario();
+        await notificaPersonale(
+            'journal',
+            `Trade registrato: ${ticker}`,
+            `${direction.toUpperCase()} · apri OmniTrade per consultare i dettagli.`,
+            'journal',
+            savedTrade.id
+        );
+    } catch (error) {
+        toast(`Trade non salvato: ${error.message}`, 'error');
+    } finally {
+        button.disabled = false;
+    }
+}
+
+async function notificaPersonale(category, title, body, resourceType, resourceId) {
+    try {
+        const deviceId = getPushDeviceId();
+        const { data: { session }, error: sessionError } = await sb.auth.getSession();
+        if (sessionError) throw sessionError;
+        if (!session?.user) return;
+        const { data: devices, error: deviceError } = await sb.from('push_subscriptions')
+            .select('device_id')
+            .eq('user_id', session.user.id)
+            .eq('enabled', true)
+            .contains('categories', [category])
+            .neq('device_id', deviceId)
+            .limit(1);
+        if (deviceError) throw deviceError;
+        if (!devices?.length) return;
+        const { data, error } = await sb.functions.invoke('push-notifications', {
+            body: {
+                category,
+                title,
+                body,
+                resourceType,
+                resourceId,
+                excludeDeviceId: deviceId
+            }
+        });
+        if (error) throw error;
+        if (data?.failed && !data.delivered) {
+            toast('Dati salvati, ma l’invio Push agli altri dispositivi non è riuscito.', 'error');
+        }
+    } catch (error) {
+        console.error('[Web Push] Notifica personale non inviata:', error);
+        toast(`Dati salvati; notifica Push non inviata: ${error.message}`, 'error');
+    }
+}
+
 async function caricaDiario() {
+    await Promise.all([caricaTradeJournal(), caricaReportAnalisi()]);
+}
+
+async function caricaTradeJournal() {
     const wrap = document.getElementById('diarioWrap');
     const elDisc = document.getElementById('kpiDisciplina');
     const elEmotion = document.getElementById('kpiErroreFrequente');
-    if (elDisc) elDisc.innerText = '—';
-    if (elEmotion) elEmotion.innerText = '—';
+    const elDisciplinedPnl = document.getElementById('kpiPnlDisciplinato');
+    const elBiasPnl = document.getElementById('kpiPnlPersoErrori');
+    if (!wrap) return;
+    if (elDisc) elDisc.textContent = '—';
+    if (elEmotion) elEmotion.textContent = '—';
+    if (elDisciplinedPnl) elDisciplinedPnl.textContent = '—';
+    if (elBiasPnl) elBiasPnl.textContent = '—';
     wrap.innerHTML = '<div class="skeleton" style="height:140px;"></div>';
     try {
+        const { data, error } = await sb.from('journals')
+            .select('id,ticker,direction,timeframe,strategy_name,entry_time,entry_price,stop_loss,take_profit,risk_reward,exit_price,pnl,result,session_tag,emotional_state,mistake_tag,notes,screenshot_url')
+            .order('entry_time', { ascending: false })
+            .limit(100);
+        if (error) throw error;
+        const trades = data || [];
+        const recordedEmotions = trades.map(trade => trade.emotional_state)
+            .filter(state => state && state !== 'Non Specificato');
+        if (recordedEmotions.length) {
+            const calmCount = recordedEmotions.filter(state => state === 'Disciplinato' || state === 'Calmo').length;
+            if (elDisc) elDisc.textContent = `${Math.round(calmCount / recordedEmotions.length * 100)}%`;
+            const frequencies = new Map();
+            recordedEmotions.forEach(state => frequencies.set(state, (frequencies.get(state) || 0) + 1));
+            const [mostFrequent, count] = [...frequencies.entries()].sort((a, b) => b[1] - a[1])[0];
+            if (elEmotion) elEmotion.textContent = `${mostFrequent} (${count})`;
+        } else {
+            if (elDisc) elDisc.textContent = 'N/D';
+            if (elEmotion) elEmotion.textContent = 'Nessun dato';
+        }
+        const closedWithPnl = trades.filter(trade => trade.result !== 'open' && trade.pnl != null && Number.isFinite(Number(trade.pnl)));
+        const pnlSum = group => closedWithPnl
+            .filter(group)
+            .reduce((sum, trade) => sum + Number(trade.pnl), 0);
+        const disciplinedPnl = pnlSum(trade => ['Disciplinato', 'Calmo'].includes(trade.emotional_state));
+        const biasPnl = pnlSum(trade => ['Ansioso', 'FOMO', 'Euforico', 'Frustrato'].includes(trade.emotional_state));
+        if (elDisciplinedPnl) elDisciplinedPnl.textContent = closedWithPnl.some(trade => ['Disciplinato', 'Calmo'].includes(trade.emotional_state)) ? formatJournalPnl(disciplinedPnl) : 'N/D';
+        if (elBiasPnl) elBiasPnl.textContent = closedWithPnl.some(trade => ['Ansioso', 'FOMO', 'Euforico', 'Frustrato'].includes(trade.emotional_state)) ? formatJournalPnl(biasPnl) : 'N/D';
+
+        if (!trades.length) {
+            wrap.innerHTML = '<p class="placeholder-text">Nessun trade registrato. Aggiungi la prima operazione per iniziare a costruire statistiche basate sui tuoi dati.</p>';
+            return;
+        }
+        const rows = trades.map(trade => {
+            const date = trade.entry_time ? new Date(trade.entry_time).toLocaleString('it-IT') : '—';
+            let screenshot = '';
+            try {
+                const url = new URL(trade.screenshot_url);
+                if (url.protocol === 'https:') screenshot = `<a href="${escapeHtml(url.href)}" target="_blank" rel="noopener noreferrer">Screenshot</a>`;
+            } catch {}
+            const notes = trade.notes ? `<details><summary>Note</summary><span>${escapeHtml(trade.notes)}</span></details>` : '—';
+            return `<tr>
+                <td>${escapeHtml(date)}</td>
+                <td><strong>${escapeHtml(trade.ticker || '—')}</strong><br>${escapeHtml(trade.direction || '')}</td>
+                <td>${escapeHtml(trade.strategy_name || '—')}<br>${escapeHtml(trade.timeframe || '')}</td>
+                <td>${formatJournalPrice(trade.entry_price)}<br><small>SL ${formatJournalPrice(trade.stop_loss)} · TP ${formatJournalPrice(trade.take_profit)}</small></td>
+                <td>${formatJournalPrice(trade.exit_price)}</td>
+                <td>${trade.risk_reward == null ? '—' : `1:${formatJournalPrice(trade.risk_reward)}`}</td>
+                <td>${escapeHtml(formatJournalPnl(trade.pnl))}<br>${escapeHtml(trade.result || 'open')}</td>
+                <td>${escapeHtml(trade.emotional_state || 'Non Specificato')}<br><small>${escapeHtml(trade.mistake_tag || '')}</small></td>
+                <td>${escapeHtml(trade.session_tag || '—')}</td>
+                <td>${notes}<br>${screenshot}</td>
+            </tr>`;
+        }).join('');
+        wrap.innerHTML = `<div class="table-scroll"><table><thead><tr><th>Ingresso</th><th>Asset / direzione</th><th>Strategia / TF</th><th>Entry / rischio</th><th>Uscita</th><th>R/R piano</th><th>P&amp;L / esito</th><th>Stato / pattern</th><th>Sessione</th><th>Revisione</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    } catch (error) {
+        wrap.innerHTML = `<p class="placeholder-text">Impossibile caricare il Journal (${escapeHtml(error.message)}). Verifica che la migration del diario sia stata applicata e che le policy RLS consentano l’accesso al proprietario.</p>`;
+    }
+}
+
+async function caricaReportAnalisi() {
+    const wrap = document.getElementById('analysisJournalWrap');
+    if (!wrap) return;
+    try {
         const { data, error } = await sb.from('diario_trading')
-            .select('data_ora, ticker, timeframe, prezzo_ingresso, distanza_vwap, volume_tick, stato_emotivo, report_ai')
+            .select('data_ora,ticker,timeframe,prezzo_ingresso,distanza_vwap,stato_emotivo,report_ai')
             .order('data_ora', { ascending: false })
             .limit(40);
         if (error) throw error;
-
-        // Calculate mood summaries only from entries with a recorded emotional state.
-        if (data && data.length > 0) {
-            const stati = data.map(d => d.stato_emotivo).filter(s => s && s !== 'Non Specificato');
-            if (stati.length) {
-                const disciplinati = stati.filter(s => s === 'Disciplinato' || s === 'Calmo').length;
-                const indiceDisciplina = Math.round((disciplinati / stati.length) * 100);
-                const frequenze = new Map();
-                for (const stato of stati) frequenze.set(stato, (frequenze.get(stato) || 0) + 1);
-                const [statoFrequente, conteggio] = [...frequenze.entries()]
-                    .sort((a, b) => b[1] - a[1])[0];
-                if (elDisc) elDisc.innerText = `${indiceDisciplina}%`;
-                if (elEmotion) elEmotion.innerText = `${statoFrequente} (${conteggio})`;
-            } else {
-                if (elDisc) elDisc.innerText = 'N/D';
-                if (elEmotion) elEmotion.innerText = 'Nessun dato';
-            }
-        }
-
-        if (!data || data.length === 0) {
-            if (elDisc) elDisc.innerText = 'N/D';
-            if (elEmotion) elEmotion.innerText = 'Nessun dato';
-            wrap.innerHTML = '<p class="placeholder-text">Nessun report salvato ancora. Genera un\'analisi in Dashboard e archiviala per alimentare la Trader Memory.</p>';
+        if (!data?.length) {
+            wrap.innerHTML = '<p class="placeholder-text">Non ci sono report di analisi archiviati.</p>';
             return;
         }
-
-        const rows = data.map(r => {
-            const dev = r.distanza_vwap == null ? null : Number(r.distanza_vwap);
-            const dataPulita = (r.data_ora || '').split('.')[0].replace('T', ' ');
-            const stato = r.stato_emotivo || 'Non Specificato';
-            const isErrore = (stato === 'FOMO' || stato === 'Ansioso' || stato === 'Frustrato');
+        const rows = data.map(report => {
+            const rawDeviation = report.distanza_vwap == null ? null : Number(report.distanza_vwap);
+            const deviation = rawDeviation == null || !Number.isFinite(rawDeviation)
+                ? '—'
+                : `${rawDeviation >= 0 ? '+' : ''}${rawDeviation.toFixed(2)}%`;
             return `<tr>
-                <td>${escapeHtml(dataPulita)}</td>
-                <td><strong>${escapeHtml(r.ticker || '-')}</strong></td>
-                <td>${escapeHtml(r.timeframe || '-')}</td>
-                <td>${r.prezzo_ingresso != null ? '$' + Number(r.prezzo_ingresso).toLocaleString('en-US') : '-'}</td>
-                <td class="${dev == null || !Number.isFinite(dev) ? '' : dev < 0 ? 'dev-neg' : 'dev-pos'}">${dev == null || !Number.isFinite(dev) ? '—' : `${dev >= 0 ? '+' : ''}${dev.toFixed(2)}%`}</td>
-                <td><span class="badge-emotion" style="${isErrore ? 'background:rgba(255,77,77,0.15); color:#ff4d4d; border-color:rgba(255,77,77,0.3);' : ''}">${escapeHtml(stato)}</span></td>
+                <td>${escapeHtml(report.data_ora || '—')}</td><td>${escapeHtml(report.ticker || '—')}</td>
+                <td>${escapeHtml(report.timeframe || '—')}</td><td>${formatJournalPrice(report.prezzo_ingresso)}</td>
+                <td>${escapeHtml(deviation)}</td><td>${escapeHtml(report.stato_emotivo || 'Non Specificato')}</td>
+                <td><details><summary>Apri report</summary><pre style="white-space:pre-wrap; max-width:700px;">${escapeHtml(report.report_ai || 'Report non disponibile')}</pre></details></td>
             </tr>`;
         }).join('');
-
-        wrap.innerHTML = `<div class="table-scroll"><table><thead><tr><th>Data</th><th>Ticker</th><th>TF</th><th>Prezzo</th><th>Dev. VWAP</th><th>Stato Emotivo</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-    } catch (e) {
-        wrap.innerHTML = `<p class="placeholder-text">Impossibile caricare il Diario da Supabase (${escapeHtml(e.message)}). Verifica che la tabella 'diario_trading' esista e che le policy RLS permettano la lettura.</p>`;
+        wrap.innerHTML = `<div class="table-scroll"><table><thead><tr><th>Data</th><th>Asset</th><th>TF</th><th>Prezzo analizzato</th><th>Dev. VWAP</th><th>Stato</th><th>Contenuto</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    } catch (error) {
+        wrap.innerHTML = `<p class="placeholder-text">Report di analisi non disponibili: ${escapeHtml(error.message)}.</p>`;
     }
 }
 
@@ -3998,13 +4367,13 @@ async function avviaDiagnosiAICoach() {
     if (!wrap) return;
 
     btn.disabled = true;
-    btn.innerText = '🧠 Il Coach AI sta analizzando il tuo profilo statistico...';
+    btn.innerText = '🧠 Il Debrief AI sta analizzando i dati...';
     wrap.innerHTML = '<div class="skeleton" style="height:180px;"></div>';
 
     await caricaDiario();
     const accountContext = costruisciContestoCopilot();
     const journalText = document.getElementById('diarioWrap')?.innerText?.trim() || '';
-    const journalContext = journalText.startsWith('Impossibile caricare il Diario') ? '' : journalText.slice(0, 1200);
+    const journalContext = journalText.startsWith('Impossibile caricare il Journal') ? '' : journalText.slice(0, 1200);
     const promptCoach = `Agisci come coach di trading di OmniTrade AI. Analizza solo i dati effettivamente forniti:
 
 ${accountContext || 'Non sono disponibili metriche di account.'}
@@ -4018,15 +4387,15 @@ Restituisci un report conciso con: osservazioni supportate dai dati, limiti dell
         const rispostaCoach = await inviaRichiestaAICopilot(promptCoach);
         wrap.innerHTML = `
             <div class="report-section">
-                <div class="report-title">🎓 VERDETTO AUDIT STATISTICO - AI COACH OMNITRADE</div>
+                <div class="report-title">🧠 AI DEBRIEF OMNITRADE</div>
                 <div class="report-item success" style="white-space:pre-wrap; font-size:13.5px; line-height:1.65; max-height:420px; overflow-y:auto; padding-right:12px;">${escapeHtml(rispostaCoach)}</div>
             </div>`;
-        toast('Diagnosi AI Coach completata!', 'success');
+        toast('AI Debrief completato.', 'success');
     } catch (e) {
-        wrap.innerHTML = `<div class="report-item danger">Impossibile completare la diagnosi dell'AI Coach: <code>${escapeHtml(e.message)}</code>.</div>`;
+        wrap.innerHTML = `<div class="report-item danger">Impossibile completare l’AI Debrief: <code>${escapeHtml(e.message)}</code>.</div>`;
     } finally {
         btn.disabled = false;
-        btn.innerText = '🧠 Genera Nuova Diagnosi AI Coach';
+        btn.innerText = '🧠 Genera AI Debrief';
     }
 }
 
@@ -4056,7 +4425,7 @@ function costruisciContestoCopilot() {
         dashboardHome: 'Dashboard', portafoglio: 'Portfolio', grafici: 'Grafici',
         volumetrica: 'Analisi volumetrica', news: 'Macro & News', regime: 'Market Regime',
         dashboard: 'VWAP / Backtest Lab', builder: 'Strategy Builder', diario: 'Trading Journal',
-        marketplace: 'Marketplace', integrations: 'Integrazioni', aicoach: 'Performance Review',
+        marketplace: 'Marketplace', integrations: 'Integrazioni', aicoach: 'AI Debrief',
         glossario: 'Academy', account: 'Account'
     };
     const getValue = id => document.getElementById(id)?.value?.trim() || '';
@@ -4174,12 +4543,15 @@ async function registraMovimento() {
     const nota = document.getElementById('movNota').value.trim();
     if (!importo || importo <= 0) { toast('Inserisci un importo valido.', 'error'); return; }
     try {
-        const { error } = await sb.from('wallet_movimenti').insert({ modalita: modalitaCorrente, tipo, importo, nota: nota || null });
+        const { data: movimento, error } = await sb.from('wallet_movimenti')
+            .insert({ modalita: modalitaCorrente, tipo, importo, nota: nota || null })
+            .select('id').single();
         if (error) throw error;
         toast((tipo === 'deposito' ? 'Deposito' : 'Prelievo') + ' registrato con successo.', 'success');
         document.getElementById('movImporto').value = '';
         document.getElementById('movNota').value = '';
         ricalcolaPortafoglio();
+        await notificaPersonale('portfolio', 'Portfolio aggiornato', 'È stato registrato un movimento nel tuo portfolio.', 'portfolio', movimento.id);
     } catch (e) {
         toast('Errore nel salvataggio: ' + e.message + ' — hai eseguito schema_wallet_supabase.sql su Supabase?', 'error');
     }
@@ -4195,11 +4567,14 @@ async function registraApertura() {
     const nota = document.getElementById('posNota').value.trim();
     if (!ticker || !quantita || quantita <= 0 || !prezzo || prezzo <= 0) { toast("Compila ticker, quantità e prezzo d'ingresso.", 'error'); return; }
     try {
-        const { error } = await sb.from('wallet_posizioni').insert({ modalita: modalitaCorrente, ticker, direzione, quantita, prezzo_ingresso: prezzo, rr_pianificato: rr, stato: 'aperta', nota: nota || null });
+        const { data: posizione, error } = await sb.from('wallet_posizioni')
+            .insert({ modalita: modalitaCorrente, ticker, direzione, quantita, prezzo_ingresso: prezzo, rr_pianificato: rr, stato: 'aperta', nota: nota || null })
+            .select('id').single();
         if (error) throw error;
         toast('Posizione ' + ticker + ' aperta.', 'success');
         ['posQuantita', 'posPrezzo', 'posRR', 'posNota'].forEach(id => document.getElementById(id).value = '');
         ricalcolaPortafoglio();
+        await notificaPersonale('portfolio', 'Posizione aperta', `Posizione ${ticker} registrata nel portfolio.`, 'portfolio', posizione.id);
     } catch (e) {
         toast('Errore apertura posizione: ' + e.message + ' — hai eseguito schema_wallet_supabase.sql su Supabase?', 'error');
     }
@@ -4227,6 +4602,7 @@ async function eseguiChiusura(id, prezzoUscita) {
         if (err2) throw err2;
         toast('Posizione chiusa — PnL: ' + (pnl >= 0 ? '+' : '') + pnl.toFixed(2), pnl >= 0 ? 'success' : 'error');
         ricalcolaPortafoglio();
+        await notificaPersonale('portfolio', 'Posizione chiusa', `La posizione ${data.ticker} è stata chiusa.`, 'portfolio', id);
     } catch (e) {
         toast('Errore chiusura: ' + e.message, 'error');
     }
@@ -4749,7 +5125,10 @@ const PUSH_CATEGORIES = [
     { id: 'trading_alerts', label: 'Trading Alerts' },
     { id: 'macroeconomy', label: 'Macroeconomia' },
     { id: 'earnings', label: 'Earnings' },
-    { id: 'system', label: 'Sistema' }
+    { id: 'system', label: 'Sistema' },
+    { id: 'portfolio', label: 'Portfolio' },
+    { id: 'journal', label: 'Journal' },
+    { id: 'backtest', label: 'Backtest' }
 ];
 const PUSH_VIEW_BY_RESOURCE = {
     news: 'news',
@@ -4758,7 +5137,10 @@ const PUSH_VIEW_BY_RESOURCE = {
     strategy_alert: 'dashboard',
     trading_alerts: 'dashboard',
     earnings: 'news',
-    system: 'news'
+    system: 'news',
+    portfolio: 'portafoglio',
+    journal: 'diario',
+    backtest: 'dashboard'
 };
 let pushDeviceRows = [];
 let currentPushSubscription = null;
