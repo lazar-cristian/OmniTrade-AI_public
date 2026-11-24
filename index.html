@@ -18,6 +18,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
     :root {
+        color-scheme: dark;
         --bg-main: #06080b;
         --bg-panel: rgba(18, 22, 28, 0.88);
         --bg-panel-solid: #12161c;
@@ -36,6 +37,7 @@
     }
 
     * { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: var(--border-color) transparent; }
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
     [hidden] { display: none !important; }
 
     /* Custom scrollbars */
@@ -405,7 +407,7 @@
         .kpi-grid { grid-template-columns: repeat(2, 1fr); }
     }
     @media (max-width: 420px) {
-        .kpi-grid { grid-template-columns: 1fr; }
+        .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     .kpi-card { 
         background: rgba(255,255,255,0.02); 
@@ -422,7 +424,14 @@
     .kpi-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; font-weight: 700; letter-spacing: 0.5px; }
     .kpi-value { font-size: 19px; font-weight: 700; color: #ffffff; font-family: 'Inter', sans-serif; }
     .kpi-value.anomaly { color: var(--danger); animation: flash 1.5s infinite; }
-    @media (prefers-reduced-motion: reduce) { .kpi-value.anomaly, .view-content.active, body { animation: none; } }
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: .01ms !important;
+            animation-iteration-count: 1 !important;
+            scroll-behavior: auto !important;
+            transition-duration: .01ms !important;
+        }
+    }
 
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
@@ -596,7 +605,7 @@
         .workspace { min-height: 0; }
         .view-content {
             min-height: 0;
-            padding: 16px max(14px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+            padding: 16px max(14px, env(safe-area-inset-right)) max(92px, calc(76px + env(safe-area-inset-bottom))) max(14px, env(safe-area-inset-left));
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
         }
@@ -606,15 +615,27 @@
             padding-bottom: max(16px, env(safe-area-inset-bottom));
         }
         .sidebar-menu { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+        .sidebar .brand { padding-right: 56px; }
         .menu-item { min-height: 44px; }
-        .workspace-tab { min-height: 40px; }
+        .workspace-tab, .workflow-step, .push-category-option { min-height: 44px; }
         .panel, .card { min-width: 0; padding: 18px; }
-        .dashboard-grid, .kpi-grid, .kpi-grid-6, .glossary-grid { min-width: 0; }
+        .dashboard-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 14px; }
+        .dashboard-grid > *, .toolbar > *, .home-hero > *, .form-row > * { min-width: 0; }
+        .kpi-grid, .kpi-grid-6, .glossary-grid { min-width: 0; }
         .toolbar { align-items: stretch; }
-        .toolbar > .segmented { align-self: flex-start; max-width: 100%; }
-        .segmented button { min-height: 40px; padding: 8px 12px; }
-        input, select { min-height: 44px; font-size: 16px; }
+        .toolbar > .segmented { align-self: flex-start; max-width: 100%; overflow-x: auto; }
+        .segmented button { min-height: 44px; padding: 8px 12px; }
+        input:not([type="checkbox"]):not([type="radio"]), select, textarea { min-height: 44px; font-size: 16px; }
         button { min-height: 44px; }
+        button, a, .menu-item { touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,255,163,.16); }
+        .home-hero > button { width: 100%; }
+        .output-box { min-height: 220px; max-height: min(55dvh, 480px); padding: 14px; overflow-wrap: anywhere; }
+        .msg { max-width: 90%; overflow-wrap: anywhere; }
+        .chat-input-area input { min-width: 0; }
+        .copilot-level-control { align-items: stretch; flex-direction: column; margin: 10px 12px 0; }
+        .copilot-level-control select { width: 100%; min-width: 0; }
+        .modal-overlay { padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)); overscroll-behavior: contain; }
+        .modal-box { max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px); overflow-y: auto; }
         .tv-chart-wrap { height: 340px; }
         .tv-watchlist-wrap { height: 280px; }
         #tvTechAnalysis, #tvSymbolInfo { height: 320px !important; }
@@ -627,7 +648,8 @@
         .home-summary-grid { grid-template-columns:1fr; }
         .home-kpi-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
         .home-kpi-grid .home-kpi-item:nth-child(3n) { border-right:0; }
-        .copilot-fab { right:max(14px, env(safe-area-inset-right)); bottom:max(14px, env(safe-area-inset-bottom)); min-height:46px; }
+        .copilot-fab { right:max(14px, env(safe-area-inset-right)); bottom:max(14px, env(safe-area-inset-bottom)); width:52px; height:52px; min-height:52px; padding:0; border-radius:50%; font-size:0; }
+        .copilot-fab::after { content:'AI'; font-size:14px; }
     }
 
     @media (max-width: 420px) {
@@ -641,6 +663,7 @@
         .home-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
         .home-kpi-grid .home-kpi-item { padding:9px 5px; }
         .home-kpi-grid .home-kpi-item:nth-child(2n) { border-right:0; }
+        .home-kpi-grid .home-kpi-item:nth-child(odd) { border-right:1px solid var(--border-color); }
         .home-kpi-grid .kpi-value { font-size:15px; }
         .analysis-path-grid { grid-template-columns:1fr; }
         .portfolio-metrics-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
