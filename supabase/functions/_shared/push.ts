@@ -8,6 +8,9 @@ export const PUSH_CATEGORIES = [
   "macroeconomy",
   "earnings",
   "system",
+  "portfolio",
+  "journal",
+  "backtest",
 ] as const;
 
 export type PushCategory = typeof PUSH_CATEGORIES[number];
@@ -51,6 +54,9 @@ const viewByResourceType: Record<string, string> = {
   trading_alerts: "dashboard",
   earnings: "news",
   system: "news",
+  portfolio: "portafoglio",
+  journal: "diario",
+  backtest: "dashboard",
 };
 
 function isSafePushUrl(url: string): boolean {
@@ -101,6 +107,7 @@ export function configureWebPush() {
 interface DeliveryTarget {
   userId?: string;
   broadcast?: boolean;
+  excludeDeviceId?: string;
 }
 
 export async function sendPushNotifications(
@@ -120,12 +127,13 @@ export async function sendPushNotifications(
   for (let offset = 0; ; offset += pageSize) {
     let query = supabase
       .from("push_subscriptions")
-      .select("endpoint,p256dh,auth")
+      .select("endpoint,p256dh,auth,device_id")
       .eq("enabled", true)
       .not("user_id", "is", null)
       .contains("categories", [payload.category])
       .range(offset, offset + pageSize - 1);
     if (target.userId) query = query.eq("user_id", target.userId);
+    if (target.excludeDeviceId) query = query.neq("device_id", target.excludeDeviceId);
 
     const { data: subscriptions, error } = await query;
     if (error) throw error;

@@ -104,11 +104,18 @@ create table if not exists public.journals (
     user_id uuid references auth.users(id) on delete cascade,
     trade_id uuid references public.trades(id) on delete set null,
     ticker text not null,
-    timeframe text not null,
+    direction text check (direction in ('long', 'short')),
+    strategy_name text,
+    timeframe text not null default '',
     session_tag text,
+    entry_time timestamp with time zone not null default timezone('utc'::text, now()),
     entry_price numeric(14,6),
+    stop_loss numeric(14,6),
+    take_profit numeric(14,6),
+    risk_reward numeric(8,3) check (risk_reward is null or risk_reward > 0),
     exit_price numeric(14,6),
     pnl numeric(14,2),
+    result text not null default 'open' check (result in ('open', 'win', 'loss', 'breakeven')),
     emotional_state text check (emotional_state in ('Disciplinato', 'Calmo', 'Ansioso', 'FOMO', 'Euforico', 'Frustrato', 'Non Specificato')),
     mistake_tag text, -- es. 'Anticipo Entrata', 'Overleveraging', 'Violazione Regole'
     notes text,
@@ -150,7 +157,8 @@ create table if not exists public.push_subscriptions (
     device_name text not null default 'Dispositivo',
     platform text not null check (platform in ('iphone', 'android', 'desktop')),
     categories text[] not null default array[
-        'news', 'trading_alerts', 'macroeconomy', 'earnings', 'system'
+        'news', 'trading_alerts', 'macroeconomy', 'earnings', 'system',
+        'portfolio', 'journal', 'backtest'
     ]::text[],
     enabled boolean not null default true,
     expiration_time timestamp with time zone,
@@ -179,6 +187,54 @@ create table if not exists public.macro_news_sent (
     source_url text,
     created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+create table if not exists public.macro_calendar_events (
+    id text primary key,
+    title text not null,
+    currency text,
+    impact text not null check (impact in ('high', 'medium', 'low')),
+    event_at timestamptz not null,
+    source_url text,
+    is_active boolean not null default true,
+    updated_at timestamptz not null default now()
+);
+
+create index if not exists macro_calendar_events_active_time_idx
+    on public.macro_calendar_events (event_at)
+    where is_active and impact = 'high';
+
+create table if not exists public.macro_event_reminders (
+    event_id text not null references public.macro_calendar_events(id) on delete cascade,
+    reminder_minutes smallint not null check (reminder_minutes in (30, 5)),
+    status text not null default 'processing' check (status in ('processing', 'sent')),
+    claimed_at timestamptz not null default now(),
+    sent_at timestamptz,
+    primary key (event_id, reminder_minutes)
+);
+
+create or replace function public.claim_macro_event_reminder(
+    p_event_id text,
+    p_reminder_minutes smallint
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    claimed_event_id text;
+begin
+    insert into public.macro_event_reminders (event_id, reminder_minutes, status, claimed_at)
+    values (p_event_id, p_reminder_minutes, 'processing', now())
+    on conflict (event_id, reminder_minutes) do update
+        set status = 'processing', claimed_at = now()
+        where macro_event_reminders.status = 'processing'
+          and macro_event_reminders.claimed_at < now() - interval '2 minutes'
+    returning event_id into claimed_event_id;
+
+    return claimed_event_id is not null;
+end
+$$;
 
 -- 11. RISULTATI AGGREGATI PER SESSIONE (SESSION ANALYTICS)
 create table if not exists public.session_results (
@@ -209,6 +265,8 @@ alter table public.alerts enable row level security;
 alter table public.push_subscriptions enable row level security;
 alter table public.news_push_sent enable row level security;
 alter table public.macro_news_sent enable row level security;
+alter table public.macro_calendar_events enable row level security;
+alter table public.macro_event_reminders enable row level security;
 alter table public.session_results enable row level security;
 
 -- Policy per user_profiles
@@ -269,6 +327,12 @@ revoke all on public.news_push_sent from anon, authenticated;
 grant all on public.news_push_sent to service_role;
 revoke all on public.macro_news_sent from anon, authenticated;
 grant all on public.macro_news_sent to service_role;
+revoke all on public.macro_calendar_events from anon, authenticated;
+grant all on public.macro_calendar_events to service_role;
+revoke all on public.macro_event_reminders from anon, authenticated;
+grant all on public.macro_event_reminders to service_role;
+revoke all on function public.claim_macro_event_reminder(text, smallint) from public, anon, authenticated;
+grant execute on function public.claim_macro_event_reminder(text, smallint) to service_role;
 
 -- Popolamento Asset Iniziali di Default
 insert into public.assets (symbol, name, asset_class, tick_size, default_spread) values
