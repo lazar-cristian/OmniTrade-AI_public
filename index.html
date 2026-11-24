@@ -36,6 +36,7 @@
     }
 
     * { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: var(--border-color) transparent; }
+    [hidden] { display: none !important; }
 
     /* Custom scrollbars */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -257,7 +258,7 @@
     }
     .forgot-pw:hover { color: var(--primary); }
 
-    body.app-hidden > .mobile-topbar, body.app-hidden > .sidebar-overlay, body.app-hidden > .sidebar, body.app-hidden > .workspace { display: none !important; }
+    body.app-hidden > .mobile-topbar, body.app-hidden > .sidebar-overlay, body.app-hidden > .sidebar, body.app-hidden > .workspace, body.app-hidden > .copilot-fab { display: none !important; }
 
     /* SIDEBAR */
     .sidebar { 
@@ -300,6 +301,12 @@
         padding: 0 25px 25px 25px; border-bottom: 1px solid var(--border-color); 
         margin-bottom: 20px; text-shadow: 0 0 16px rgba(0,255,163,0.3); 
     }
+    .workspace-picker { padding: 0 14px 14px; border-bottom: 1px solid var(--border-color); }
+    .workspace-picker-label { margin: 0 0 8px; color: var(--text-muted); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+    .workspace-picker-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .workspace-tab { min-width: 0; padding: 9px 7px; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(255,255,255,0.02); color: var(--text-muted); font: inherit; font-size: 11px; cursor: pointer; }
+    .workspace-tab:hover, .workspace-tab.active { border-color: rgba(0,255,163,0.35); background: var(--primary-glow); color: var(--primary); }
+    .workspace-nav-label { margin: 12px 10px 4px; color: var(--text-dark); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
     .sidebar-menu { display: flex; flex-direction: column; gap: 6px; flex: 1; padding: 0 12px; }
     .menu-item { 
         padding: 12px 16px; color: var(--text-muted); 
@@ -317,6 +324,19 @@
     }
     .menu-item:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
     .sidebar-foot { padding: 15px 25px 0 25px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border-color); margin-top: 10px; line-height: 1.6; }
+    .copilot-fab { position: fixed; right: 24px; bottom: 24px; z-index: 80; width: auto; min-height: 48px; padding: 0 18px; border: 1px solid rgba(0,255,163,.45); border-radius: 999px; background: #00ffa3; color: #06120d; font: inherit; font-weight: 700; box-shadow: 0 10px 32px rgba(0,0,0,.4); cursor: pointer; }
+    .copilot-fab:hover { transform: translateY(-2px); box-shadow: 0 12px 36px rgba(0,255,163,.2); }
+    .home-hero { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
+    .home-hero h1 { margin:0; font-size:clamp(24px, 4vw, 34px); }
+    .home-summary-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .home-kpi-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; }
+    .home-kpi-grid .kpi-card { padding:14px 8px; }
+    .home-actions { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+    .home-action { width:100%; min-height:80px; padding:14px; border:1px solid var(--border-color); border-radius:10px; background:rgba(255,255,255,.025); color:var(--text-main); text-align:left; font:inherit; cursor:pointer; }
+    .home-action strong { display:block; margin-bottom:5px; color:var(--primary); }
+    .home-action:hover { border-color:var(--primary); background:var(--primary-glow); }
+    .regime-score { font:700 34px 'Inter',sans-serif; color:var(--primary); }
+    .account-actions { display:flex; flex-wrap:wrap; gap:10px; }
 
     /* WORKSPACE */
     .workspace { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; min-width: 0; }
@@ -559,6 +579,7 @@
         }
         .sidebar-menu { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
         .menu-item { min-height: 44px; }
+        .workspace-tab { min-height: 40px; }
         .panel, .card { min-width: 0; padding: 18px; }
         .dashboard-grid, .kpi-grid, .kpi-grid-6, .glossary-grid { min-width: 0; }
         .toolbar { align-items: stretch; }
@@ -574,6 +595,9 @@
         .auth-card { padding: 32px 24px 26px; }
         .chat-layout { height: 65vh; min-height: 360px; max-height: 620px; }
         #toastContainer { bottom: max(10px, env(safe-area-inset-bottom)); }
+        .home-summary-grid { grid-template-columns:1fr; }
+        .home-kpi-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+        .copilot-fab { right:max(14px, env(safe-area-inset-right)); bottom:max(14px, env(safe-area-inset-bottom)); min-height:46px; }
     }
 
     @media (max-width: 420px) {
@@ -584,6 +608,9 @@
         .panel, .card { padding: 15px; }
         .kpi-card { padding: 13px 8px; }
         .kpi-value { font-size: 17px; }
+        .home-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        .home-kpi-grid .kpi-card { padding:11px 6px; }
+        .home-kpi-grid .kpi-value { font-size:15px; }
         .chat-box { padding: 14px; }
         .chat-input-area { padding: 12px; gap: 8px; }
         .chat-input-area button { padding: 10px 14px; }
@@ -633,6 +660,15 @@
             </div>
         </div>
 
+        <div class="form-group" id="authExperienceWrap" style="display:none;">
+            <label for="authExperienceLevel">Il tuo livello di trading</label>
+            <select id="authExperienceLevel">
+                <option value="beginner">Principiante — guidami passo passo</option>
+                <option value="intermediate">Intermedio</option>
+                <option value="advanced">Avanzato</option>
+            </select>
+        </div>
+
         <!-- Messaggio errore/successo -->
         <div class="auth-msg" id="authMessaggio"></div>
 
@@ -662,25 +698,38 @@
 <div class="sidebar" id="sidebarEl">
     <button class="sidebar-close-btn" onclick="toggleSidebar(false)" aria-label="Chiudi menu">✕</button>
     <div class="brand">OmniTrade AI</div>
+    <div class="workspace-picker" aria-label="Aree di lavoro">
+        <p class="workspace-picker-label">Workspace</p>
+        <div class="workspace-picker-grid">
+            <button type="button" class="workspace-tab active" data-workspace="dashboard" onclick="setWorkspace('dashboard')">⌂ Dashboard</button>
+            <button type="button" class="workspace-tab" data-workspace="macro" onclick="setWorkspace('macro')">◷ Macro</button>
+            <button type="button" class="workspace-tab" data-workspace="analysis" onclick="setWorkspace('analysis')">⌁ Analisi</button>
+            <button type="button" class="workspace-tab" data-workspace="backtest" onclick="setWorkspace('backtest')">▤ Backtest</button>
+            <button type="button" class="workspace-tab" data-workspace="performance" onclick="setWorkspace('performance')">↗ Performance</button>
+            <button type="button" class="workspace-tab" data-workspace="learning" onclick="setWorkspace('learning')">◎ Academy</button>
+            <button type="button" class="workspace-tab" data-workspace="account" onclick="setWorkspace('account')">⚙ Account</button>
+        </div>
+    </div>
     <div class="sidebar-menu">
-        <div class="menu-item active" tabindex="0" onclick="switchView('portafoglio', this)">💼 Portafoglio</div>
-        <div class="menu-item" tabindex="0" onclick="switchView('grafici', this)">📈 Grafici Live</div>
-        <div class="menu-item" tabindex="0" onclick="switchView('volumetrica', this)">📊 Volumetrica</div>
-        <div class="menu-item" tabindex="0" onclick="switchView('news', this)">📰 News &amp; Calendario</div>
-        <div class="menu-item" tabindex="0" onclick="switchView('regime', this)">🌐 Market Regime</div>
-        <div class="menu-item" tabindex="0" onclick="switchView('dashboard', this)">📊 Analisi VWAP</div>
-        <div class="menu-item" tabindex="0" onclick="switchView('builder', this)">🛠️ Strategy Builder</div>
-        <div class="menu-item" tabindex="0" onclick="switchView('papertrading', this)">🎮 Paper Trading Sim</div>
-        <div class="menu-item" tabindex="0" onclick="switchView('marketplace', this)">🏛️ Marketplace &amp; Enciclopedia</div>
-        <div class="menu-item" tabindex="0" onclick="switchView('integrations', this)">🔌 MT5 &amp; Webhooks</div>
-        <div class="menu-item" tabindex="0" onclick="switchView('aicoach', this)">🎓 Future AI Coach</div>
-        <div class="menu-item" tabindex="0" onclick="switchView('chat', this)">💬 AI Copilot Chat</div>
-        <div class="menu-item" tabindex="0" onclick="switchView('diario', this)">🗂️ Diario &amp; Memory</div>
-        <div class="menu-item" tabindex="0" onclick="switchView('glossario', this)">🧠 Glossario Cimi</div>
+        <p class="workspace-nav-label">Strumenti</p>
+        <div class="menu-item active" data-workspaces="dashboard" tabindex="0" onclick="switchView('dashboardHome', this)">⌂ Panoramica</div>
+        <div class="menu-item" data-workspaces="macro" tabindex="0" onclick="switchView('news', this)">📰 Macro &amp; News</div>
+        <div class="menu-item" data-workspaces="macro" tabindex="0" onclick="switchView('regime', this)">🌐 Market Regime</div>
+        <div class="menu-item" data-workspaces="analysis" tabindex="0" onclick="switchView('volumetrica', this)">📊 Flussi &amp; Order Book</div>
+        <div class="menu-item" data-workspaces="analysis" tabindex="0" onclick="switchView('dashboard', this)">⌁ VWAP &amp; Analisi</div>
+        <div class="menu-item" data-workspaces="backtest" tabindex="0" onclick="switchView('dashboard', this)">🧪 Backtest Lab</div>
+        <div class="menu-item" data-workspaces="backtest" tabindex="0" onclick="switchView('builder', this)">🛠️ Strategy Builder</div>
+        <div class="menu-item" data-workspaces="backtest" tabindex="0" onclick="switchView('papertrading', this)">🎮 Paper Trading</div>
+        <div class="menu-item" data-workspaces="performance" tabindex="0" onclick="switchView('portafoglio', this)">💼 Portfolio</div>
+        <div class="menu-item" data-workspaces="performance" tabindex="0" onclick="switchView('diario', this)">🗂️ Trading Journal</div>
+        <div class="menu-item" data-workspaces="performance" tabindex="0" onclick="switchView('aicoach', this)">📈 Performance Review</div>
+        <div class="menu-item" data-workspaces="learning" tabindex="0" onclick="switchView('glossario', this)">📚 Academy &amp; Glossario</div>
+        <div class="menu-item" data-workspaces="learning" tabindex="0" onclick="switchView('marketplace', this)">🏛️ Strategy Marketplace</div>
+        <div class="menu-item" data-workspaces="account" tabindex="0" onclick="switchView('account', this)">⚙ Profilo &amp; Dispositivi</div>
+        <div class="menu-item" data-workspaces="account" tabindex="0" onclick="switchView('integrations', this)">🔌 Integrazioni</div>
     </div>
     <div class="sidebar-foot">
-        👤 <span id="utenteEmailFoot">-</span><br>
-        <button class="btn-sec" style="margin-top:8px; padding:10px; font-size:11px; width:100%;" onclick="effettuaLogout()">🚪 Esci dal Workspace</button>
+        Workspace personale · Dati sincronizzati in sicurezza
     </div>
 </div>
 
@@ -692,8 +741,71 @@
         <p class="placeholder-text" style="font-size:11px; text-align:center; margin:4px 0 6px 0;">ⓘ DXY, VIX e US10Y sono mostrati tramite fonti equivalenti (Fed/CBOE proxy) perché i simboli indice originali di TradingView richiedono un'accettazione dati in tempo reale non disponibile nei widget embeddati.</p>
     </div>
 
-    <!-- PORTAFOGLIO -->
-    <div id="view-portafoglio" class="view-content active">
+    <!-- DASHBOARD -->
+    <div id="view-dashboardHome" class="view-content active">
+        <div class="home-hero">
+            <div>
+                <p class="workspace-picker-label">Trading Operating System</p>
+                <h1>La tua giornata di trading</h1>
+                <p class="placeholder-text" style="margin:6px 0 0;">Mercato, portafoglio e prossime azioni in un unico punto.</p>
+            </div>
+            <button class="btn-refresh" type="button" onclick="calcolaMarketRegime()">↻ Aggiorna contesto mercato</button>
+        </div>
+        <div class="home-summary-grid">
+            <section class="panel">
+                <div class="toolbar" style="margin-bottom:8px;">
+                    <h2 style="border:0; padding:0; margin:0;">🌐 Market Regime</h2>
+                    <button class="btn-refresh" type="button" onclick="apriWorkspace('macro','regime')">Dettagli</button>
+                </div>
+                <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+                    <div class="regime-score" id="homeRegimeScore">—</div>
+                    <div><strong id="homeRegimeTitle">In attesa dei dati</strong><p class="placeholder-text" id="homeRegimeStatus" style="margin:4px 0 0;">Il punteggio richiede dati aggiornati da tutte le fonti.</p></div>
+                </div>
+            </section>
+            <section class="panel">
+                <div class="toolbar" style="margin-bottom:8px;">
+                    <h2 style="border:0; padding:0; margin:0;">🗓️ Eventi macro</h2>
+                    <button class="btn-refresh" type="button" onclick="apriWorkspace('macro','news')">Apri calendario</button>
+                </div>
+                <div class="tv-chart-wrap" id="homeMacroCalendar" style="height:300px;"></div>
+                <p class="placeholder-text" style="margin:8px 0 0;">Calendario economico TradingView; orari e disponibilità dipendono dalla fonte.</p>
+            </section>
+        </div>
+        <section class="panel" style="margin-top:14px;">
+            <div class="toolbar" style="margin-bottom:8px;">
+                <h2 style="border:0; padding:0; margin:0;">💼 Portfolio Snapshot</h2>
+                <button class="btn-refresh" type="button" onclick="apriWorkspace('performance','portafoglio')">Apri portfolio</button>
+            </div>
+            <div class="home-kpi-grid">
+                <div class="kpi-card"><div class="kpi-label">Saldo</div><div class="kpi-value" id="homeKpiSaldo">—</div></div>
+                <div class="kpi-card"><div class="kpi-label">P&amp;L</div><div class="kpi-value" id="homeKpiPnl">—</div></div>
+                <div class="kpi-card"><div class="kpi-label">Win Rate</div><div class="kpi-value" id="homeKpiWinrate">—</div></div>
+                <div class="kpi-card"><div class="kpi-label">Profit Factor</div><div class="kpi-value" id="homeKpiProfitFactor">—</div></div>
+                <div class="kpi-card"><div class="kpi-label">Max DD ($)</div><div class="kpi-value" id="homeKpiDrawdown">—</div></div>
+            </div>
+            <p class="placeholder-text" id="homePortfolioStatus" style="margin:10px 0 0;">Caricamento statistiche portfolio…</p>
+        </section>
+        <section class="panel" style="margin-top:14px;">
+            <div class="toolbar" style="margin-bottom:8px;">
+                <div><h2 style="border:0; padding:0; margin:0;">🧠 Today Briefing AI</h2><p class="placeholder-text" style="margin:5px 0 0;">Genera una sintesi usando i dati disponibili nel tuo workspace. L'invio all'AI avviene solo su tua richiesta.</p></div>
+                <button class="btn-main" id="btnTodayBriefing" type="button" onclick="generaBriefingGiornaliero()">Genera briefing</button>
+            </div>
+            <div class="output-box" id="todayBriefingOutput" role="status" aria-live="polite"><p class="placeholder-text">Il briefing non è stato ancora generato oggi.</p></div>
+        </section>
+        <section style="margin-top:20px;">
+            <h2>Da dove vuoi iniziare?</h2>
+            <div class="home-actions">
+                <button class="home-action" onclick="apriWorkspace('analysis','volumetrica')"><strong>Analizza il mercato</strong>Volumi, order book e VWAP</button>
+                <button class="home-action" onclick="apriWorkspace('backtest','builder')"><strong>Costruisci una strategia</strong>Regole visuali e test</button>
+                <button class="home-action" onclick="apriWorkspace('backtest','dashboard')"><strong>Valida un'idea</strong>Backtest su dati storici</button>
+                <button class="home-action" onclick="apriWorkspace('performance','diario')"><strong>Migliora le performance</strong>Journal e memoria trader</button>
+                <button class="home-action" onclick="apriWorkspace('learning','glossario')"><strong>Impara</strong>Concetti e strategie</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- PORTFOLIO -->
+    <div id="view-portafoglio" class="view-content">
         <div class="toolbar">
             <div>
                 <h2 style="border:none; padding:0; margin:0 0 6px 0;">💼 Portafoglio</h2>
@@ -712,6 +824,9 @@
             <div class="kpi-card"><div class="kpi-label">Profit Factor</div><div class="kpi-value" id="kpiProfitFactor">-</div></div>
             <div class="kpi-card"><div class="kpi-label">R/R Realizzato</div><div class="kpi-value" id="kpiRR">-</div></div>
             <div class="kpi-card"><div class="kpi-label">Posizioni Aperte</div><div class="kpi-value" id="kpiAperte">0</div></div>
+            <div class="kpi-card"><div class="kpi-label">Max Drawdown ($)</div><div class="kpi-value" id="kpiMaxDrawdown">—</div></div>
+            <div class="kpi-card"><div class="kpi-label">Expectancy / trade</div><div class="kpi-value" id="kpiExpectancy">—</div></div>
+            <div class="kpi-card"><div class="kpi-label">Recovery Factor</div><div class="kpi-value" id="kpiRecoveryFactor">—</div></div>
         </div>
 
         <div class="panel" style="margin-top:20px;">
@@ -919,9 +1034,12 @@
 
     <!-- DASHBOARD ANALISI VWAP -->
     <div id="view-dashboard" class="view-content">
+        <div class="toolbar">
+            <div><p class="workspace-picker-label">Ricerca quantitativa</p><h1 style="margin:0;">Backtest Lab</h1><p class="placeholder-text" style="margin:5px 0 0;">Asset → timeframe → strategia → sessione → risultati. I risultati sono simulazioni storiche, non previsioni.</p></div>
+        </div>
         <div class="dashboard-grid">
             <div class="panel">
-                <h2>Configurazione Strategia</h2>
+                <h2>1 · Configura il test</h2>
                 <div class="form-group">
                     <label for="ticker">Asset (ticker Yahoo Finance, es. BTC-USD, AAPL, ^GSPC, EURUSD=X)</label>
                     <input type="text" id="ticker" list="tickerSuggestions" value="BTC-USD" placeholder="Scrivi un ticker qualsiasi..." autocomplete="off">
@@ -955,13 +1073,18 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="sessionFilter">Filtro Sessione (Session Engine)</label>
-                        <select id="sessionFilter">
+                        <select id="sessionFilter" onchange="toggleCustomBacktestSession()">
                             <option value="ALL" selected>Tutte le Sessioni (24h)</option>
                             <option value="TOKYO">Tokyo / Asia (00:00 - 08:00 ora locale)</option>
                             <option value="LONDON">Londra (07:00 - 15:30 ora locale)</option>
                             <option value="NEW_YORK">New York (09:30 - 16:00 ora locale)</option>
                             <option value="LONDON_NY_OVERLAP">Overlap Londra - New York (08:00 - 10:00 New York)</option>
+                            <option value="CUSTOM">Sessione personalizzata (ora locale)</option>
                         </select>
+                    </div>
+                    <div class="form-row" id="customSessionFields" hidden>
+                        <div class="form-group"><label for="customSessionStart">Inizio sessione</label><input id="customSessionStart" type="time" value="08:00"></div>
+                        <div class="form-group"><label for="customSessionEnd">Fine sessione</label><input id="customSessionEnd" type="time" value="16:00"></div>
                     </div>
                     <div class="form-group">
                         <label for="costiOperativi">Costi stimati per lato</label>
@@ -986,6 +1109,10 @@
                     <input type="checkbox" id="esameCoscienza" style="width:20px; height:20px; margin:0; cursor:pointer;" checked>
                     <label for="esameCoscienza" style="margin:0; cursor:pointer; font-weight: 600; color: var(--primary);">🧠 Abilita Esame di Coscienza dell'AI (Analisi Macro)</label>
                 </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="backtestRiskPerTrade">Rischio simulato per trade (%)</label><input type="number" id="backtestRiskPerTrade" value="1" min="0.1" max="10" step="0.1"></div>
+                    <div class="form-group"><label for="backtestHorizon">Orizzonte Monte Carlo (trade)</label><input type="number" id="backtestHorizon" value="250" min="25" max="2000" step="25"></div>
+                </div>
                 <div class="btn-group">
                     <button class="btn-main" onclick="lanciaAzione('analisi')">⚡ GENERA ANALISI COMPLETA</button>
                     <button class="btn-sec" onclick="lanciaAzione('backtest')">📊 AVVIA BACKTEST MATEMATICO</button>
@@ -995,7 +1122,7 @@
             </div>
 
             <div class="panel">
-                <h2>Monitor Metriche &amp; Responso Quantitativo</h2>
+                <h2>2 · Metriche e risultati</h2>
                 <div class="kpi-grid">
                     <div class="kpi-card">
                         <div class="kpi-label">Ultimo Prezzo</div>
@@ -1046,6 +1173,7 @@
 
     <!-- CHAT -->
     <div id="view-chat" class="view-content">
+        <p class="placeholder-text">Il Copilot riceve la pagina e i dati di trading visibili pertinenti alla richiesta. Evita di includere informazioni che non vuoi inviare all'AI.</p>
         <div class="chat-layout">
             <div class="chat-box" id="chatBox">
                 <div class="msg ai">Benvenuto nella console di comunicazione diretta di OmniTrade AI. Qui puoi farmi domande di approfondimento sui grafici, chiarire dubbi operativi o analizzare le notizie fondamentali. Chiedimi qualsiasi cosa!</div>
@@ -1068,6 +1196,19 @@
                 <button class="btn-sec" onclick="esportaStrategiaJSON()">📥 Esporta JSON</button>
                 <button class="btn-main" onclick="salvaOAggiornaStrategia()">💾 Salva Strategia</button>
             </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:14px;">
+            <h2>Le mie strategie salvate</h2>
+            <div class="form-row">
+                <div class="form-group"><label for="savedStrategiesSelect">Carica dal tuo archivio</label><select id="savedStrategiesSelect" onchange="caricaVersioniStrategia()"><option value="">Caricamento strategie personali…</option></select></div>
+                <div class="form-group" style="align-self:end;"><button class="btn-sec" type="button" onclick="caricaStrategiaSelezionata()">Carica strategia</button></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label for="savedStrategyVersionSelect">Cronologia versioni</label><select id="savedStrategyVersionSelect"><option value="">Seleziona prima una strategia</option></select></div>
+                <div class="form-group" style="align-self:end;"><button class="btn-sec" type="button" onclick="caricaVersioneStrategiaSelezionata()">Carica versione selezionata</button></div>
+            </div>
+            <p class="placeholder-text" id="builderLibraryStatus" style="margin:0;">Ogni salvataggio crea una versione immutabile.</p>
         </div>
 
         <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr;">
@@ -1114,6 +1255,12 @@
                         </select>
                     </div>
                 </div>
+                <div class="form-group"><label for="stratDescrizione">Descrizione e note</label><textarea id="stratDescrizione" rows="2" style="width:100%; resize:vertical;" placeholder="Obiettivo, regole e limiti della strategia"></textarea></div>
+                <label class="push-category-option" style="display:inline-flex; margin:0 0 8px; padding:8px 10px;">
+                    <input type="checkbox" id="stratPublic">
+                    Condividi pubblicamente nel Marketplace
+                </label>
+                <div class="form-group"><label for="stratChangelog">Nota della prossima versione</label><input id="stratChangelog" type="text" maxlength="240" placeholder="Modifica rispetto alla versione precedente"></div>
             </div>
         </div>
 
@@ -1193,20 +1340,20 @@
         <!-- KPI TRADER MEMORY (ANALISI ERRORI E PATTERN) -->
         <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom:20px;">
             <div class="kpi-card">
-                <div class="kpi-label">Indice Disciplina Emotiva</div>
-                <div class="kpi-value" id="kpiDisciplina" style="color:var(--primary);">88%</div>
+                <div class="kpi-label">Check-in calmi o disciplinati (%)</div>
+                <div class="kpi-value" id="kpiDisciplina" title="Percentuale calcolata sui check-in con stato emotivo specificato." style="color:var(--primary);">—</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-label">Errore Più Frequente</div>
-                <div class="kpi-value" id="kpiErroreFrequente" style="font-size:16px; color:#ffd200;">Anticipo Entrata</div>
+                <div class="kpi-label">Stato emotivo più registrato</div>
+                <div class="kpi-value" id="kpiErroreFrequente" style="font-size:16px; color:#ffd200;">—</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-label">P&amp;L da Trade Disciplinati</div>
-                <div class="kpi-value" id="kpiPnlDisciplinato" style="color:var(--primary);">+$1,420.00</div>
+                <div class="kpi-label">P&amp;L trade disciplinati</div>
+                <div class="kpi-value" id="kpiPnlDisciplinato" title="Non disponibile: il diario attuale registra report e stati emotivi, non i risultati dei singoli trade." style="color:var(--primary);">—</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-label">P&amp;L Perso da FOMO / Errori</div>
-                <div class="kpi-value" id="kpiPnlPersoErrori" style="color:var(--danger);">-$380.00</div>
+                <div class="kpi-label">P&amp;L associato a bias</div>
+                <div class="kpi-value" id="kpiPnlPersoErrori" title="Non disponibile: il diario attuale non associa il P&amp;L dei singoli trade allo stato emotivo." style="color:var(--danger);">—</div>
             </div>
         </div>
 
@@ -1223,7 +1370,7 @@
         <div class="toolbar">
             <div>
                 <h2 style="border:none; margin:0; padding:0;">🌐 Global Market Regime Engine (Rilevatore Macro)</h2>
-                <p class="placeholder-text" style="margin:4px 0 0 0;">Stato macroeconomico calcolato in tempo reale su Volatilità (VIX), Flussi Valutari (DXY) e Rendimenti (US10Y).</p>
+                <p class="placeholder-text" style="margin:4px 0 0 0;">Indicatore sintetico: rendimenti recenti di S&amp;P 500, DXY, US 10Y e Bitcoin, più livello VIX. È un riepilogo descrittivo, non una previsione né un consiglio d'investimento.</p>
             </div>
             <button class="btn-refresh" onclick="calcolaMarketRegime()">↻ Ricalcola Regime</button>
         </div>
@@ -1231,13 +1378,13 @@
         <div class="panel" style="margin-bottom:20px; border-left: 6px solid var(--primary);" id="marketRegimeBanner">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
                 <div>
-                    <span style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted);">Regime di Mercato Attuale:</span>
-                    <h1 style="margin:4px 0; color:var(--primary); font-size:28px;" id="regimeTitolo">RISK-ON (Espansione)</h1>
-                    <p style="margin:0; font-size:13px; color:var(--text-main);" id="regimeDescrizione">Flussi favorevoli al rischio, volatilità compressa e pressione compratrice su azionario e crypto.</p>
+                    <span style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted);">Regime dai dati aggiornati:</span>
+                    <h1 style="margin:4px 0; color:var(--text-muted); font-size:28px;" id="regimeTitolo">DATI NON ANCORA CALCOLATI</h1>
+                    <p style="margin:0; font-size:13px; color:var(--text-main);" id="regimeDescrizione">Aggiorna il regime per caricare le cinque fonti. Se una fonte manca, il risultato viene indicato come non disponibile.</p>
                 </div>
                 <div style="background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:10px; padding:12px 18px; text-align:right;">
-                    <span style="font-size:11px; color:var(--text-muted);">Priorità Operativa:</span>
-                    <div style="font-size:16px; font-weight:700; color:#00ffa3;" id="regimeAzione">Long su Setup di Continuazione</div>
+                    <span style="font-size:11px; color:var(--text-muted);">Punteggio sintetico</span>
+                    <div style="font-size:16px; font-weight:700; color:var(--text-muted);" id="regimeAzione">— / 100</div>
                 </div>
             </div>
         </div>
@@ -1245,73 +1392,56 @@
         <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:15px; margin-bottom:24px;">
             <div class="kpi-card">
                 <div class="kpi-label">VIX (Indice Paura / Volatilità)</div>
-                <div class="kpi-value" id="regimeVix">14.80</div>
-                <div class="placeholder-text" style="font-size:11px; margin-top:4px;">&lt; 18: Volatilità Bassa (Risk-On)</div>
+                <div class="kpi-value" id="regimeVix">—</div>
+                <div class="placeholder-text" style="font-size:11px; margin-top:4px;">Volatilità implicita</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">DXY (US Dollar Strength)</div>
-                <div class="kpi-value" id="regimeDxy">102.40</div>
-                <div class="placeholder-text" style="font-size:11px; margin-top:4px;">Stabile / Neutro</div>
+                <div class="kpi-value" id="regimeDxy">—</div>
+                <div class="placeholder-text" style="font-size:11px; margin-top:4px;">Indice del dollaro</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">US 10Y Yield (Rendimenti Obbligazionari)</div>
-                <div class="kpi-value" id="regimeYield">4.22%</div>
-                <div class="placeholder-text" style="font-size:11px; margin-top:4px;">Tassi in assestamento</div>
+                <div class="kpi-value" id="regimeYield">—</div>
+                <div class="placeholder-text" style="font-size:11px; margin-top:4px;">Rendimento Treasury 10Y</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-label">Allocazione Rischio Consigliata</div>
-                <div class="kpi-value" id="regimeAllocazione" style="color:var(--primary);">100% Rischio Piano</div>
-                <div class="placeholder-text" style="font-size:11px; margin-top:4px;">Circuit breaker disattivato</div>
+                <div class="kpi-label">S&amp;P 500</div>
+                <div class="kpi-value" id="regimeSp500">—</div>
+                <div class="placeholder-text" style="font-size:11px; margin-top:4px;">Variazione su 5 sedute</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Bitcoin</div>
+                <div class="kpi-value" id="regimeBtc">—</div>
+                <div class="placeholder-text" style="font-size:11px; margin-top:4px;">Variazione su 5 sedute</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Fonti disponibili</div>
+                <div class="kpi-value" id="regimeAllocazione" style="color:var(--text-muted);">0 / 5</div>
+                <div class="placeholder-text" style="font-size:11px; margin-top:4px;">Tutte necessarie per il regime</div>
             </div>
         </div>
 
         <div class="panel">
             <h2>🧠 Guida Operativa di Regime per Trader</h2>
             <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr; gap:16px; margin-top:10px;">
-                <div class="report-item success">
-                    <strong>🟢 Risk-On:</strong> Focus su breakout rialzisti e continuazione trend su Tech, Crypto e Indici. Spazio libero a TP estesi (1:2.5+).
-                </div>
-                <div class="report-item warning">
-                    <strong>🟡 Neutral:</strong> Mercato in range o compressione pre-macro. Preferire strategie di pura Mean Reversion al VWAP con TP a fair value.
-                </div>
-                <div class="report-item danger">
-                    <strong>🔴 Risk-Off:</strong> Fuga dal rischio verso Dollar e Bonds. Short su rally e riduzione sizing del 50%.
-                </div>
-                <div class="report-item" style="border-left-color:#ff4d4d; background:rgba(255,77,77,0.08);">
-                    <strong>⛔ Cash Priority (Circuit Breaker):</strong> VIX &gt; 35 o shock macro sistemico. Nessuna nuova posizione permessa dal sistema.
-                </div>
+                <div class="report-item"><strong>Metodo:</strong> indicatore paritario sui rendimenti a 5 sedute di S&amp;P 500, DXY, US 10Y e BTC e sul livello VIX; direzione inversa applicata a DXY e US 10Y.</div>
+                <div class="report-item warning"><strong>Limiti:</strong> proxy di mercato, finestre brevi e dati di terze parti. Non determina sizing, operazioni o allocazioni e non sostituisce la tua analisi.</div>
             </div>
         </div>
     </div>
 
-    <!-- STRATEGY MARKETPLACE & ENCYCLOPEDIA -->
+    <!-- STRATEGY MARKETPLACE -->
     <div id="view-marketplace" class="view-content">
         <div class="toolbar">
             <div>
-                <h2 style="border:none; margin:0; padding:0;">🏛️ Strategy Marketplace &amp; Encyclopedia</h2>
-                <p class="placeholder-text" style="margin:4px 0 0 0;">Libreria di strategie quantitative validate, manuale operativo e repository condivisibile.</p>
+                <h1 style="margin:0;">🏛️ Strategy Marketplace</h1>
+                <p class="placeholder-text" style="margin:4px 0 0 0;">Esplora strategie pubblicate dagli utenti, importale nel Builder e lascia una valutazione.</p>
             </div>
-            <div class="segmented" id="segMarketplace">
-                <button class="active" onclick="mostraTabMarketplace('encyclopedia', this)">📖 Enciclopedia Strategie</button>
-                <button onclick="mostraTabMarketplace('marketplace', this)">🏆 Classifica &amp; Marketplace</button>
-            </div>
+            <button class="btn-refresh" type="button" onclick="caricaMarketplaceEEncyclopedia()">↻ Aggiorna</button>
         </div>
-
-        <!-- TAB 1: ENCYCLOPEDIA -->
-        <div id="tabEncyclopedia">
-            <div class="glossary-grid" id="encyclopediaGrid">
-                <!-- Verrà popolato dinamicamente con le strategie da enciclopedia -->
-            </div>
-        </div>
-
-        <!-- TAB 2: MARKETPLACE -->
-        <div id="tabMarketplaceContent" style="display:none;">
-            <div class="panel">
-                <h2>🏆 Top Strategie Validate dalla Community (Classifica per Profit Factor &amp; Sharpe)</h2>
-                <div id="marketplaceListWrap">
-                    <p class="placeholder-text">Caricamento strategie del Marketplace...</p>
-                </div>
-            </div>
+        <div class="panel">
+            <div id="marketplaceListWrap" aria-live="polite"><p class="placeholder-text">Caricamento strategie pubbliche…</p></div>
         </div>
     </div>
 
@@ -1431,7 +1561,7 @@
         <div class="toolbar">
             <div>
                 <h2 style="border:none; margin:0; padding:0;">🎓 Future AI Coach &amp; Statistical Performance Doctor</h2>
-                <p class="placeholder-text" style="margin:4px 0 0 0;">Il tuo mentore statistico oggettivo: analizza la tua equity curve, individua debolezze e raccomanda correttivi al piano di trading.</p>
+                <p class="placeholder-text" style="margin:4px 0 0 0;">Analizza portfolio e report disponibili. Senza risultati dei trade non vengono inferiti performance o vantaggi statistici.</p>
             </div>
             <button class="btn-main" id="btnRichiediDiagnosiCoach" onclick="avviaDiagnosiAICoach()">🧠 Genera Diagnosi AI Coach</button>
         </div>
@@ -1446,15 +1576,60 @@
 
     <!-- GLOSSARIO -->
     <div id="view-glossario" class="view-content">
-        <h2 style="border:none;">🧠 Glossario di Teoria dell'Asta e Meccanica dei Volumi</h2>
-        <p class="placeholder-text" style="margin-bottom:20px;">Integrazione delle regole e dei parametri dell'Order Flow istituzionale del mentore Andrea Cimi.</p>
-        <div class="glossary-grid" id="glossarioGrid">
-            <p class="placeholder-text">Caricamento glossario dal cloud...</p>
+        <div class="toolbar">
+            <div><h1 style="margin:0;">📚 Academy</h1><p class="placeholder-text" style="margin:5px 0 0;">Glossario e strategie formative. Il Marketplace condiviso è separato.</p></div>
+            <div class="segmented" id="segAcademy">
+                <button class="active" type="button" onclick="mostraTabAcademy('glossary', this)">Glossario</button>
+                <button type="button" onclick="mostraTabAcademy('strategies', this)">Strategie e pattern</button>
+            </div>
         </div>
+        <div id="academyGlossary">
+            <div class="glossary-grid" id="glossarioGrid"><p class="placeholder-text">Caricamento glossario…</p></div>
+        </div>
+        <div id="academyStrategies" hidden>
+            <p class="placeholder-text">Esempi didattici: i risultati non sono performance storiche verificate.</p>
+            <div class="glossary-grid" id="academyStrategiesGrid"></div>
+        </div>
+    </div>
+
+    <!-- ACCOUNT CENTER -->
+    <div id="view-account" class="view-content">
+        <div class="home-hero">
+            <div><p class="workspace-picker-label">Impostazioni personali</p><h1>Account Center</h1><p class="placeholder-text" style="margin:6px 0 0;">Profilo, sicurezza, dispositivi e preferenze.</p></div>
+        </div>
+        <div class="dashboard-grid">
+            <section class="panel">
+                <h2>👤 Profilo</h2>
+                <div class="form-group"><label>Email account</label><p id="accountEmail" class="placeholder-text" style="margin:0;">Caricamento…</p></div>
+                <div class="form-group"><label for="accountExperienceLevel">Livello di esperienza</label>
+                    <select id="accountExperienceLevel">
+                        <option value="beginner">Principiante</option>
+                        <option value="intermediate">Intermedio</option>
+                        <option value="advanced">Avanzato</option>
+                    </select>
+                </div>
+                <button class="btn-main" type="button" onclick="salvaLivelloEsperienza()">Salva preferenze</button>
+                <p class="placeholder-text" id="accountLevelHint" style="margin:10px 0 0;"></p>
+            </section>
+            <section class="panel">
+                <h2>🔐 Sicurezza</h2>
+                <div class="form-group"><label for="accountNewPassword">Nuova password</label><input id="accountNewPassword" type="password" autocomplete="new-password" minlength="8" placeholder="Almeno 8 caratteri"></div>
+                <div class="account-actions">
+                    <button class="btn-main" type="button" onclick="aggiornaPasswordAccount()">Aggiorna password</button>
+                    <button class="btn-sec" type="button" onclick="effettuaLogout()">🚪 Esci dall'account</button>
+                </div>
+            </section>
+        </div>
+        <section class="panel" style="margin-top:14px;">
+            <h2>📲 Dispositivi e notifiche</h2>
+            <p class="placeholder-text">Gestisci i dispositivi registrati e le categorie push separatamente. Le preferenze si salvano sul servizio notifiche associato al tuo account.</p>
+            <button class="btn-main" type="button" onclick="apriWorkspace('macro','news'); setTimeout(() => document.getElementById('pushDevicesList')?.scrollIntoView({behavior:'smooth',block:'start'}), 150);">Gestisci dispositivi e notifiche</button>
+        </section>
     </div>
 </div>
 
 <div id="toastContainer"></div>
+<button type="button" class="copilot-fab" onclick="apriCopilot()" aria-label="Apri AI Copilot">✦ Chiedi all'AI</button>
 
 <script>
 /* ============ CONFIG SUPABASE ============ */
@@ -1539,6 +1714,8 @@ function mostraTabAuth(tab, el) {
     // Aggiorna autocomplete
     const pwInput = document.getElementById('authPassword');
     if (pwInput) pwInput.autocomplete = tab === 'login' ? 'current-password' : 'new-password';
+    const levelWrap = document.getElementById('authExperienceWrap');
+    if (levelWrap) levelWrap.style.display = tab === 'registrati' ? 'block' : 'none';
 }
 
 function togglePasswordVisibility() {
@@ -1590,7 +1767,12 @@ async function eseguiAuth() {
             if (error) throw error;
             impostaMessaggioAuth('✓ Accesso effettuato!', 'ok');
         } else {
-            const { data, error } = await sb.auth.signUp({ email, password });
+            const experienceLevel = document.getElementById('authExperienceLevel')?.value || 'beginner';
+            const { data, error } = await sb.auth.signUp({
+                email,
+                password,
+                options: { data: { experience_level: experienceLevel } }
+            });
             if (error) throw error;
             if (data.session) {
                 impostaMessaggioAuth('✓ Account creato con successo!', 'ok');
@@ -1632,8 +1814,13 @@ function gestisciCambioSessione(session) {
     if (session && session.user) {
         gate.style.display = 'none';
         document.body.classList.remove('app-hidden');
-        const etichettaEmail = document.getElementById('utenteEmailFoot');
-        if (etichettaEmail) etichettaEmail.innerText = session.user.is_anonymous ? 'Utente anonimo' : (session.user.email || 'Utente');
+        const livelloProfilo = session.user.user_metadata?.experience_level;
+        const livello = ['beginner', 'intermediate', 'advanced'].includes(livelloProfilo) ? livelloProfilo : 'advanced';
+        localStorage.setItem('omnitrade_experience_level', livello);
+        const accountEmail = document.getElementById('accountEmail');
+        if (accountEmail) accountEmail.textContent = session.user.is_anonymous ? 'Utente anonimo' : (session.user.email || 'Utente');
+        const accountLevel = document.getElementById('accountExperienceLevel');
+        if (accountLevel) accountLevel.value = livello;
         if (!appGiaAvviata) {
             appGiaAvviata = true;
             avviaApp();
@@ -1651,6 +1838,64 @@ function pulisciIntervalli() {
     if (typeof orderBookInterval !== 'undefined' && orderBookInterval) { clearInterval(orderBookInterval); orderBookInterval = null; }
     if (typeof newsRefreshInterval !== 'undefined' && newsRefreshInterval) { clearInterval(newsRefreshInterval); newsRefreshInterval = null; }
     if (typeof newsPollingInterval !== 'undefined' && newsPollingInterval) { clearInterval(newsPollingInterval); newsPollingInterval = null; }
+}
+
+async function aggiornaAccountCenter() {
+    const { data, error } = await sb.auth.getUser();
+    if (error) {
+        toast(`Impossibile caricare il profilo: ${error.message}`, 'error');
+        return;
+    }
+    const user = data.user;
+    if (!user) return;
+    const email = document.getElementById('accountEmail');
+    if (email) email.textContent = user.email || 'Utente anonimo';
+    const level = ['beginner', 'intermediate', 'advanced'].includes(user.user_metadata?.experience_level)
+        ? user.user_metadata.experience_level
+        : 'advanced';
+    localStorage.setItem('omnitrade_experience_level', level);
+    const selector = document.getElementById('accountExperienceLevel');
+    if (selector) selector.value = level;
+    const hint = document.getElementById('accountLevelHint');
+    if (hint) hint.textContent = level === 'beginner'
+        ? 'Modalità Principiante: mostra Dashboard, Macro & News, Portfolio, Academy e impostazioni Account.'
+        : 'Le aree avanzate restano disponibili nei rispettivi workspace.';
+}
+
+async function salvaLivelloEsperienza() {
+    const level = document.getElementById('accountExperienceLevel')?.value;
+    if (!['beginner', 'intermediate', 'advanced'].includes(level)) {
+        toast('Seleziona un livello valido.', 'error');
+        return;
+    }
+    const { error } = await sb.auth.updateUser({ data: { experience_level: level } });
+    if (error) {
+        toast(`Preferenza non salvata: ${error.message}`, 'error');
+        return;
+    }
+    localStorage.setItem('omnitrade_experience_level', level);
+    setWorkspace(workspaceCorrente);
+    const hint = document.getElementById('accountLevelHint');
+    if (hint) hint.textContent = level === 'beginner'
+        ? 'Modalità Principiante attiva: le funzioni avanzate sono nascoste ma non eliminate.'
+        : 'Livello aggiornato. Tutte le aree previste dal livello sono disponibili.';
+    toast('Livello di esperienza aggiornato.', 'success');
+}
+
+async function aggiornaPasswordAccount() {
+    const input = document.getElementById('accountNewPassword');
+    const password = input?.value || '';
+    if (password.length < 8) {
+        toast('La nuova password deve contenere almeno 8 caratteri.', 'error');
+        return;
+    }
+    const { error } = await sb.auth.updateUser({ password });
+    if (error) {
+        toast(`Password non aggiornata: ${error.message}`, 'error');
+        return;
+    }
+    input.value = '';
+    toast('Password aggiornata.', 'success');
 }
 
 sb.auth.onAuthStateChange((_evento, session) => {
@@ -1771,7 +2016,78 @@ function initParticles() {
 }
 
 /* ============ NAVIGAZIONE SPA ============ */
+const WORKSPACE_DEFAULT_VIEW = {
+    dashboard: 'dashboardHome',
+    macro: 'news',
+    analysis: 'volumetrica',
+    backtest: 'dashboard',
+    performance: 'diario',
+    learning: 'glossario',
+    account: 'account'
+};
+let workspaceCorrente = 'dashboard';
+
+function vistaDisponibilePerPrincipiante(viewId) {
+    return ['dashboardHome', 'news', 'portafoglio', 'glossario', 'account', 'chat'].includes(viewId);
+}
+
+function aggiornaNavigazioneWorkspace(workspaceId) {
+    workspaceCorrente = workspaceId;
+    localStorage.setItem('omnitrade_workspace', workspaceId);
+    const livello = localStorage.getItem('omnitrade_experience_level') || 'advanced';
+    document.querySelectorAll('.workspace-tab').forEach(button => {
+        button.hidden = livello === 'beginner' && ['analysis', 'backtest'].includes(button.dataset.workspace);
+        const selected = button.dataset.workspace === workspaceId;
+        button.classList.toggle('active', selected);
+        button.setAttribute('aria-pressed', String(selected));
+    });
+    document.querySelectorAll('.menu-item[data-workspaces]').forEach(item => {
+        const inWorkspace = item.dataset.workspaces.split(/\s+/).includes(workspaceId);
+        const viewId = item.getAttribute('onclick')?.match(/switchView\('([^']+)'/)?.[1];
+        item.hidden = !inWorkspace || (livello === 'beginner' && !vistaDisponibilePerPrincipiante(viewId));
+    });
+}
+
+function setWorkspace(workspaceId, requestedView = null) {
+    if (!Object.prototype.hasOwnProperty.call(WORKSPACE_DEFAULT_VIEW, workspaceId)) return;
+    aggiornaNavigazioneWorkspace(workspaceId);
+    const livello = localStorage.getItem('omnitrade_experience_level') || 'advanced';
+    const defaultView = requestedView && (livello !== 'beginner' || vistaDisponibilePerPrincipiante(requestedView))
+        ? requestedView
+        : (livello === 'beginner' && workspaceId === 'performance'
+            ? 'portafoglio'
+            : WORKSPACE_DEFAULT_VIEW[workspaceId]);
+    const defaultItem = Array.from(document.querySelectorAll('.menu-item')).find(item =>
+        !item.hidden && item.getAttribute('onclick')?.includes(`switchView('${defaultView}'`)
+    );
+    if (defaultItem) switchView(defaultView, defaultItem);
+}
+
+function apriWorkspace(workspaceId, viewId) {
+    setWorkspace(workspaceId, viewId);
+}
+
 function switchView(viewId, element) {
+    const view = document.getElementById('view-' + viewId);
+    if (!view) return;
+    if (!element) {
+        element = Array.from(document.querySelectorAll('.menu-item')).find(item =>
+            !item.hidden && item.getAttribute('onclick')?.includes(`switchView('${viewId}'`)
+        );
+    }
+    if (element?.dataset.workspaces) {
+        const workspace = element.dataset.workspaces.split(/\s+/).find(id => id === workspaceCorrente)
+            || element.dataset.workspaces.split(/\s+/)[0];
+        if (workspace !== workspaceCorrente) {
+            aggiornaNavigazioneWorkspace(workspace);
+        }
+    }
+    if ((localStorage.getItem('omnitrade_experience_level') || 'advanced') === 'beginner'
+        && !vistaDisponibilePerPrincipiante(viewId)) {
+        toast('Questa funzione è nascosta in Modalità Principiante. Puoi cambiare livello da Account.', 'info');
+        setWorkspace('dashboard');
+        return;
+    }
     // Sospende intervalli pesanti se si esce dalla rispettiva pagina
     if (viewId !== 'volumetrica' && typeof orderBookInterval !== 'undefined' && orderBookInterval) {
         clearInterval(orderBookInterval);
@@ -1788,8 +2104,8 @@ function switchView(viewId, element) {
 
     document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
-    document.getElementById('view-' + viewId).classList.add('active');
-    element.classList.add('active');
+    view.classList.add('active');
+    element?.classList.add('active');
     if (viewId === 'diario') caricaDiario();
     if (viewId === 'regime') calcolaMarketRegime();
     if (viewId === 'builder') inizializzaBuilderView();
@@ -1797,11 +2113,18 @@ function switchView(viewId, element) {
     if (viewId === 'marketplace') caricaMarketplaceEEncyclopedia();
     if (viewId === 'aicoach') caricaStatoAICoach();
     if (viewId === 'glossario') caricaGlossario();
+    if (viewId === 'glossario') renderStrategieAcademy();
     if (viewId === 'portafoglio') ricalcolaPortafoglio();
     if (viewId === 'dashboard') avviaMonitorVWAP();
     if (viewId === 'grafici') { caricaGraficoLive(); caricaWatchlist(); }
     if (viewId === 'volumetrica') caricaVolumetrica();
     if (viewId === 'news') { caricaNewsECalendario(); controllaStatoPushNotifiche(); }
+    if (viewId === 'account') aggiornaAccountCenter();
+    if (viewId === 'dashboardHome') {
+        ricalcolaPortafoglio();
+        calcolaMarketRegime(true);
+        renderCalendarioEconomico('homeMacroCalendar');
+    }
     if (window.innerWidth <= 768) toggleSidebar(false);
 }
 
@@ -1933,14 +2256,29 @@ function leggiParametri() {
     const rr = parseFloat(document.getElementById('rr').value);
     const sessione = document.getElementById('sessionFilter') ? document.getElementById('sessionFilter').value : 'ALL';
     const commissione = document.getElementById('costiOperativi') ? parseFloat(document.getElementById('costiOperativi').value) : 0.05;
+    const sessionePersonalizzata = {
+        start: document.getElementById('customSessionStart')?.value || '',
+        end: document.getElementById('customSessionEnd')?.value || '',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+    };
+    const rischioPerTrade = parseFloat(document.getElementById('backtestRiskPerTrade')?.value || '1');
+    const orizzonteMonteCarlo = parseInt(document.getElementById('backtestHorizon')?.value || '250', 10);
     return {
         ticker: tickerRaw || 'BTC-USD',
         tf,
         soglia: isNaN(soglia) ? 0 : soglia,
         rr: isNaN(rr) ? 1 : rr,
         sessione,
-        commissione: isNaN(commissione) ? 0 : commissione
+        commissione: isNaN(commissione) ? 0 : commissione,
+        sessionePersonalizzata,
+        rischioPerTrade,
+        orizzonteMonteCarlo
     };
+}
+
+function toggleCustomBacktestSession() {
+    const fields = document.getElementById('customSessionFields');
+    if (fields) fields.hidden = document.getElementById('sessionFilter')?.value !== 'CUSTOM';
 }
 
 function rangePerTimeframe(tf) {
@@ -2264,8 +2602,26 @@ function minutiNelFuso(timestamp, timezone) {
     return Number(campi.hour) * 60 + Number(campi.minute);
 }
 
-function candelaNellaSessione(timestamp, sessione) {
+function minutiDaOrario(orario) {
+    if (!/^\d{2}:\d{2}$/.test(orario || '')) return NaN;
+    const [ore, minuti] = orario.split(':').map(Number);
+    return ore < 24 && minuti < 60 ? ore * 60 + minuti : NaN;
+}
+
+function candelaNellaSessione(timestamp, sessione, sessionePersonalizzata) {
     if (sessione === 'ALL') return true;
+    if (sessione === 'CUSTOM') {
+        const start = minutiDaOrario(sessionePersonalizzata?.start);
+        const end = minutiDaOrario(sessionePersonalizzata?.end);
+        const localTimezone = sessionePersonalizzata?.timezone || 'UTC';
+        if (!Number.isFinite(start) || !Number.isFinite(end) || start === end) return false;
+        try {
+            const minuti = minutiNelFuso(timestamp, localTimezone);
+            return start < end ? minuti >= start && minuti < end : minuti >= start || minuti < end;
+        } catch (_) {
+            return false;
+        }
+    }
     const sessioni = {
         TOKYO: { timezone: 'Asia/Tokyo', start: 0, end: 8 * 60 },
         LONDON: { timezone: 'Europe/London', start: 7 * 60, end: 15 * 60 + 30 },
@@ -2282,8 +2638,15 @@ function candelaNellaSessione(timestamp, sessione) {
     }
 }
 
-function calcolaBacktestVWAP(candles, { soglia, rr, sessione, commissione }) {
+function calcolaBacktestVWAP(candles, { soglia, rr, sessione, commissione, sessionePersonalizzata }) {
     if (!(soglia > 0) || !(rr > 0)) throw new Error('Soglia e Risk/Reward devono essere maggiori di zero.');
+    if (sessione === 'CUSTOM') {
+        const start = minutiDaOrario(sessionePersonalizzata?.start);
+        const end = minutiDaOrario(sessionePersonalizzata?.end);
+        if (!Number.isFinite(start) || !Number.isFinite(end) || start === end) {
+            throw new Error('Imposta una sessione personalizzata valida con orario di inizio e fine differenti.');
+        }
+    }
     if (!candles.some(candle => candle.volume > 0 && Number.isFinite(candle.vwap))) {
         throw new Error('La fonte non fornisce volumi validi per calcolare VWAP e backtest.');
     }
@@ -2304,7 +2667,8 @@ function calcolaBacktestVWAP(candles, { soglia, rr, sessione, commissione }) {
 
     for (let i = 0; i < candles.length; i++) {
         const candela = candles[i];
-        if (posizione && candela.session !== posizione.session) {
+        const dentroSessione = candelaNellaSessione(candela.time, sessione, sessionePersonalizzata);
+        if (posizione && (candela.session !== posizione.session || (sessione !== 'ALL' && !dentroSessione))) {
             chiudiPosizione(candles[i - 1], candles[i - 1].close, 'fine sessione');
         }
 
@@ -2325,7 +2689,7 @@ function calcolaBacktestVWAP(candles, { soglia, rr, sessione, commissione }) {
             continue;
         }
 
-        if (i === candles.length - 1 || candela.vwap == null || candela.volume <= 0 || !candelaNellaSessione(candela.time, sessione)) continue;
+        if (i === candles.length - 1 || candela.vwap == null || candela.volume <= 0 || !dentroSessione) continue;
         const deviazione = ((candela.close - candela.vwap) / candela.vwap) * 100;
         const direzione = deviazione <= -soglia ? 1 : (deviazione >= soglia ? -1 : 0);
         if (!direzione) continue;
@@ -2373,6 +2737,75 @@ function calcolaBacktestVWAP(candles, { soglia, rr, sessione, commissione }) {
     };
 }
 
+function calcolaMetricheBacktest(trades, maxDrawdownR) {
+    const netProfitR = trades.reduce((sum, trade) => sum + trade.netR, 0);
+    const expectancyR = trades.length ? netProfitR / trades.length : 0;
+    const variance = trades.length
+        ? trades.reduce((sum, trade) => sum + (trade.netR - expectancyR) ** 2, 0) / trades.length
+        : 0;
+    const downsideDeviation = trades.length
+        ? Math.sqrt(trades.reduce((sum, trade) => sum + Math.min(0, trade.netR) ** 2, 0) / trades.length)
+        : 0;
+    const deviation = Math.sqrt(variance);
+    return {
+        netProfitR,
+        expectancyR,
+        sharpe: deviation > 0 ? expectancyR / deviation : null,
+        sortino: downsideDeviation > 0 ? expectancyR / downsideDeviation : null,
+        recoveryFactor: maxDrawdownR < 0 ? netProfitR / Math.abs(maxDrawdownR) : null
+    };
+}
+
+function stimaRiskOfRuin(trades, rischioPerTrade, orizzonte) {
+    if (trades.length < 20) return null;
+    const simulations = 2000;
+    const riskFraction = rischioPerTrade / 100;
+    let ruinCount = 0;
+    for (let simulation = 0; simulation < simulations; simulation++) {
+        let equity = 1;
+        for (let trade = 0; trade < orizzonte; trade++) {
+            const outcome = trades[Math.floor(Math.random() * trades.length)].netR;
+            equity *= Math.max(0, 1 + outcome * riskFraction);
+            if (equity <= 0.5) {
+                ruinCount++;
+                break;
+            }
+        }
+    }
+    return ruinCount / simulations * 100;
+}
+
+function analizzaSessioniBacktest(candles, parameters) {
+    const sessions = [
+        ['TOKYO', 'Tokyo'],
+        ['LONDON', 'Londra'],
+        ['NEW_YORK', 'New York'],
+        ['LONDON_NY_OVERLAP', 'Overlap Londra / New York']
+    ];
+    return sessions.map(([sessione, label]) => {
+        const result = calcolaBacktestVWAP(candles, { ...parameters, sessione });
+        return { label, ...result, ...calcolaMetricheBacktest(result.trades, result.maxDrawdownR) };
+    });
+}
+
+function analizzaOreBacktest(trades, timezone) {
+    const ore = new Map();
+    trades.forEach(trade => {
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: timezone, hour: '2-digit', hourCycle: 'h23'
+        }).formatToParts(new Date(trade.entryTime * 1000));
+        const hour = parts.find(part => part.type === 'hour')?.value;
+        if (hour == null) return;
+        if (!ore.has(hour)) ore.set(hour, []);
+        ore.get(hour).push(trade.netR);
+    });
+    return Array.from(ore, ([hour, values]) => ({
+        hour,
+        count: values.length,
+        expectancy: values.reduce((sum, value) => sum + value, 0) / values.length
+    })).sort((a, b) => b.expectancy - a.expectancy);
+}
+
 function renderGraficiBacktest(series, backtest) {
     const labels = backtest.curva.map(point => formattaOraMercato(point.time, series.meta.timezone));
     renderVwapChart('vwapEquityChart', 'line', labels, [{
@@ -2401,7 +2834,16 @@ async function eseguiBacktestDaDati(ticker, tf, soglia, rr) {
         return;
     }
 
-    const { sessione, commissione } = leggiParametri();
+    const parameters = leggiParametri();
+    const { sessione, commissione } = parameters;
+    if (!Number.isFinite(parameters.rischioPerTrade) || parameters.rischioPerTrade < 0.1 || parameters.rischioPerTrade > 10) {
+        consoleBox.innerHTML = '<div class="report-item danger">Il rischio simulato per trade deve essere compreso tra 0,1% e 10%.</div>';
+        return;
+    }
+    if (!Number.isInteger(parameters.orizzonteMonteCarlo) || parameters.orizzonteMonteCarlo < 25 || parameters.orizzonteMonteCarlo > 2000) {
+        consoleBox.innerHTML = '<div class="report-item danger">L’orizzonte Monte Carlo deve essere compreso tra 25 e 2000 trade.</div>';
+        return;
+    }
     let backtest;
     const candeleBacktest = series.candles.slice(0, -1);
     if (candeleBacktest.length < 2) {
@@ -2409,7 +2851,7 @@ async function eseguiBacktestDaDati(ticker, tf, soglia, rr) {
         return;
     }
     try {
-        backtest = calcolaBacktestVWAP(candeleBacktest, { soglia, rr, sessione, commissione });
+        backtest = calcolaBacktestVWAP(candeleBacktest, { ...parameters, soglia, rr });
     } catch (error) {
         consoleBox.innerHTML = `<div class="report-item danger">Backtest non eseguito: ${escapeHtml(error.message)}</div>`;
         return;
@@ -2420,16 +2862,35 @@ async function eseguiBacktestDaDati(ticker, tf, soglia, rr) {
 
     const tradeCount = backtest.trades.length;
     const profitFactor = Number.isFinite(backtest.profitFactor) ? backtest.profitFactor.toFixed(2) : '∞';
+    const metriche = calcolaMetricheBacktest(backtest.trades, backtest.maxDrawdownR);
+    const rischioRovina = stimaRiskOfRuin(backtest.trades, parameters.rischioPerTrade, parameters.orizzonteMonteCarlo);
+    const intraday = ['1m', '2m', '5m', '15m', '30m', '60m', '1h', '90m'].includes(tf);
     const sessionLabel = {
         ALL: 'Tutte le sessioni',
         TOKYO: 'Tokyo (fuso Asia/Tokyo)',
         LONDON: 'Londra (fuso Europe/London)',
         NEW_YORK: 'New York (fuso America/New_York)',
-        LONDON_NY_OVERLAP: 'Overlap Londra-New York'
+        LONDON_NY_OVERLAP: 'Overlap Londra-New York',
+        CUSTOM: `Personalizzata ${parameters.sessionePersonalizzata.start}–${parameters.sessionePersonalizzata.end} (${parameters.sessionePersonalizzata.timezone})`
     }[sessione] || 'Tutte le sessioni';
     const first = candeleBacktest[0];
     const last = candeleBacktest[candeleBacktest.length - 1];
     const sourceInfo = `${candeleBacktest.length} candele complete · ${formattaOraMercato(first.time, series.meta.timezone)} - ${formattaOraMercato(last.time, series.meta.timezone)}`;
+    const sessions = intraday ? analizzaSessioniBacktest(candeleBacktest, parameters) : [];
+    const sessioniConTrade = sessions.filter(item => item.trades.length >= 3).sort((a, b) => b.expectancyR - a.expectancyR);
+    const hourly = intraday ? analizzaOreBacktest(backtest.trades, series.meta.timezone).filter(item => item.count >= 2) : [];
+    const numberOrDash = (value, decimals = 2) => Number.isFinite(value) ? value.toFixed(decimals) : 'N/D';
+    const sessionTable = sessions.length ? `
+        <h3>Session Based Backtesting</h3>
+        <div class="table-scroll"><table><thead><tr><th>Sessione</th><th>Trade</th><th>Win rate</th><th>Profit factor</th><th>Expectancy</th><th>Drawdown</th></tr></thead><tbody>
+            ${sessions.map(item => `<tr><td>${escapeHtml(item.label)}</td><td>${item.trades.length}</td><td>${item.trades.length ? item.winRate.toFixed(1) + '%' : '—'}</td><td>${item.trades.length ? (Number.isFinite(item.profitFactor) ? item.profitFactor.toFixed(2) : '∞') : '—'}</td><td>${item.trades.length ? (item.expectancyR >= 0 ? '+' : '') + item.expectancyR.toFixed(2) + 'R' : '—'}</td><td>${item.trades.length ? item.maxDrawdownR.toFixed(2) + 'R' : '—'}</td></tr>`).join('')}
+        </tbody></table></div>
+        <p class="placeholder-text">${sessioniConTrade.length >= 2
+            ? `Migliore nel campione: ${escapeHtml(sessioniConTrade[0].label)} · peggiore: ${escapeHtml(sessioniConTrade[sessioniConTrade.length - 1].label)} (ordinamento per expectancy; almeno 3 trade per sessione).`
+            : 'Confronto sessioni non conclusivo: servono almeno 3 trade in due o più sessioni.'}</p>` : '<p class="placeholder-text">Confronto sessioni e orari disponibile solo con timeframe intraday.</p>';
+    const hourSummary = hourly.length >= 2
+        ? `<p class="placeholder-text">Ore migliori: ${hourly.slice(0, 3).map(item => `${item.hour}:00 (${item.expectancy >= 0 ? '+' : ''}${item.expectancy.toFixed(2)}R, ${item.count} trade)`).join(' · ')}<br>Ore peggiori: ${hourly.slice(-3).reverse().map(item => `${item.hour}:00 (${item.expectancy >= 0 ? '+' : ''}${item.expectancy.toFixed(2)}R, ${item.count} trade)`).join(' · ')}. Fuso: ${escapeHtml(series.meta.timezone)}; minimo 2 trade per ora.</p>`
+        : '<p class="placeholder-text">Campione insufficiente per confrontare le ore (servono almeno due trade per ora).</p>';
 
     consoleBox.innerHTML = `
         <div class="report-section">
@@ -2444,12 +2905,20 @@ async function eseguiBacktestDaDati(ticker, tf, soglia, rr) {
                     <div class="kpi-card"><div class="kpi-label">Profit factor netto</div><div class="kpi-value">${profitFactor}</div></div>
                     <div class="kpi-card"><div class="kpi-label">Expectancy netta</div><div class="kpi-value">${backtest.expectancyR >= 0 ? '+' : ''}${backtest.expectancyR.toFixed(2)}R</div></div>
                     <div class="kpi-card"><div class="kpi-label">Max drawdown osservato</div><div class="kpi-value">${backtest.maxDrawdownR.toFixed(2)}R</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Net profit</div><div class="kpi-value">${metriche.netProfitR >= 0 ? '+' : ''}${metriche.netProfitR.toFixed(2)}R</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Recovery factor</div><div class="kpi-value">${numberOrDash(metriche.recoveryFactor)}</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Sharpe per trade</div><div class="kpi-value">${numberOrDash(metriche.sharpe)}</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Sortino per trade</div><div class="kpi-value">${numberOrDash(metriche.sortino)}</div></div>
+                    <div class="kpi-card"><div class="kpi-label">Risk of Ruin stimato</div><div class="kpi-value">${rischioRovina == null ? 'N/D (<20 trade)' : rischioRovina.toFixed(1) + '%'}</div></div>
                 </div>` : `<div class="report-item">Nessun trade chiuso con questi parametri nel periodo disponibile. Prova un timeframe o una soglia diversa.</div>`}
+            <h3>Sessioni e fasce orarie</h3>
+            ${sessionTable}
+            ${hourSummary}
             <div class="report-item">
                 Simulazione: ultima candela esclusa perché potenzialmente incompleta; VWAP stimato con HLC3 e volume per candela; ingresso alla chiusura del segnale, target al VWAP congelato all'ingresso, stop dimensionato sul rapporto R/R. Se stop e target sono toccati nella stessa candela, viene conteggiato prima lo stop. Le commissioni sono applicate a entrata e uscita.
             </div>
             <div class="report-item warning">
-                Dati Yahoo Finance con ritardo e copertura variabili; slippage reale, spread, liquidità, esecuzione e survivorship bias non sono modellati. Il backtest è descrittivo e non dimostra robustezza né risultati futuri.
+                Dati Yahoo Finance con ritardo e copertura variabili; slippage reale, spread, liquidità, esecuzione e survivorship bias non sono modellati. Sharpe e Sortino sono rapporti per trade, non annualizzati. Risk of Ruin è una simulazione bootstrap (2.000 percorsi, rischio ${parameters.rischioPerTrade}% per trade, orizzonte ${parameters.orizzonteMonteCarlo} trade, soglia di rovina al 50% del capitale iniziale); con meno di 20 trade non viene stimato. Tutti i risultati sono campionari, non previsioni.
             </div>
         </div>`;
 }
@@ -2603,6 +3072,10 @@ async function eseguiSalvataggioDiario(statoEmotivo) {
 /* ============ DIARIO CLOUD ============ */
 async function caricaDiario() {
     const wrap = document.getElementById('diarioWrap');
+    const elDisc = document.getElementById('kpiDisciplina');
+    const elEmotion = document.getElementById('kpiErroreFrequente');
+    if (elDisc) elDisc.innerText = '—';
+    if (elEmotion) elEmotion.innerText = '—';
     wrap.innerHTML = '<div class="skeleton" style="height:140px;"></div>';
     try {
         const { data, error } = await sb.from('diario_trading')
@@ -2611,38 +3084,33 @@ async function caricaDiario() {
             .limit(40);
         if (error) throw error;
 
-        // Calcolo metriche Trader Memory
+        // Calculate mood summaries only from entries with a recorded emotional state.
         if (data && data.length > 0) {
-            const stati = data.map(d => d.stato_emotivo || 'Non Specificato');
-            const disciplinati = stati.filter(s => s === 'Disciplinato' || s === 'Calmo').length;
-            const indiceDisciplina = Math.round((disciplinati / stati.length) * 100);
-
-            const erroriConteggio = {};
-            stati.forEach(s => {
-                if (s === 'FOMO' || s === 'Ansioso' || s === 'Euforico' || s === 'Frustrato') {
-                    erroriConteggio[s] = (erroriConteggio[s] || 0) + 1;
-                }
-            });
-
-            let erroreFrequente = 'Nessuno';
-            let maxErr = 0;
-            for (const [err, count] of Object.entries(erroriConteggio)) {
-                if (count > maxErr) { maxErr = count; erroreFrequente = err; }
+            const stati = data.map(d => d.stato_emotivo).filter(s => s && s !== 'Non Specificato');
+            if (stati.length) {
+                const disciplinati = stati.filter(s => s === 'Disciplinato' || s === 'Calmo').length;
+                const indiceDisciplina = Math.round((disciplinati / stati.length) * 100);
+                const frequenze = new Map();
+                for (const stato of stati) frequenze.set(stato, (frequenze.get(stato) || 0) + 1);
+                const [statoFrequente, conteggio] = [...frequenze.entries()]
+                    .sort((a, b) => b[1] - a[1])[0];
+                if (elDisc) elDisc.innerText = `${indiceDisciplina}%`;
+                if (elEmotion) elEmotion.innerText = `${statoFrequente} (${conteggio})`;
+            } else {
+                if (elDisc) elDisc.innerText = 'N/D';
+                if (elEmotion) elEmotion.innerText = 'Nessun dato';
             }
-
-            const elDisc = document.getElementById('kpiDisciplina');
-            const elErr = document.getElementById('kpiErroreFrequente');
-            if (elDisc) elDisc.innerText = indiceDisciplina + '%';
-            if (elErr) elErr.innerText = erroreFrequente !== 'Nessuno' ? (erroreFrequente + ` (${maxErr})`) : 'Zero Bias Rilevati';
         }
 
         if (!data || data.length === 0) {
+            if (elDisc) elDisc.innerText = 'N/D';
+            if (elEmotion) elEmotion.innerText = 'Nessun dato';
             wrap.innerHTML = '<p class="placeholder-text">Nessun report salvato ancora. Genera un\'analisi in Dashboard e archiviala per alimentare la Trader Memory.</p>';
             return;
         }
 
         const rows = data.map(r => {
-            const dev = Number(r.distanza_vwap);
+            const dev = r.distanza_vwap == null ? null : Number(r.distanza_vwap);
             const dataPulita = (r.data_ora || '').split('.')[0].replace('T', ' ');
             const stato = r.stato_emotivo || 'Non Specificato';
             const isErrore = (stato === 'FOMO' || stato === 'Ansioso' || stato === 'Frustrato');
@@ -2651,7 +3119,7 @@ async function caricaDiario() {
                 <td><strong>${escapeHtml(r.ticker || '-')}</strong></td>
                 <td>${escapeHtml(r.timeframe || '-')}</td>
                 <td>${r.prezzo_ingresso != null ? '$' + Number(r.prezzo_ingresso).toLocaleString('en-US') : '-'}</td>
-                <td class="${dev < 0 ? 'dev-neg' : 'dev-pos'}">${dev >= 0 ? '+' : ''}${dev.toFixed(2)}%</td>
+                <td class="${dev == null || !Number.isFinite(dev) ? '' : dev < 0 ? 'dev-neg' : 'dev-pos'}">${dev == null || !Number.isFinite(dev) ? '—' : `${dev >= 0 ? '+' : ''}${dev.toFixed(2)}%`}</td>
                 <td><span class="badge-emotion" style="${isErrore ? 'background:rgba(255,77,77,0.15); color:#ff4d4d; border-color:rgba(255,77,77,0.3);' : ''}">${escapeHtml(stato)}</span></td>
             </tr>`;
         }).join('');
@@ -2663,19 +3131,10 @@ async function caricaDiario() {
 }
 
 /* ============ GLOSSARIO ============ */
-async function caricaGlossario() {
+function caricaGlossario() {
     const grid = document.getElementById('glossarioGrid');
     grid.innerHTML = '<div class="skeleton" style="height:200px; grid-column:1/-1;"></div>';
-    let termini = GLOSSARIO_FALLBACK;
-    try {
-        const { data, error } = await sb.from('glossario_macro').select('termine, categoria, definizione, formula').order('termine');
-        if (!error && data && data.length > 0) {
-            // Combina arricchendo con formule e backtest se presenti
-            termini = GLOSSARIO_FALLBACK;
-        }
-    } catch (e) { /* fallback silenzioso sui 15 termini mandatory */ }
-
-    grid.innerHTML = termini.map((t, index) => `
+    grid.innerHTML = GLOSSARIO_FALLBACK.map((t, index) => `
         <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
             <div>
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
@@ -2689,7 +3148,7 @@ async function caricaGlossario() {
                         <div style="font-family:monospace; font-size:11.5px; color:#00d2ff; margin-top:2px;"><code>${escapeHtml(t.formula)}</code></div>
                     </div>` : ''}
             </div>
-            ${t.configBacktest ? `
+            ${t.configBacktest && (localStorage.getItem('omnitrade_experience_level') || 'advanced') !== 'beginner' ? `
                 <button class="btn-sec" style="width:100%; padding:9px 12px; font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="lanciaBacktestRapidoGlossario(${index})">
                     ⚡ Avvia Backtest Strategia (${t.configBacktest.ticker})
                 </button>` : ''}
@@ -2726,8 +3185,11 @@ function lanciaBacktestRapidoGlossario(index) {
 }
 
 /* ============ STRATEGY BUILDER (VISUAL & AI GENERATOR) ============ */
+let strategiaCorrenteId = null;
+let strategiePersonali = [];
+
 function inizializzaBuilderView() {
-    // Inizializzazione della vista visual builder
+    caricaStrategiePersonali();
 }
 
 function aggiungiCondizioneVisuale() {
@@ -2774,6 +3236,8 @@ function raccogliStrategiaCorrente() {
     return {
         nome,
         categoria,
+        descrizione: document.getElementById('stratDescrizione')?.value.trim() || '',
+        is_public: document.getElementById('stratPublic')?.checked || false,
         asset,
         timeframe,
         regole_if: regoleIF,
@@ -2792,6 +3256,124 @@ function esportaStrategiaJSON() {
     toast('Configurazione JSON esportata con successo!', 'success');
 }
 
+function applicaStrategiaNelBuilder(data, { id = null, nomeOverride = null, pubblica = false } = {}) {
+    const config = data?.rules_json && typeof data.rules_json === 'object' ? data.rules_json : data;
+    if (!config || typeof config !== 'object') throw new Error('La strategia selezionata non contiene un JSON valido.');
+    document.getElementById('stratNome').value = nomeOverride || config.nome || data.name || 'Strategia importata';
+    document.getElementById('stratCategoria').value = config.categoria || data.category || 'Mean Reversion';
+    document.getElementById('stratDescrizione').value = config.descrizione || data.description || '';
+    document.getElementById('stratPublic').checked = pubblica || config.is_public === true;
+    document.getElementById('stratAsset').value = config.asset || 'BTC-USD';
+    document.getElementById('stratTimeframe').value = config.timeframe || '15m';
+    document.getElementById('thenDirezione').value = config.gestione_then?.direzione || 'contrarian';
+    document.getElementById('thenTakeProfit').value = config.gestione_then?.take_profit || 'VWAP';
+    document.getElementById('thenStopLoss').value = config.gestione_then?.stop_loss || '1R';
+    const rules = Array.isArray(config.regole_if) && config.regole_if.length
+        ? config.regole_if
+        : [{ indicatore: 'VWAP_DEV', operatore: 'GREATER', valore: 1.5, sessione: 'ALL' }];
+    const container = document.getElementById('visualRulesContainer');
+    container.replaceChildren();
+    rules.forEach((rule, index) => {
+        aggiungiCondizioneVisuale();
+        const card = container.lastElementChild;
+        const label = card.querySelector('span');
+        if (label) label.textContent = index === 0 ? 'IF (Trigger):' : 'AND (Filtro):';
+        const indicator = card.querySelector('.rule-indicator');
+        const operator = card.querySelector('.rule-operator');
+        const value = card.querySelector('.rule-value');
+        if (indicator && Array.from(indicator.options).some(option => option.value === rule.indicatore)) indicator.value = rule.indicatore;
+        if (operator && Array.from(operator.options).some(option => option.value === rule.operatore)) operator.value = rule.operatore;
+        if (value) value.value = Number.isFinite(Number(rule.valore)) ? Number(rule.valore) : 1.5;
+        const session = card.querySelector('.rule-session');
+        if (session && Array.from(session.options).some(option => option.value === rule.sessione)) session.value = rule.sessione;
+    });
+    document.getElementById('stratChangelog').value = '';
+    strategiaCorrenteId = id;
+}
+
+async function caricaStrategiePersonali() {
+    const select = document.getElementById('savedStrategiesSelect');
+    if (!select) return;
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) return;
+    const { data, error } = await sb.from('strategies')
+        .select('id,name,category,description,is_public,rules_json,updated_at')
+        .eq('user_id', session.user.id)
+        .order('updated_at', { ascending: false });
+    if (error) {
+        select.replaceChildren(new Option('Archivio non disponibile', ''));
+        const status = document.getElementById('builderLibraryStatus');
+        if (status) status.textContent = `Impossibile caricare le strategie: ${error.message}`;
+        return;
+    }
+    strategiePersonali = data || [];
+    select.replaceChildren(new Option(strategiePersonali.length ? 'Seleziona una strategia…' : 'Nessuna strategia salvata', ''));
+    strategiePersonali.forEach(strategy => select.add(new Option(`${strategy.name}${strategy.is_public ? ' · pubblica' : ''}`, strategy.id)));
+    await caricaVersioniStrategia();
+}
+
+async function caricaVersioniStrategia() {
+    const select = document.getElementById('savedStrategyVersionSelect');
+    const strategyId = document.getElementById('savedStrategiesSelect')?.value;
+    if (!select) return;
+    if (!strategyId) {
+        select.replaceChildren(new Option('Seleziona prima una strategia', ''));
+        return;
+    }
+    const { data, error } = await sb.from('strategy_versions')
+        .select('id,version_number,changelog,created_at')
+        .eq('strategy_id', strategyId)
+        .order('version_number', { ascending: false });
+    if (error) {
+        select.replaceChildren(new Option('Cronologia non disponibile', ''));
+        const status = document.getElementById('builderLibraryStatus');
+        if (status) status.textContent = 'Per versioni immutabili applica la migration supabase/migrations/20261124193000_strategy_marketplace.sql.';
+        return;
+    }
+    select.replaceChildren(new Option(data?.length ? 'Seleziona una versione…' : 'Nessuna versione archiviata', ''));
+    (data || []).forEach(version => {
+        const note = version.changelog ? ` · ${version.changelog}` : '';
+        select.add(new Option(`v${version.version_number} · ${new Date(version.created_at).toLocaleDateString('it-IT')}${note}`, version.id));
+    });
+}
+
+function caricaStrategiaSelezionata() {
+    const strategy = strategiePersonali.find(item => item.id === document.getElementById('savedStrategiesSelect')?.value);
+    if (!strategy) {
+        toast('Seleziona una strategia del tuo archivio.', 'info');
+        return;
+    }
+    try {
+        applicaStrategiaNelBuilder(strategy, { id: strategy.id, pubblica: strategy.is_public });
+        toast(`Strategia "${strategy.name}" caricata nel Builder.`, 'success');
+    } catch (error) {
+        toast(`Impossibile caricare la strategia: ${error.message}`, 'error');
+    }
+}
+
+async function caricaVersioneStrategiaSelezionata() {
+    const versionId = document.getElementById('savedStrategyVersionSelect')?.value;
+    const strategy = strategiePersonali.find(item => item.id === document.getElementById('savedStrategiesSelect')?.value);
+    if (!versionId || !strategy) {
+        toast('Seleziona una strategia e una versione.', 'info');
+        return;
+    }
+    const { data, error } = await sb.from('strategy_versions')
+        .select('id,version_number,changelog,rules_json')
+        .eq('id', versionId)
+        .single();
+    if (error) {
+        toast(`Impossibile caricare la versione: ${error.message}`, 'error');
+        return;
+    }
+    try {
+        applicaStrategiaNelBuilder({ ...strategy, rules_json: data.rules_json }, { id: strategy.id, pubblica: strategy.is_public });
+        toast(`Caricata la versione ${data.version_number}. Il prossimo salvataggio creerà una nuova revisione.`, 'success');
+    } catch (loadError) {
+        toast(`Versione non valida: ${loadError.message}`, 'error');
+    }
+}
+
 async function salvaOAggiornaStrategia() {
     const strat = raccogliStrategiaCorrente();
     try {
@@ -2801,15 +3383,49 @@ async function salvaOAggiornaStrategia() {
             return;
         }
 
-        const { error } = await sb.from('strategies').insert({
+        const payload = {
             user_id: session.user.id,
             name: strat.nome,
+            description: strat.descrizione,
             category: strat.categoria,
+            rules_json: strat,
+            is_public: strat.is_public
+        };
+        let strategyId = strategiaCorrenteId;
+        if (strategyId) {
+            const { data, error } = await sb.from('strategies').update(payload)
+                .eq('id', strategyId).eq('user_id', session.user.id).select('id').maybeSingle();
+            if (error) throw error;
+            if (!data) throw new Error('Strategia non trovata o non di tua proprietà.');
+            strategyId = data.id;
+        } else {
+            const { data, error } = await sb.from('strategies').insert(payload).select('id').single();
+            if (error) throw error;
+            strategyId = data.id;
+            strategiaCorrenteId = strategyId;
+        }
+        const { data: versions, error: versionReadError } = await sb.from('strategy_versions')
+            .select('version_number').eq('strategy_id', strategyId)
+            .order('version_number', { ascending: false }).limit(1);
+        if (versionReadError) {
+            await caricaStrategiePersonali();
+            toast(`Strategia salvata, ma versionamento non disponibile: applica la migration strategy_marketplace.sql (${versionReadError.message}).`, 'error');
+            return;
+        }
+        const versionNumber = (versions?.[0]?.version_number || 0) + 1;
+        const { error: versionError } = await sb.from('strategy_versions').insert({
+            strategy_id: strategyId,
+            version_number: versionNumber,
+            changelog: document.getElementById('stratChangelog').value.trim() || (versionNumber === 1 ? 'Versione iniziale' : 'Aggiornamento strategia'),
             rules_json: strat
         });
-
-        if (error) throw error;
-        toast(`Strategia "${strat.nome}" salvata su Supabase!`, 'success');
+        if (versionError) {
+            await caricaStrategiePersonali();
+            toast(`Strategia salvata, ma la versione ${versionNumber} non è stata archiviata: ${versionError.message}`, 'error');
+            return;
+        }
+        await caricaStrategiePersonali();
+        toast(`Strategia "${strat.nome}" salvata come versione ${versionNumber}.`, 'success');
     } catch (e) {
         toast(`Salvataggio cloud: ${e.message}`, 'error');
     }
@@ -2905,7 +3521,7 @@ Formato JSON atteso:
 }
 
 /* ============ FASE 3: MARKET REGIME ENGINE ============ */
-async function calcolaMarketRegime() {
+async function calcolaMarketRegime(quiet = false) {
     const banner = document.getElementById('marketRegimeBanner');
     const elTitolo = document.getElementById('regimeTitolo');
     const elDesc = document.getElementById('regimeDescrizione');
@@ -2916,64 +3532,106 @@ async function calcolaMarketRegime() {
     const elAlloc = document.getElementById('regimeAllocazione');
 
     try {
-        // Tentativo recupero VIX proxy reale
-        let vixVal = 14.80;
-        try {
-            const resp = await fetchConFallback('yahoo', { ticker: '^VIX', interval: '1d', range: '5d' },
-                'https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?interval=1d&range=5d');
-            const j = await resp.json();
-            const cls = j?.chart?.result?.[0]?.indicators?.quote?.[0]?.close?.filter(v => v != null);
-            if (cls && cls.length) vixVal = parseFloat(cls[cls.length - 1].toFixed(2));
-        } catch (_) {}
+        const strumenti = [
+            { key: 'sp500', ticker: '^GSPC' },
+            { key: 'dxy', ticker: 'DX-Y.NYB' },
+            { key: 'vix', ticker: '^VIX' },
+            { key: 'yield', ticker: '^TNX' },
+            { key: 'btc', ticker: 'BTC-USD' }
+        ];
+        const serie = await Promise.all(strumenti.map(async ({ key, ticker }) => {
+            const encodedTicker = encodeURIComponent(ticker);
+            const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodedTicker}?interval=1d&range=10d`;
+            const response = await fetchConFallback('yahoo', { ticker, interval: '1d', range: '10d' }, url);
+            if (!response.ok) throw new Error(`${ticker}: HTTP ${response.status}`);
+            const data = await response.json();
+            const closes = data?.chart?.result?.[0]?.indicators?.quote?.[0]?.close
+                ?.filter(value => Number.isFinite(value));
+            if (!closes || closes.length < 2) throw new Error(`${ticker}: serie storica insufficiente`);
+            return [key, { current: closes.at(-1), previous: closes[Math.max(0, closes.length - 6)] }];
+        }));
+        const values = Object.fromEntries(serie);
+        const missing = strumenti.map(item => item.key).filter(key => !values[key]);
+        if (missing.length) throw new Error(`Fonti mancanti: ${missing.join(', ')}`);
+        const percentChange = ({ current, previous }) => ((current / previous) - 1) * 100;
+        const clamp = value => Math.max(0, Math.min(100, value));
+        const sp500Change = percentChange(values.sp500);
+        const dxyChange = percentChange(values.dxy);
+        const btcChange = percentChange(values.btc);
+        const yieldPercent = values.yield.current / 10;
+        const yieldChangeBps = (values.yield.current - values.yield.previous) * 10;
+        const components = [
+            clamp(50 + (sp500Change / 2.5) * 50),
+            clamp(50 - (dxyChange / 1) * 50),
+            clamp(100 - (values.vix.current / 35) * 100),
+            clamp(50 - (yieldChangeBps / 40) * 50),
+            clamp(50 + (btcChange / 10) * 50)
+        ];
+        const score = Math.round(components.reduce((sum, component) => sum + component, 0) / components.length);
+        const regime = score >= 60 ? { label: 'RISK ON', color: 'var(--primary)' }
+            : score <= 40 ? { label: 'RISK OFF', color: 'var(--danger)' }
+                : { label: 'NEUTRAL', color: '#ffd200' };
+        const updatedAt = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+        const changeLabel = value => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
 
-        if (elVix) elVix.innerText = vixVal.toFixed(2);
-        if (elDxy) elDxy.innerText = "102.35";
-        if (elYield) elYield.innerText = "4.21%";
-
-        if (vixVal >= 32) {
-            // Cash Priority
-            banner.style.borderLeftColor = 'var(--danger)';
-            elTitolo.innerText = 'CASH PRIORITY (Alta Tensione / Shock)';
-            elTitolo.style.color = 'var(--danger)';
-            elDesc.innerText = 'Volatilità estrema sul mercato. Rischio sistemico elevato: stop alle nuove aperture di posizione.';
-            elAzione.innerText = 'Circuit Breaker Attivo: 0% Esposizione';
-            elAzione.style.color = 'var(--danger)';
-            elAlloc.innerText = '0% (Cash Protettivo)';
-            elAlloc.style.color = 'var(--danger)';
-        } else if (vixVal >= 22) {
-            // Risk-Off
-            banner.style.borderLeftColor = '#ff4d4d';
-            elTitolo.innerText = 'RISK-OFF (Difensivo / Correzione)';
-            elTitolo.style.color = '#ff4d4d';
-            elDesc.innerText = 'Deflussi dal comparto tech e crypto. Prediligere operazioni corte o ridurre il sizing del 50%.';
-            elAzione.innerText = 'Short su Rally / Difesa';
-            elAzione.style.color = '#ff4d4d';
-            elAlloc.innerText = '50% Rischio Standard';
-            elAlloc.style.color = '#ffd200';
-        } else if (vixVal >= 17) {
-            // Neutral
-            banner.style.borderLeftColor = '#ffd200';
-            elTitolo.innerText = 'NEUTRAL (Range-Bound / Consolidamento)';
-            elTitolo.style.color = '#ffd200';
-            elDesc.innerText = 'Mercato privo di catalizzatori direzionali forti. Eccellente per strategie di Mean Reversion al VWAP.';
-            elAzione.innerText = 'Mean Reversion VWAP';
-            elAzione.style.color = '#ffd200';
-            elAlloc.innerText = '75% Rischio Standard';
-            elAlloc.style.color = '#ffd200';
-        } else {
-            // Risk-On
-            banner.style.borderLeftColor = 'var(--primary)';
-            elTitolo.innerText = 'RISK-ON (Espansione / Buy Flussi)';
-            elTitolo.style.color = 'var(--primary)';
-            elDesc.innerText = 'Volatilità compressa, appetito per il rischio elevato e compressione degli spread.';
-            elAzione.innerText = 'Long su Setup di Continuazione';
-            elAzione.style.color = 'var(--primary)';
-            elAlloc.innerText = '100% Rischio Piano';
-            elAlloc.style.color = 'var(--primary)';
+        if (elVix) elVix.textContent = values.vix.current.toFixed(2);
+        if (elDxy) elDxy.textContent = values.dxy.current.toFixed(2);
+        if (elYield) elYield.textContent = `${yieldPercent.toFixed(2)}%`;
+        const sp500 = document.getElementById('regimeSp500');
+        const btc = document.getElementById('regimeBtc');
+        if (sp500) sp500.textContent = changeLabel(sp500Change);
+        if (btc) btc.textContent = changeLabel(btcChange);
+        if (elAlloc) elAlloc.textContent = '5 / 5';
+        if (elAzione) {
+            elAzione.textContent = `${score} / 100`;
+            elAzione.style.color = regime.color;
         }
-        toast('Market Regime aggiornato con successo!', 'success');
+        if (elTitolo) {
+            elTitolo.textContent = regime.label;
+            elTitolo.style.color = regime.color;
+        }
+        if (elDesc) elDesc.textContent = `Score descrittivo basato sulle variazioni recenti di S&P 500, DXY, US 10Y e Bitcoin e sul livello VIX; soglie: Risk Off ≤40, Neutral 41–59, Risk On ≥60. Aggiornato alle ${updatedAt}.`;
+        if (banner) banner.style.borderLeftColor = regime.color;
+        const homeScore = document.getElementById('homeRegimeScore');
+        const homeTitle = document.getElementById('homeRegimeTitle');
+        const homeStatus = document.getElementById('homeRegimeStatus');
+        if (homeScore) homeScore.textContent = String(score);
+        if (homeTitle) {
+            homeTitle.textContent = regime.label;
+            homeTitle.style.color = regime.color;
+        }
+        if (homeStatus) homeStatus.textContent = `Fonti 5/5 · variazioni su circa 5 sedute · aggiornato alle ${updatedAt}.`;
+        window.omnitradeRegimeSnapshot = {
+            label: regime.label,
+            score,
+            updatedAt,
+            changes: `S&P 500 ${changeLabel(sp500Change)}, DXY ${changeLabel(dxyChange)}, BTC ${changeLabel(btcChange)}, US 10Y ${yieldChangeBps.toFixed(0)} bp`
+        };
+        if (!quiet) toast('Market Regime aggiornato con le cinque fonti.', 'success');
     } catch (e) {
-        toast(`Errore calcolo regime: ${e.message}`, 'error');
+        if (banner) banner.style.borderLeftColor = 'var(--border-color)';
+        if (elTitolo) {
+            elTitolo.textContent = 'DATI NON DISPONIBILI';
+            elTitolo.style.color = 'var(--text-muted)';
+        }
+        if (elDesc) elDesc.textContent = `Risultato non calcolato: ${e.message}`;
+        if (elAzione) elAzione.textContent = '— / 100';
+        if (elVix) elVix.textContent = '—';
+        if (elDxy) elDxy.textContent = '—';
+        if (elYield) elYield.textContent = '—';
+        if (elAlloc) elAlloc.textContent = '0 / 5';
+        ['regimeSp500', 'regimeBtc'].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = '—';
+        });
+        const homeScore = document.getElementById('homeRegimeScore');
+        const homeTitle = document.getElementById('homeRegimeTitle');
+        const homeStatus = document.getElementById('homeRegimeStatus');
+        if (homeScore) homeScore.textContent = '—';
+        if (homeTitle) homeTitle.textContent = 'Non disponibile';
+        if (homeStatus) homeStatus.textContent = 'Impossibile aggiornare tutte le fonti; il regime non viene stimato.';
+        delete window.omnitradeRegimeSnapshot;
+        if (!quiet) toast(`Market Regime non disponibile: ${e.message}`, 'error');
     }
 }
 
@@ -2984,9 +3642,6 @@ const STRATEGIE_ENCICLOPEDIA = [
         autore: "Andrea Cimi (Liquidity Auction)",
         categoria: "Mean Reversion",
         descrizione: "Sfrutta l'eccesso di estensione statistica del prezzo rispetto al VWAP della sessione istituzionale (Londra/NY) con riassorbimento del volume tick.",
-        winrate: "53.4%",
-        profitFactor: "1.72",
-        sharpe: "1.42",
         asset: "BTC-USD",
         tf: "1h",
         soglia: 2.0,
@@ -2998,9 +3653,6 @@ const STRATEGIE_ENCICLOPEDIA = [
         autore: "Quant Team OmniTrade",
         categoria: "Liquidity Sweep",
         descrizione: "Identifica la caccia agli stop sopra l'Asian Range durante la prima ora di Londra e cavalca l'inversione rapida verso il Fair Value opposto.",
-        winrate: "48.2%",
-        profitFactor: "1.85",
-        sharpe: "1.58",
         asset: "ETH-USD",
         tf: "15m",
         soglia: 1.5,
@@ -3012,9 +3664,6 @@ const STRATEGIE_ENCICLOPEDIA = [
         autore: "Wall St. Algo Research",
         categoria: "Trend Following",
         descrizione: "Cavalca i massicci flussi istituzionali dell'overlap Londra-New York quando la volatilità si espande dopo la pubblicazione dei dati macro USA.",
-        winrate: "58.1%",
-        profitFactor: "1.65",
-        sharpe: "1.70",
         asset: "^GSPC",
         tf: "15m",
         soglia: 1.0,
@@ -3026,9 +3675,6 @@ const STRATEGIE_ENCICLOPEDIA = [
         autore: "Smart Money Lab",
         categoria: "Order Block",
         descrizione: "Rileva il posizionamento di ordini limite passivi istituzionali (Order Block) e genera ingressi ad alta precisione con rischio asimmetrico.",
-        winrate: "44.0%",
-        profitFactor: "1.92",
-        sharpe: "1.35",
         asset: "BTC-USD",
         tf: "5m",
         soglia: 1.5,
@@ -3037,60 +3683,161 @@ const STRATEGIE_ENCICLOPEDIA = [
     }
 ];
 
-function mostraTabMarketplace(tabId, btn) {
-    document.querySelectorAll('#segMarketplace button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('tabEncyclopedia').style.display = tabId === 'encyclopedia' ? 'block' : 'none';
-    document.getElementById('tabMarketplaceContent').style.display = tabId === 'marketplace' ? 'block' : 'none';
+function mostraTabAcademy(tabId, button) {
+    document.querySelectorAll('#segAcademy button').forEach(item => item.classList.remove('active'));
+    button.classList.add('active');
+    document.getElementById('academyGlossary').hidden = tabId !== 'glossary';
+    document.getElementById('academyStrategies').hidden = tabId !== 'strategies';
+    if (tabId === 'strategies') renderStrategieAcademy();
 }
 
-function caricaMarketplaceEEncyclopedia() {
-    // 1. Popola Enciclopedia
-    const encWrap = document.getElementById('encyclopediaGrid');
-    if (encWrap) {
-        encWrap.innerHTML = STRATEGIE_ENCICLOPEDIA.map((s, i) => `
-            <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+function renderStrategieAcademy() {
+    const container = document.getElementById('academyStrategiesGrid');
+    if (!container) return;
+    const showAdvancedActions = (localStorage.getItem('omnitrade_experience_level') || 'advanced') !== 'beginner';
+    container.innerHTML = STRATEGIE_ENCICLOPEDIA.map((strategy, index) => `
+        <article class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+                <div class="card-title">${escapeHtml(strategy.titolo)}</div>
+                <span class="badge-emotion">${escapeHtml(strategy.categoria)}</span>
+                <p class="card-def">${escapeHtml(strategy.descrizione)}</p>
+                <p class="placeholder-text">Esempio didattico · nessuna performance storica verificata.</p>
+            </div>
+            ${showAdvancedActions ? `<div class="account-actions">
+                <button class="btn-sec" type="button" onclick="clonaStrategiaNelBuilder(${index})">Apri nel Builder</button>
+                <button class="btn-main" type="button" onclick="eseguiBacktestDaEnciclopedia(${index})">Prova un backtest</button>
+            </div>` : ''}
+        </article>`).join('');
+}
+
+let strategieMarketplace = [];
+
+async function caricaMarketplaceEEncyclopedia() {
+    const container = document.getElementById('marketplaceListWrap');
+    if (!container) return;
+    container.textContent = 'Caricamento strategie pubbliche…';
+    try {
+        const { data: strategies, error } = await sb.from('strategies')
+            .select('id,name,description,category,rules_json,created_at')
+            .eq('is_public', true)
+            .order('updated_at', { ascending: false })
+            .limit(100);
+        if (error) throw error;
+        strategieMarketplace = strategies || [];
+        if (!strategieMarketplace.length) {
+            container.textContent = 'Nessuna strategia pubblica al momento. Puoi condividere una tua strategia dal Builder.';
+            return;
+        }
+        const ids = strategieMarketplace.map(strategy => strategy.id);
+        const { data: { session } } = await sb.auth.getSession();
+        const [ratingsResult, ownRatingsResult] = await Promise.all([
+            sb.from('strategy_ratings').select('strategy_id,rating').in('strategy_id', ids),
+            session
+                ? sb.from('strategy_ratings').select('strategy_id,rating').eq('user_id', session.user.id).in('strategy_id', ids)
+                : Promise.resolve({ data: [], error: null })
+        ]);
+        const { data: ratings, error: ratingsError } = ratingsResult;
+        if (ratingsError) throw ratingsError;
+        if (ownRatingsResult.error) throw ownRatingsResult.error;
+        const { data: ownStrategies, error: ownStrategiesError } = session
+            ? await sb.from('strategies').select('id').eq('user_id', session.user.id).in('id', ids)
+            : { data: [], error: null };
+        if (ownStrategiesError) throw ownStrategiesError;
+        const ownStrategyIds = new Set((ownStrategies || []).map(strategy => strategy.id));
+        const groupedRatings = new Map();
+        (ratings || []).forEach(item => {
+            if (!groupedRatings.has(item.strategy_id)) groupedRatings.set(item.strategy_id, []);
+            groupedRatings.get(item.strategy_id).push(item);
+        });
+        const ownRatingByStrategy = new Map((ownRatingsResult.data || []).map(item => [item.strategy_id, item.rating]));
+        container.innerHTML = `<div class="glossary-grid">${strategieMarketplace.map(strategy => {
+            const strategyRatings = groupedRatings.get(strategy.id) || [];
+            const average = strategyRatings.length
+                ? (strategyRatings.reduce((sum, item) => sum + Number(item.rating), 0) / strategyRatings.length).toFixed(1)
+                : 'Nessun voto';
+            const ownRating = ownRatingByStrategy.get(strategy.id) || '';
+            const ratingControl = ownStrategyIds.has(strategy.id)
+                ? '<p class="placeholder-text">Questa è una tua strategia pubblica.</p>'
+                : `<label>La tua valutazione
+                <select aria-label="Valuta ${escapeHtml(strategy.name)}" onchange="salvaValutazioneStrategia('${escapeHtml(strategy.id)}', this.value)">
+                    <option value="">Scegli stelle…</option>
+                    ${[5, 4, 3, 2, 1].map(value => `<option value="${value}" ${ownRating === value ? 'selected' : ''}>${value} / 5</option>`).join('')}
+                </select>
+            </label>`;
+            return `<article class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
                 <div>
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
-                        <div>
-                            <div class="card-title" style="margin:0; font-size:16px;">${escapeHtml(s.titolo)}</div>
-                            <span class="placeholder-text" style="font-size:11px;">Autore: ${escapeHtml(s.autore)}</span>
-                        </div>
-                        <span class="badge-emotion" style="background:rgba(0,255,163,0.1); color:var(--primary); font-size:10px;">${escapeHtml(s.categoria)}</span>
-                    </div>
-                    <p class="card-def" style="margin-bottom:14px; font-size:13px; line-height:1.5;">${escapeHtml(s.descrizione)}</p>
-                    <div style="display:flex; gap:12px; margin-bottom:14px; background:rgba(0,0,0,0.25); padding:8px 12px; border-radius:6px; font-size:12px;">
-                        <div>Win Rate: <strong style="color:#00ffa3;">${s.winrate}</strong></div>
-                        <div>Profit Factor: <strong style="color:#00ffa3;">${s.profitFactor}</strong></div>
-                        <div>Sharpe: <strong style="color:#00d2ff;">${s.sharpe}</strong></div>
-                    </div>
+                    <div class="card-title">${escapeHtml(strategy.name)}</div>
+                    <span class="badge-emotion">${escapeHtml(strategy.category || 'Strategia')}</span>
+                    <p class="card-def">${escapeHtml(strategy.description || 'Nessuna descrizione fornita.')}</p>
+                    <p class="placeholder-text">Valutazione media: ${average}${strategyRatings.length ? ` (${strategyRatings.length})` : ''}</p>
+                    ${ratingControl}
                 </div>
-                <div style="display:flex; gap:8px;">
-                    <button class="btn-sec" style="flex:1; padding:9px 12px; font-size:12px;" onclick="clonaStrategiaNelBuilder(${i})">🛠️ Clona nel Builder</button>
-                    <button class="btn-main" style="flex:1; padding:9px 12px; font-size:12px;" onclick="eseguiBacktestDaEnciclopedia(${i})">⚡ Backtest Istantaneo</button>
+                <div class="account-actions" style="margin-top:12px;">
+                    <button class="btn-main" type="button" onclick="clonaStrategiaCondivisa('${escapeHtml(strategy.id)}')">Importa nel Builder</button>
+                    <button class="btn-sec" type="button" onclick="scaricaStrategiaCondivisa('${escapeHtml(strategy.id)}')">Scarica JSON</button>
                 </div>
-            </div>`).join('');
+            </article>`;
+        }).join('')}</div>`;
+    } catch (error) {
+        container.textContent = `Marketplace non disponibile: ${error.message}. Verifica che la migration strategy_marketplace.sql sia stata applicata in Supabase.`;
     }
+}
 
-    // 2. Popola Marketplace (Top Classifica)
-    const mktWrap = document.getElementById('marketplaceListWrap');
-    if (mktWrap) {
-        const righe = STRATEGIE_ENCICLOPEDIA.map((s, i) => `
-            <tr>
-                <td><strong>#${i + 1}</strong></td>
-                <td><strong>${escapeHtml(s.titolo)}</strong></td>
-                <td>${escapeHtml(s.asset)}</td>
-                <td><span class="badge-emotion">${escapeHtml(s.categoria)}</span></td>
-                <td style="color:#00ffa3; font-weight:700;">${s.profitFactor}</td>
-                <td style="color:#00ffa3;">${s.winrate}</td>
-                <td>${s.sharpe}</td>
-                <td>
-                    <button class="btn-sec" style="padding:6px 10px; font-size:11px;" onclick="eseguiBacktestDaEnciclopedia(${i})">Test</button>
-                </td>
-            </tr>`).join('');
-
-        mktWrap.innerHTML = `<div class="table-scroll"><table><thead><tr><th>Rank</th><th>Strategia</th><th>Asset</th><th>Stile</th><th>Profit Factor</th><th>Win Rate</th><th>Sharpe</th><th>Azione</th></tr></thead><tbody>${righe}</tbody></table></div>`;
+async function salvaValutazioneStrategia(strategyId, ratingValue) {
+    const rating = Number(ratingValue);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) return;
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+        toast('Accedi per valutare una strategia.', 'error');
+        return;
     }
+    const { error } = await sb.from('strategy_ratings').upsert({
+        strategy_id: strategyId,
+        user_id: session.user.id,
+        rating
+    }, { onConflict: 'strategy_id,user_id' });
+    if (error) {
+        toast(`Valutazione non salvata: ${error.message}`, 'error');
+        return;
+    }
+    toast('Valutazione salvata.', 'success');
+    await caricaMarketplaceEEncyclopedia();
+}
+
+function clonaStrategiaCondivisa(strategyId) {
+    const strategy = strategieMarketplace.find(item => item.id === strategyId);
+    if (!strategy) {
+        toast('La strategia condivisa non è più disponibile. Aggiorna il Marketplace.', 'error');
+        return;
+    }
+    try {
+        applicaStrategiaNelBuilder(strategy, {
+            nomeOverride: `${strategy.name} (Copia)`,
+            pubblica: false
+        });
+        apriWorkspace('backtest', 'builder');
+        toast('Strategia importata nel Builder come copia privata.', 'success');
+    } catch (error) {
+        toast(`Strategia non importabile: ${error.message}`, 'error');
+    }
+}
+
+function scaricaStrategiaCondivisa(strategyId) {
+    const strategy = strategieMarketplace.find(item => item.id === strategyId);
+    if (!strategy) {
+        toast('La strategia condivisa non è più disponibile. Aggiorna il Marketplace.', 'error');
+        return;
+    }
+    const filename = (strategy.name || 'strategia')
+        .normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'strategia';
+    const blob = new Blob([JSON.stringify(strategy.rules_json, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${filename}.json`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function eseguiBacktestDaEnciclopedia(index) {
@@ -3114,19 +3861,14 @@ function eseguiBacktestDaEnciclopedia(index) {
 function clonaStrategiaNelBuilder(index) {
     const s = STRATEGIE_ENCICLOPEDIA[index];
     if (!s) return;
-
-    document.getElementById('stratNome').value = s.titolo + " (Copia Personale)";
-    document.getElementById('stratCategoria').value = s.categoria;
-    document.getElementById('stratAsset').value = s.asset;
-    document.getElementById('stratTimeframe').value = s.tf;
-
-    const valInput = document.querySelector('#visualRulesContainer .rule-value');
-    const sessInput = document.querySelector('#visualRulesContainer .rule-session');
-    if (valInput) valInput.value = s.soglia;
-    if (sessInput) sessInput.value = s.sessione;
-
-    const menuBuilder = document.querySelector('.menu-item[onclick*="builder"]');
-    switchView('builder', menuBuilder);
+    applicaStrategiaNelBuilder({
+        nome: s.titolo,
+        categoria: s.categoria,
+        asset: s.asset,
+        timeframe: s.tf,
+        regole_if: [{ indicatore: 'VWAP_DEV', operatore: 'GREATER', valore: s.soglia, sessione: s.sessione }]
+    }, { nomeOverride: `${s.titolo} (Copia Personale)` });
+    apriWorkspace('backtest', 'builder');
     toast(`Strategia "${s.titolo}" clonata nel tuo Builder! Puoi modificarne le regole.`, 'success');
 }
 
@@ -3259,21 +4001,18 @@ async function avviaDiagnosiAICoach() {
     btn.innerText = '🧠 Il Coach AI sta analizzando il tuo profilo statistico...';
     wrap.innerHTML = '<div class="skeleton" style="height:180px;"></div>';
 
-    // Raccoglie dati cronologia e portfolio per il Coach
-    const promptCoach = `Agisci come il "Future AI Coach & Statistical Doctor" di OmniTrade AI.
-Analizza oggettivamente le abitudini operative e l'edge statistico del trader in base ai seguenti dati del suo account:
-- Saldo Reale: $${document.getElementById('kpiSaldo')?.innerText || '10,000'}
-- Win Rate Globale: ${document.getElementById('kpiWinrate')?.innerText || '51%'}
-- Profit Factor: ${document.getElementById('kpiProfitFactor')?.innerText || '1.65'}
-- Rapporto R/R Realizzato: ${document.getElementById('kpiRR')?.innerText || '1:1.8'}
-- Indice Disciplina Emotiva: ${document.getElementById('kpiDisciplina')?.innerText || '85%'}
-- Errore Più Frequente registrato: ${document.getElementById('kpiErroreFrequente')?.innerText || 'Anticipo Entrata'}
+    await caricaDiario();
+    const accountContext = costruisciContestoCopilot();
+    const journalText = document.getElementById('diarioWrap')?.innerText?.trim() || '';
+    const journalContext = journalText.startsWith('Impossibile caricare il Diario') ? '' : journalText.slice(0, 1200);
+    const promptCoach = `Agisci come coach di trading di OmniTrade AI. Analizza solo i dati effettivamente forniti:
 
-Fornisci un report clinico-statistico dettagliato diviso in:
-1. 🩺 DIAGNOSI DELL'EDGE (Solidità matematica ed efficienza nell'estrazione di valore da deviazioni VWAP e sessioni).
-2. ⚠️ PUNTI DI VULNERABILITÀ CRITICI (Bias psicologici, perdite da FOMO e deviazione dal piano di risk management).
-3. 🎯 3 REGOLE OPERATIVE CORRETTIVE TASSATIVE (Istruzioni pratiche per le prossime 20 operazioni).
-Usa un tono incisivo, analitico e professionale da Head Trader istituzionale in perfetto italiano.`;
+${accountContext || 'Non sono disponibili metriche di account.'}
+${journalContext ? `Estratto del journal: ${journalContext}` : 'Non sono disponibili voci del journal.'}
+
+Non inventare saldo, risultati, win rate, edge, errori o abitudini. Se i dati non bastano per una conclusione, dichiaralo chiaramente e indica quali dati servono. Distingui sempre i report di analisi dai trade eseguiti: i report non dimostrano un risultato economico.
+
+Restituisci un report conciso con: osservazioni supportate dai dati, limiti dell'analisi e prossimi passi misurabili per migliorare la raccolta dei dati. Non presentare raccomandazioni come consulenza finanziaria. Rispondi in italiano professionale.`;
 
     try {
         const rispostaCoach = await inviaRichiestaAICopilot(promptCoach);
@@ -3311,6 +4050,60 @@ async function inviaRichiestaAICopilot(promptText) {
     return dati.risposta;
 }
 
+function costruisciContestoCopilot() {
+    const activeView = document.querySelector('.view-content.active');
+    const viewTitles = {
+        dashboardHome: 'Dashboard', portafoglio: 'Portfolio', grafici: 'Grafici',
+        volumetrica: 'Analisi volumetrica', news: 'Macro & News', regime: 'Market Regime',
+        dashboard: 'VWAP / Backtest Lab', builder: 'Strategy Builder', diario: 'Trading Journal',
+        marketplace: 'Marketplace', integrations: 'Integrazioni', aicoach: 'Performance Review',
+        glossario: 'Academy', account: 'Account'
+    };
+    const getValue = id => document.getElementById(id)?.value?.trim() || '';
+    const getText = id => document.getElementById(id)?.innerText?.trim() || '';
+    const asset = getValue('ticker') || getValue('chartTicker') || getValue('volumeTicker');
+    const strategy = [getValue('stratNome'), getValue('stratAsset'), getValue('stratTimeframe')].filter(Boolean).join(' · ');
+    const portfolio = window.omnitradePortfolioSnapshot || null;
+    const regime = window.omnitradeRegimeSnapshot || null;
+    const context = [
+        `Pagina: ${viewTitles[activeView?.id?.replace('view-', '')] || 'OmniTrade AI'}`,
+        asset ? `Asset selezionato: ${asset}` : '',
+        strategy ? `Strategia corrente: ${strategy}` : '',
+        getText('outputConsole') ? `Analisi/backtest visibile: ${getText('outputConsole').slice(0, 1200)}` : '',
+        portfolio ? `Portfolio: saldo ${portfolio.balance}; P&L realizzato ${portfolio.pnl}; win rate ${portfolio.winRate}; profit factor ${portfolio.profitFactor}; max drawdown realizzato ${portfolio.drawdown}.` : '',
+        regime ? `Market regime: ${regime.label}, score ${regime.score}/100, aggiornato ${regime.updatedAt}; variazioni a 5 sedute: ${regime.changes}.` : '',
+        activeView?.id === 'view-diario' && getText('diarioWrap')
+            ? `Estratto del Journal attualmente visualizzato: ${getText('diarioWrap').slice(0, 800)}`
+            : ''
+    ].filter(Boolean);
+    return context.join('\n');
+}
+
+function apriCopilot() {
+    switchView('chat');
+    const input = document.getElementById('chatInput');
+    if (input) input.focus();
+}
+
+async function generaBriefingGiornaliero() {
+    const button = document.getElementById('btnTodayBriefing');
+    const output = document.getElementById('todayBriefingOutput');
+    if (!button || !output) return;
+    button.disabled = true;
+    button.textContent = 'Generazione…';
+    output.textContent = 'Sto preparando il briefing con i dati disponibili…';
+    try {
+        const prompt = `Prepara un briefing giornaliero conciso usando solo il contesto verificato qui sotto. Non inventare eventi macro, prezzi, asset forti/deboli o allocazioni; se un dato manca, dichiaralo. Non fornire istruzioni personalizzate di acquisto/vendita. Struttura obbligatoria: Analisi, Rischi, Azione consigliata, Motivazione.\n\n${costruisciContestoCopilot()}`;
+        const briefing = await inviaRichiestaAICopilot(prompt);
+        output.textContent = briefing;
+    } catch (error) {
+        output.textContent = `Briefing non disponibile: ${error.message}`;
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Genera briefing';
+    }
+}
+
 async function inviaInChat() {
     const input = document.getElementById('chatInput');
     if (input.value.trim() === "") return;
@@ -3325,12 +4118,12 @@ async function inviaInChat() {
     chatBox.scrollTop = chatBox.scrollHeight;
 
     try {
-        const risposta = await inviaRichiestaAICopilot(userText);
+        const prompt = `Sei l'AI Copilot contestuale di OmniTrade AI. Usa soltanto i dati del contesto, dichiara le incertezze e non inventare valori o eventi. Non formulare promesse di rendimento. Struttura la risposta con le sezioni: Analisi, Rischi, Azione consigliata, Motivazione.\n\nContesto workspace:\n${costruisciContestoCopilot() || 'Nessun dato aggiuntivo disponibile.'}\n\nRichiesta dell'utente:\n${userText}`;
+        const risposta = await inviaRichiestaAICopilot(prompt);
         document.getElementById(idAttesa).innerHTML = escapeHtml(risposta).replace(/\n/g, '<br>');
     } catch (e) {
         const elAttesa = document.getElementById(idAttesa);
-        elAttesa.innerHTML = `<em>AI reale non raggiungibile (${escapeHtml(e.message)}).</em><br>Risposta dimostrativa: secondo la teoria dell'asta di Cimi, i flussi di volume e la deviazione dal VWAP vanno confrontati con il cruscotto intermarket prima di validare questo scenario.
-            <br><span class="placeholder-text" style="font-size:11px;">Verifica che le chiavi Supabase siano configurate come Secrets nelle Edge Functions del tuo progetto Supabase.</span>`;
+        elAttesa.textContent = `AI Copilot non disponibile: ${e.message}. Nessuna risposta dimostrativa viene mostrata.`;
     }
     chatBox.scrollTop = chatBox.scrollHeight;
 }
@@ -3338,6 +4131,23 @@ async function inviaInChat() {
 /* ============ PORTAFOGLIO: STATO E AZIONI ============ */
 let modalitaCorrente = 'reale';
 let equityChart = null;
+
+function aggiornaDashboardPortfolio(snapshot) {
+    window.omnitradePortfolioSnapshot = snapshot;
+    const values = {
+        homeKpiSaldo: snapshot.balance,
+        homeKpiPnl: snapshot.pnl,
+        homeKpiWinrate: snapshot.winRate,
+        homeKpiProfitFactor: snapshot.profitFactor,
+        homeKpiDrawdown: snapshot.drawdown
+    };
+    Object.entries(values).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value;
+    });
+    const status = document.getElementById('homePortfolioStatus');
+    if (status) status.textContent = `Modalità ${snapshot.mode}; drawdown massimo calcolato sulle posizioni chiuse, in valore assoluto.`;
+}
 
 function impostaModalita(m, el) {
     modalitaCorrente = m;
@@ -3474,6 +4284,31 @@ async function ricalcolaPortafoglio() {
         const mediaVincita = vincite.length > 0 ? sommaVincite / vincite.length : 0;
         const mediaPerdita = perdite.length > 0 ? sommaPerditeAbs / perdite.length : 0;
         const rrRealizzato = mediaPerdita > 0 ? (mediaVincita / mediaPerdita) : null;
+        const chiusePerData = [...chiuse].sort((a, b) => new Date(a.chiusa_il) - new Date(b.chiusa_il));
+        let pnlProgressivo = 0, piccoPnl = 0, drawdownMassimo = 0;
+        chiusePerData.forEach(posizione => {
+            pnlProgressivo += Number(posizione.pnl || 0);
+            piccoPnl = Math.max(piccoPnl, pnlProgressivo);
+            drawdownMassimo = Math.max(drawdownMassimo, piccoPnl - pnlProgressivo);
+        });
+        const profitFactorLabel = isFinite(profitFactor) ? profitFactor.toFixed(2) : '∞';
+        const expectancyPnl = chiuse.length ? pnlTot / chiuse.length : null;
+        const recoveryFactor = drawdownMassimo > 0 ? pnlTot / drawdownMassimo : null;
+        document.getElementById('kpiMaxDrawdown').textContent = chiuse.length
+            ? '-$' + drawdownMassimo.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : '—';
+        document.getElementById('kpiExpectancy').textContent = expectancyPnl == null
+            ? '—'
+            : (expectancyPnl >= 0 ? '+$' : '-$') + Math.abs(expectancyPnl).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('kpiRecoveryFactor').textContent = recoveryFactor == null ? '—' : recoveryFactor.toFixed(2);
+        aggiornaDashboardPortfolio({
+            mode: modalitaCorrente,
+            balance: '$' + saldo.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            pnl: (pnlTot >= 0 ? '+$' : '-$') + Math.abs(pnlTot).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            winRate: (vincite.length + perdite.length) ? `${winrate.toFixed(1)}%` : '—',
+            profitFactor: chiuse.length ? profitFactorLabel : '—',
+            drawdown: chiuse.length ? '-$' + drawdownMassimo.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'
+        });
 
         animaContatore('kpiSaldo', saldo, { prefisso: '$', decimali: 2 });
         const segnoPnl = pnlTot >= 0 ? '+$' : '-$';
@@ -3560,6 +4395,11 @@ async function ricalcolaPortafoglio() {
         disegnaEquity(labels, valori);
 
     } catch (e) {
+        aggiornaDashboardPortfolio({
+            mode: modalitaCorrente, balance: '—', pnl: '—', winRate: '—', profitFactor: '—', drawdown: '—'
+        });
+        const status = document.getElementById('homePortfolioStatus');
+        if (status) status.textContent = 'Metriche portfolio non disponibili: verifica connessione e schema Supabase.';
         toast('Errore nel caricamento del portafoglio: ' + e.message, 'error');
         wrapAperte.innerHTML = '<p class="placeholder-text">Impossibile caricare — hai eseguito schema_wallet_supabase.sql nel SQL Editor di Supabase?</p>';
         wrapStorico.innerHTML = '';
@@ -3771,6 +4611,21 @@ function caricaWatchlist() {
 /* ============ NEWS & CALENDARIO ECONOMICO ============ */
 let newsRefreshInterval = null;
 
+function renderCalendarioEconomico(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '<div class="tradingview-widget-container__widget"></div>';
+    const script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-events.js';
+    proteggiScriptTradingView(script);
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+        width: '100%', height: '100%', colorTheme: 'dark', isTransparent: true, locale: 'it',
+        importanceFilter: '-1,0,1', countryFilter: 'us,eu,gb,jp,cn'
+    });
+    container.appendChild(script);
+}
+
 function caricaNewsECalendario() {
     const newsContainer = document.getElementById('tvNewsTimeline');
     newsContainer.innerHTML = '<div class="tradingview-widget-container__widget"></div>';
@@ -3784,17 +4639,7 @@ function caricaNewsECalendario() {
     });
     newsContainer.appendChild(scriptNews);
 
-    const calContainer = document.getElementById('tvEconCalendar');
-    calContainer.innerHTML = '<div class="tradingview-widget-container__widget"></div>';
-    const scriptCal = document.createElement('script');
-    scriptCal.src = "https://s3.tradingview.com/external-embedding/embed-widget-events.js";
-    proteggiScriptTradingView(scriptCal);
-    scriptCal.async = true;
-    scriptCal.innerHTML = JSON.stringify({
-        width: "100%", height: "100%", colorTheme: "dark", isTransparent: true, locale: "it",
-        importanceFilter: "-1,0,1", countryFilter: "us,eu,gb,jp,cn"
-    });
-    calContainer.appendChild(scriptCal);
+    renderCalendarioEconomico('tvEconCalendar');
 
     const etichettaOra = document.getElementById('newsUltimoAggiornamento');
     if (etichettaOra) etichettaOra.innerText = new Date().toLocaleTimeString('it-IT');
@@ -4549,9 +5394,9 @@ function avviaApp() {
     // Le chiavi devono risiedere SOLO nei segreti Supabase (server-side).
     ['ai_provider', 'ai_custom_key', 'ai_custom_model'].forEach(k => localStorage.removeItem(k));
 
+    setWorkspace('dashboard');
     initParticles();
     caricaTickerTapeGlobale();
-    ricalcolaPortafoglio();
     caricaImpostazioniNotifiche();
     registraServiceWorkerPush().catch(error => console.error('[Service Worker] Registrazione fallita:', error));
     controllaStatoPushNotifiche();
