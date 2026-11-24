@@ -330,11 +330,32 @@
     .home-hero h1 { margin:0; font-size:clamp(24px, 4vw, 34px); }
     .home-summary-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
     .home-kpi-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; }
-    .home-kpi-grid .kpi-card { padding:14px 8px; }
+    .home-kpi-grid .home-kpi-item { min-width:0; padding:10px 8px; border-right:1px solid var(--border-color); }
+    .home-kpi-grid .home-kpi-item:last-child { border-right:0; }
     .home-actions { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
     .home-action { width:100%; min-height:80px; padding:14px; border:1px solid var(--border-color); border-radius:10px; background:rgba(255,255,255,.025); color:var(--text-main); text-align:left; font:inherit; cursor:pointer; }
     .home-action strong { display:block; margin-bottom:5px; color:var(--primary); }
     .home-action:hover { border-color:var(--primary); background:var(--primary-glow); }
+    .analysis-path-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .portfolio-metrics-panel { margin-top:20px; }
+    .portfolio-metrics-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .portfolio-metric { min-width:0; padding:15px 10px; text-align:center; border-right:1px solid var(--border-color); border-bottom:1px solid var(--border-color); }
+    .portfolio-metric:nth-child(3n) { border-right:0; }
+    .portfolio-metric:nth-last-child(-n+3) { border-bottom:0; }
+    .portfolio-metric .kpi-value { overflow-wrap:anywhere; }
+    .source-disclosure { margin:12px 0 0; padding:10px 12px; border-left:3px solid var(--primary); border-radius:0 8px 8px 0; background:rgba(0,255,163,.045); color:var(--text-muted); font-size:12px; line-height:1.55; overflow-wrap:anywhere; }
+    .source-disclosure strong { color:var(--text-main); }
+    .workflow-strip { display:flex; gap:8px; overflow-x:auto; padding:4px 2px 10px; margin:0 0 14px; scrollbar-width:thin; }
+    .workflow-step { flex:0 0 auto; min-height:40px; padding:8px 12px; border:1px solid var(--border-color); border-radius:999px; background:rgba(255,255,255,.025); color:var(--text-muted); font:inherit; font-size:12px; cursor:pointer; }
+    .workflow-step:hover { border-color:var(--primary); color:var(--primary); }
+    .copilot-dialog[hidden] { display:none; }
+    .copilot-dialog:not([hidden]) { position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left)); background:rgba(0,0,0,.72); overscroll-behavior:contain; }
+    .copilot-panel { width:min(820px,100%); max-height:min(90dvh,900px); display:flex; flex-direction:column; overflow:hidden; border:1px solid var(--border-color); border-radius:16px; background:var(--bg-panel-solid); box-shadow:0 24px 80px rgba(0,0,0,.55); }
+    .copilot-panel-header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 18px; border-bottom:1px solid var(--border-color); }
+    .copilot-panel-header h2 { margin:0; padding:0; border:0; }
+    .copilot-close { width:44px; min-height:44px; border:1px solid var(--border-color); border-radius:8px; background:transparent; color:var(--text-main); font:inherit; font-size:22px; cursor:pointer; }
+    .copilot-panel .placeholder-text { margin:12px 18px 0; }
+    .copilot-panel .chat-layout { width:auto; margin:12px 18px 18px; }
     .regime-score { font:700 34px 'Inter',sans-serif; color:var(--primary); }
     .account-actions { display:flex; flex-wrap:wrap; gap:10px; }
 
@@ -593,10 +614,12 @@
         #tvVolumeChart { height: 340px !important; }
         .auth-gate { overflow-y: auto; padding: max(16px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom)); }
         .auth-card { padding: 32px 24px 26px; }
-        .chat-layout { height: 65vh; min-height: 360px; max-height: 620px; }
+        .copilot-panel { max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px); }
+        .copilot-panel .chat-layout { height:min(65dvh,620px); min-height:300px; }
         #toastContainer { bottom: max(10px, env(safe-area-inset-bottom)); }
         .home-summary-grid { grid-template-columns:1fr; }
         .home-kpi-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+        .home-kpi-grid .home-kpi-item:nth-child(3n) { border-right:0; }
         .copilot-fab { right:max(14px, env(safe-area-inset-right)); bottom:max(14px, env(safe-area-inset-bottom)); min-height:46px; }
     }
 
@@ -609,12 +632,23 @@
         .kpi-card { padding: 13px 8px; }
         .kpi-value { font-size: 17px; }
         .home-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
-        .home-kpi-grid .kpi-card { padding:11px 6px; }
+        .home-kpi-grid .home-kpi-item { padding:9px 5px; }
+        .home-kpi-grid .home-kpi-item:nth-child(2n) { border-right:0; }
         .home-kpi-grid .kpi-value { font-size:15px; }
+        .analysis-path-grid { grid-template-columns:1fr; }
+        .portfolio-metrics-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        .portfolio-metric:nth-child(3n) { border-right:1px solid var(--border-color); }
+        .portfolio-metric:nth-child(2n) { border-right:0; }
+        .portfolio-metric:nth-last-child(-n+3) { border-bottom:1px solid var(--border-color); }
+        .portfolio-metric:nth-last-child(-n+1) { border-bottom:0; }
         .chat-box { padding: 14px; }
         .chat-input-area { padding: 12px; gap: 8px; }
         .chat-input-area button { padding: 10px 14px; }
         .modal-box { padding: 20px; }
+    }
+    @media (max-height: 600px) {
+        .copilot-panel { max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px); }
+        .copilot-panel .chat-layout { height:42dvh; min-height:150px; }
     }
 </style>
 </head>
@@ -706,7 +740,7 @@
             <button type="button" class="workspace-tab" data-workspace="analysis" onclick="setWorkspace('analysis')">⌁ Analisi</button>
             <button type="button" class="workspace-tab" data-workspace="backtest" onclick="setWorkspace('backtest')">▤ Backtest</button>
             <button type="button" class="workspace-tab" data-workspace="performance" onclick="setWorkspace('performance')">↗ Performance</button>
-            <button type="button" class="workspace-tab" data-workspace="learning" onclick="setWorkspace('learning')">◎ Academy</button>
+            <button type="button" class="workspace-tab" data-workspace="learning" onclick="setWorkspace('learning')">◎ Learning</button>
             <button type="button" class="workspace-tab" data-workspace="account" onclick="setWorkspace('account')">⚙ Account</button>
         </div>
     </div>
@@ -715,16 +749,17 @@
         <div class="menu-item active" data-workspaces="dashboard" tabindex="0" onclick="switchView('dashboardHome', this)">⌂ Panoramica</div>
         <div class="menu-item" data-workspaces="macro" tabindex="0" onclick="switchView('news', this)">📰 Macro &amp; News</div>
         <div class="menu-item" data-workspaces="macro" tabindex="0" onclick="switchView('regime', this)">🌐 Market Regime</div>
+        <div class="menu-item" data-workspaces="analysis" tabindex="0" onclick="switchView('market-analysis', this)">📈 Analisi mercato</div>
         <div class="menu-item" data-workspaces="analysis" tabindex="0" onclick="switchView('volumetrica', this)">📊 Flussi &amp; Order Book</div>
-        <div class="menu-item" data-workspaces="analysis" tabindex="0" onclick="switchView('dashboard', this)">⌁ VWAP &amp; Analisi</div>
-        <div class="menu-item" data-workspaces="backtest" tabindex="0" onclick="switchView('dashboard', this)">🧪 Backtest Lab</div>
         <div class="menu-item" data-workspaces="backtest" tabindex="0" onclick="switchView('builder', this)">🛠️ Strategy Builder</div>
+        <div class="menu-item" data-workspaces="backtest" tabindex="0" onclick="switchView('marketplace', this)">🏛️ Marketplace strategie</div>
+        <div class="menu-item" data-workspaces="backtest" tabindex="0" onclick="switchView('dashboard', this)">🧪 Backtest Lab</div>
+        <div class="menu-item" data-workspaces="backtest" tabindex="0" onclick="apriSessionAnalysis(this)">📈 Session Analysis</div>
         <div class="menu-item" data-workspaces="backtest" tabindex="0" onclick="switchView('papertrading', this)">🎮 Paper Trading</div>
         <div class="menu-item" data-workspaces="performance" tabindex="0" onclick="switchView('portafoglio', this)">💼 Portfolio</div>
-        <div class="menu-item" data-workspaces="performance" tabindex="0" onclick="switchView('diario', this)">🗂️ Trading Journal</div>
+        <div class="menu-item" data-workspaces="performance" tabindex="0" onclick="switchView('diario', this)">🗂️ Journal &amp; Trader Memory</div>
         <div class="menu-item" data-workspaces="performance" tabindex="0" onclick="switchView('aicoach', this)">🧠 AI Debrief</div>
         <div class="menu-item" data-workspaces="learning" tabindex="0" onclick="switchView('glossario', this)">📚 Academy &amp; Glossario</div>
-        <div class="menu-item" data-workspaces="learning" tabindex="0" onclick="switchView('marketplace', this)">🏛️ Strategy Marketplace</div>
         <div class="menu-item" data-workspaces="account" tabindex="0" onclick="switchView('account', this)">⚙ Profilo &amp; Dispositivi</div>
         <div class="menu-item" data-workspaces="account" tabindex="0" onclick="switchView('integrations', this)">🔌 Integrazioni</div>
     </div>
@@ -738,7 +773,7 @@
         <div class="tradingview-widget-container">
             <div class="tradingview-widget-container__widget" id="tickerTapeInner"></div>
         </div>
-        <p class="placeholder-text" style="font-size:11px; text-align:center; margin:4px 0 6px 0;">ⓘ DXY, VIX e US10Y sono mostrati tramite fonti equivalenti (Fed/CBOE proxy) perché i simboli indice originali di TradingView richiedono un'accettazione dati in tempo reale non disponibile nei widget embeddati.</p>
+        <p class="placeholder-text" style="font-size:11px; text-align:center; margin:4px 0 6px 0;">ⓘ Widget TradingView: copertura e aggiornamento sono gestiti dal provider. DXY, VIX e US10Y possono usare simboli equivalenti; verifica la fonte prima di operare.</p>
     </div>
 
     <!-- DASHBOARD -->
@@ -777,11 +812,11 @@
                 <button class="btn-refresh" type="button" onclick="apriWorkspace('performance','portafoglio')">Apri portfolio</button>
             </div>
             <div class="home-kpi-grid">
-                <div class="kpi-card"><div class="kpi-label">Saldo</div><div class="kpi-value" id="homeKpiSaldo">—</div></div>
-                <div class="kpi-card"><div class="kpi-label">P&amp;L</div><div class="kpi-value" id="homeKpiPnl">—</div></div>
-                <div class="kpi-card"><div class="kpi-label">Win Rate</div><div class="kpi-value" id="homeKpiWinrate">—</div></div>
-                <div class="kpi-card"><div class="kpi-label">Profit Factor</div><div class="kpi-value" id="homeKpiProfitFactor">—</div></div>
-                <div class="kpi-card"><div class="kpi-label">Max DD ($)</div><div class="kpi-value" id="homeKpiDrawdown">—</div></div>
+                <div class="home-kpi-item"><div class="kpi-label">Saldo</div><div class="kpi-value" id="homeKpiSaldo">—</div></div>
+                <div class="home-kpi-item"><div class="kpi-label">P&amp;L</div><div class="kpi-value" id="homeKpiPnl">—</div></div>
+                <div class="home-kpi-item"><div class="kpi-label">Win Rate</div><div class="kpi-value" id="homeKpiWinrate">—</div></div>
+                <div class="home-kpi-item"><div class="kpi-label">Profit Factor</div><div class="kpi-value" id="homeKpiProfitFactor">—</div></div>
+                <div class="home-kpi-item"><div class="kpi-label">Max DD ($)</div><div class="kpi-value" id="homeKpiDrawdown">—</div></div>
             </div>
             <p class="placeholder-text" id="homePortfolioStatus" style="margin:10px 0 0;">Caricamento statistiche portfolio…</p>
         </section>
@@ -792,15 +827,24 @@
             </div>
             <div class="output-box" id="todayBriefingOutput" role="status" aria-live="polite"><p class="placeholder-text">Il briefing non è stato ancora generato oggi.</p></div>
         </section>
-        <section style="margin-top:20px;">
-            <h2>Da dove vuoi iniziare?</h2>
-            <div class="home-actions">
-                <button class="home-action" onclick="apriWorkspace('analysis','volumetrica')"><strong>Analizza il mercato</strong>Volumi, order book e VWAP</button>
-                <button class="home-action" onclick="apriWorkspace('backtest','builder')"><strong>Costruisci una strategia</strong>Regole visuali e test</button>
-                <button class="home-action" onclick="apriWorkspace('backtest','dashboard')"><strong>Valida un'idea</strong>Backtest su dati storici</button>
-                <button class="home-action" onclick="apriWorkspace('performance','diario')"><strong>Migliora le performance</strong>Journal e memoria trader</button>
-                <button class="home-action" onclick="apriWorkspace('learning','glossario')"><strong>Impara</strong>Concetti e strategie</button>
+        <section class="panel" style="margin-top:20px;" aria-labelledby="dailyFocusTitle">
+            <div class="toolbar">
+                <div>
+                    <h2 id="dailyFocusTitle" style="border:0; padding:0; margin:0;">Da dove vuoi iniziare?</h2>
+                    <p class="placeholder-text" style="margin:5px 0 0;">Scegli un obiettivo per vedere pochi passi pertinenti. Tutti i workspace e gli strumenti restano sempre accessibili.</p>
+                </div>
+                <div class="form-group" style="min-width:min(100%,260px); margin:0;">
+                    <label for="homeFocusGoal">Focus di oggi</label>
+                    <select id="homeFocusGoal" onchange="aggiornaFocusGiornaliero(true)">
+                        <option value="analyze">Analizzare il mercato</option>
+                        <option value="validate">Costruire e validare una strategia</option>
+                        <option value="improve">Migliorare le performance</option>
+                        <option value="learn">Imparare</option>
+                    </select>
+                </div>
             </div>
+            <div class="home-actions" id="homeFocusActions" aria-live="polite"></div>
+            <p class="placeholder-text" id="homeFocusProfileHint" style="margin:10px 0 0;"></p>
         </section>
     </div>
 
@@ -809,25 +853,29 @@
         <div class="toolbar">
             <div>
                 <h2 style="border:none; padding:0; margin:0 0 6px 0;">💼 Portafoglio</h2>
-                <p class="placeholder-text" style="margin:0;">Modalità Reale: il tuo registro personale di depositi, prelievi e posizioni. Modalità Demo: saldo virtuale per testare strategie senza rischio.</p>
+                <p class="placeholder-text" style="margin:0;">Modalità Reale: registro manuale, non sincronizzato con un broker. Modalità Demo: saldo virtuale per testare strategie senza rischio.</p>
             </div>
             <div class="segmented" id="segmentedModalita">
                 <button class="active" onclick="impostaModalita('reale', this)">🟢 Reale</button>
                 <button onclick="impostaModalita('demo', this)">🧪 Demo</button>
             </div>
         </div>
+        <p class="source-disclosure" data-source-disclosure="portfolio-prices"></p>
 
-        <div class="kpi-grid-6">
-            <div class="kpi-card"><div class="kpi-label">Saldo</div><div class="kpi-value" id="kpiSaldo">$0.00</div></div>
-            <div class="kpi-card"><div class="kpi-label">P&amp;L Realizzato</div><div class="kpi-value" id="kpiPnl">$0.00</div></div>
-            <div class="kpi-card"><div class="kpi-label">Win Rate</div><div class="kpi-value" id="kpiWinrate">0.0%</div></div>
-            <div class="kpi-card"><div class="kpi-label">Profit Factor</div><div class="kpi-value" id="kpiProfitFactor">-</div></div>
-            <div class="kpi-card"><div class="kpi-label">R/R Realizzato</div><div class="kpi-value" id="kpiRR">-</div></div>
-            <div class="kpi-card"><div class="kpi-label">Posizioni Aperte</div><div class="kpi-value" id="kpiAperte">0</div></div>
-            <div class="kpi-card"><div class="kpi-label">Max Drawdown ($)</div><div class="kpi-value" id="kpiMaxDrawdown">—</div></div>
-            <div class="kpi-card"><div class="kpi-label">Expectancy / trade</div><div class="kpi-value" id="kpiExpectancy">—</div></div>
-            <div class="kpi-card"><div class="kpi-label">Recovery Factor</div><div class="kpi-value" id="kpiRecoveryFactor">—</div></div>
-        </div>
+        <section class="panel portfolio-metrics-panel" aria-labelledby="portfolioMetricsTitle">
+            <h2 id="portfolioMetricsTitle">Performance snapshot</h2>
+            <div class="portfolio-metrics-grid">
+                <div class="portfolio-metric"><div class="kpi-label">Saldo</div><div class="kpi-value" id="kpiSaldo">$0.00</div></div>
+                <div class="portfolio-metric"><div class="kpi-label">P&amp;L Realizzato</div><div class="kpi-value" id="kpiPnl">$0.00</div></div>
+                <div class="portfolio-metric"><div class="kpi-label">Win Rate</div><div class="kpi-value" id="kpiWinrate">0.0%</div></div>
+                <div class="portfolio-metric"><div class="kpi-label">Profit Factor</div><div class="kpi-value" id="kpiProfitFactor">-</div></div>
+                <div class="portfolio-metric"><div class="kpi-label">R/R Realizzato</div><div class="kpi-value" id="kpiRR">-</div></div>
+                <div class="portfolio-metric"><div class="kpi-label">Posizioni Aperte</div><div class="kpi-value" id="kpiAperte">0</div></div>
+                <div class="portfolio-metric"><div class="kpi-label">Max Drawdown ($)</div><div class="kpi-value" id="kpiMaxDrawdown">—</div></div>
+                <div class="portfolio-metric"><div class="kpi-label">Expectancy / trade</div><div class="kpi-value" id="kpiExpectancy">—</div></div>
+                <div class="portfolio-metric"><div class="kpi-label">Recovery Factor</div><div class="kpi-value" id="kpiRecoveryFactor">—</div></div>
+            </div>
+        </section>
 
         <div class="panel" style="margin-top:20px;">
             <h2>Curva Equity</h2>
@@ -900,39 +948,43 @@
         </div>
     </div>
 
-    <!-- GRAFICI LIVE -->
-    <div id="view-grafici" class="view-content">
-        <div class="panel" style="margin-bottom:20px;">
-            <h2>Ricerca Simbolo</h2>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="chartTicker">Ticker (formato libero: BTC-USD, AAPL, EURUSD=X, ^GSPC...)</label>
-                    <input type="text" id="chartTicker" list="tickerSuggestions" value="BTC-USD">
-                </div>
-                <div class="form-group">
-                    <label for="chartInterval">Intervallo</label>
-                    <select id="chartInterval">
-                        <option value="5m">5 Minuti</option>
-                        <option value="15m">15 Minuti</option>
-                        <option value="60m" selected>1 Ora</option>
-                        <option value="1d">1 Giorno</option>
-                        <option value="1wk">1 Settimana</option>
-                    </select>
-                </div>
+    <!-- MARKET ANALYSIS WORKSPACE -->
+    <div id="view-market-analysis" class="view-content">
+        <div class="home-hero">
+            <div>
+                <p class="workspace-picker-label">Analisi Mercato</p>
+                <h1>Leggi il contesto prima di agire</h1>
+                <p class="placeholder-text" style="margin:6px 0 0;">Un punto di partenza per flussi, livelli VWAP, regime e analisi assistita. Per i grafici avanzati usa TradingView.</p>
             </div>
-            <button class="btn-main" onclick="caricaGraficoLive()">📡 Carica Grafico Live</button>
-            <p class="placeholder-text" style="margin-top:14px; font-size:12px;">Cerchi analisi tecnica, volumi e order book? Vai alla pagina <strong>📊 Volumetrica</strong> nel menu laterale.</p>
         </div>
-        <div class="tv-chart-wrap" id="tvAdvancedChart"><div class="tradingview-widget-container__widget"></div></div>
-
-        <h2 style="margin-top:30px; border:none;">Watchlist Rapida</h2>
-        <div class="tv-watchlist-wrap" id="tvWatchlistInner"></div>
+        <div class="analysis-path-grid">
+            <button class="home-action" type="button" onclick="apriWorkspace('analysis','volumetrica')">
+                <strong>Flussi &amp; Order Book</strong>
+                Volumi, strumenti tecnici e book Binance per le coppie crypto supportate.
+            </button>
+            <button class="home-action" type="button" onclick="apriWorkspace('macro','regime')">
+                <strong>Market Regime</strong>
+                Rivedi il contesto macro e le cinque fonti attualmente disponibili.
+            </button>
+            <button class="home-action" type="button" onclick="apriWorkspace('backtest','dashboard')">
+                <strong>VWAP &amp; Backtest Lab</strong>
+                Valida un’ipotesi sui dati storici disponibili, con i limiti della fonte dichiarati.
+            </button>
+            <button class="home-action" type="button" onclick="apriCopilot('Analizza il contesto di mercato mostrato in questa pagina. Distingui dati osservati, rischi e limiti della fonte.')">
+                <strong>Chiedi all’AI</strong>
+                Apri il Copilot globale con una richiesta contestuale.
+            </button>
+        </div>
+        <p class="source-disclosure" data-source-disclosure="yahoo"></p>
+        <p class="source-disclosure" data-source-disclosure="tradingview"></p>
     </div>
 
     <!-- VOLUMETRICA -->
     <div id="view-volumetrica" class="view-content">
         <div class="panel" style="margin-bottom:20px;">
             <h2>📊 Volumetrica &amp; Analisi Tecnica</h2>
+            <p class="source-disclosure" data-source-disclosure="binance"></p>
+            <p class="source-disclosure" data-source-disclosure="tradingview"></p>
             <div class="form-row">
                 <div class="form-group">
                     <label for="volTicker">Ticker</label>
@@ -1015,6 +1067,7 @@
             <button class="btn-refresh" onclick="caricaNewsECalendario()">↻ Aggiorna ora</button>
         </div>
         <div class="tv-chart-wrap" style="height:480px;" id="tvNewsTimeline"></div>
+        <p class="source-disclosure" data-source-disclosure="tradingview"></p>
 
         <div class="toolbar" style="margin-top:30px;">
             <div>
@@ -1026,10 +1079,13 @@
             </div>
         </div>
         <div class="panel" id="investingNewsWrap"><div class="skeleton" style="height:200px;"></div></div>
+        <p class="source-disclosure" data-source-disclosure="investing-rss"></p>
 
         <h2 style="margin-top:30px; border:none;">🗓️ Calendario Economico</h2>
         <p class="placeholder-text" style="margin-bottom:16px;">Eventi macro reali (tassi, inflazione, occupazione...) con impatto atteso sul mercato.</p>
         <div class="tv-chart-wrap" style="height:480px;" id="tvEconCalendar"></div>
+        <p class="source-disclosure" data-source-disclosure="tradingview-calendar"></p>
+        <p class="source-disclosure" data-source-disclosure="manual-macro"></p>
     </div>
 
     <!-- DASHBOARD ANALISI VWAP -->
@@ -1037,6 +1093,14 @@
         <div class="toolbar">
             <div><p class="workspace-picker-label">Ricerca quantitativa</p><h1 style="margin:0;">Backtest Lab</h1><p class="placeholder-text" style="margin:5px 0 0;">Asset → timeframe → strategia → sessione → risultati. I risultati sono simulazioni storiche, non previsioni.</p></div>
         </div>
+        <nav class="workflow-strip" aria-label="Workflow di trading">
+            <button class="workflow-step" type="button" onclick="apriWorkspace('backtest','builder')">1 · Strategy Builder</button>
+            <button class="workflow-step" type="button" onclick="switchView('dashboard')">2 · Backtest Lab</button>
+            <button class="workflow-step" type="button" onclick="apriSessionAnalysis()">3 · Session Analysis</button>
+            <button class="workflow-step" type="button" onclick="apriWorkspace('backtest','papertrading')">4 · Paper Trading</button>
+            <button class="workflow-step" type="button" onclick="apriWorkspace('performance','diario')">5 · Journal &amp; Trader Memory</button>
+        </nav>
+        <p class="source-disclosure" data-source-disclosure="yahoo"></p>
         <div class="dashboard-grid">
             <div class="panel">
                 <h2>1 · Configura il test</h2>
@@ -1121,8 +1185,8 @@
                 <p class="placeholder-text" style="margin-top:14px; font-size:12px;">Il backtest usa candele OHLCV storiche Yahoo Finance. Il VWAP è stimato usando (massimo + minimo + chiusura) / 3 per candela, non dati tick; feed e ritardi dipendono dalla fonte, i risultati non garantiscono performance future.</p>
             </div>
 
-            <div class="panel">
-                <h2>2 · Metriche e risultati</h2>
+            <div class="panel" id="sessionAnalysisResults">
+                <h2>Session Analysis · Metriche e risultati</h2>
                 <div class="kpi-grid">
                     <div class="kpi-card">
                         <div class="kpi-label">Ultimo Prezzo</div>
@@ -1171,18 +1235,24 @@
         </div>
     </div>
 
-    <!-- CHAT -->
-    <div id="view-chat" class="view-content">
-        <p class="placeholder-text">Il Copilot riceve la pagina e i dati di trading visibili pertinenti alla richiesta. Evita di includere informazioni che non vuoi inviare all'AI.</p>
-        <div class="chat-layout">
-            <div class="chat-box" id="chatBox">
-                <div class="msg ai">Benvenuto nella console di comunicazione diretta di OmniTrade AI. Qui puoi farmi domande di approfondimento sui grafici, chiarire dubbi operativi o analizzare le notizie fondamentali. Chiedimi qualsiasi cosa!</div>
+    <!-- COPILOT PANEL -->
+    <div id="copilotDialog" class="copilot-dialog" aria-hidden="true" hidden onclick="if(event.target===this) chiudiCopilot()">
+        <section class="copilot-panel" role="dialog" aria-modal="true" aria-labelledby="copilotTitle">
+            <header class="copilot-panel-header">
+                <h2 id="copilotTitle">AI Copilot</h2>
+                <button class="copilot-close" type="button" aria-label="Chiudi Copilot" onclick="chiudiCopilot()">×</button>
+            </header>
+            <p class="placeholder-text">Il Copilot riceve la pagina e i dati di trading visibili pertinenti alla richiesta. Evita di includere informazioni che non vuoi inviare all'AI.</p>
+            <div class="chat-layout">
+                <div class="chat-box" id="chatBox">
+                    <div class="msg ai">Sono il Copilot di OmniTrade AI. Posso aiutarti a interpretare i dati disponibili, distinguendo osservazioni e ipotesi.</div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" id="chatInput" placeholder="Scrivi un messaggio..." onkeydown="if(event.key==='Enter') inviaInChat()">
+                    <button class="btn-main" onclick="inviaInChat()">Invia</button>
+                </div>
             </div>
-            <div class="chat-input-area">
-                <input type="text" id="chatInput" placeholder="Scrivi un messaggio..." onkeydown="if(event.key==='Enter') inviaInChat()">
-                <button class="btn-main" onclick="inviaInChat()">Invia</button>
-            </div>
-        </div>
+        </section>
     </div>
 
     <!-- STRATEGY BUILDER (VISUAL & AI) -->
@@ -1197,6 +1267,13 @@
                 <button class="btn-main" onclick="salvaOAggiornaStrategia()">💾 Salva Strategia</button>
             </div>
         </div>
+        <nav class="workflow-strip" aria-label="Workflow di trading">
+            <button class="workflow-step" type="button" onclick="apriWorkspace('backtest','builder')">1 · Strategy Builder</button>
+            <button class="workflow-step" type="button" onclick="apriWorkspace('backtest','dashboard')">2 · Backtest Lab</button>
+            <button class="workflow-step" type="button" onclick="apriSessionAnalysis()">3 · Session Analysis</button>
+            <button class="workflow-step" type="button" onclick="apriWorkspace('backtest','papertrading')">4 · Paper Trading</button>
+            <button class="workflow-step" type="button" onclick="apriWorkspace('performance','diario')">5 · Journal &amp; Trader Memory</button>
+        </nav>
 
         <div class="panel" style="margin-bottom:14px;">
             <h2>Le mie strategie salvate</h2>
@@ -1492,6 +1569,7 @@
                     <div style="font-size:16px; font-weight:700; color:var(--text-muted);" id="regimeAzione">— / 100</div>
                 </div>
             </div>
+            <p class="source-disclosure" data-source-disclosure="yahoo"></p>
         </div>
 
         <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:15px; margin-bottom:24px;">
@@ -1554,13 +1632,20 @@
     <div id="view-papertrading" class="view-content">
         <div class="toolbar">
             <div>
-                <h2 style="border:none; margin:0; padding:0;">🎮 Paper Trading Simulator (Real-Time Execution Engine)</h2>
-                <p class="placeholder-text" style="margin:4px 0 0 0;">Simula operazioni su dati reali di mercato senza rischiare capitale, con spread e commissioni realistiche.</p>
+                <h2 style="border:none; margin:0; padding:0;">🎮 Paper Trading Simulator</h2>
+                <p class="placeholder-text" style="margin:4px 0 0 0;">Solo simulazione: non è collegato a un exchange e non invia ordini reali. Prezzi, esecuzioni e uscite possono essere simulati o usare valori di fallback; non usare come feed o esecuzione live.</p>
             </div>
             <div style="display:flex; gap:10px;">
                 <button class="btn-sec" onclick="resetContoDemo()">🔄 Reset Saldo ($100,000)</button>
             </div>
         </div>
+        <nav class="workflow-strip" aria-label="Workflow di trading">
+            <button class="workflow-step" type="button" onclick="apriWorkspace('backtest','builder')">1 · Strategy Builder</button>
+            <button class="workflow-step" type="button" onclick="apriWorkspace('backtest','dashboard')">2 · Backtest Lab</button>
+            <button class="workflow-step" type="button" onclick="apriSessionAnalysis()">3 · Session Analysis</button>
+            <button class="workflow-step" type="button" onclick="apriWorkspace('backtest','papertrading')">4 · Paper Trading</button>
+            <button class="workflow-step" type="button" onclick="apriWorkspace('performance','diario')">5 · Journal &amp; Trader Memory</button>
+        </nav>
 
         <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom:20px;">
             <div class="kpi-card">
@@ -1622,41 +1707,33 @@
     <div id="view-integrations" class="view-content">
         <div class="toolbar">
             <div>
-                <h2 style="border:none; margin:0; padding:0;">🔌 MT5 &amp; TradingView Integrations Hub</h2>
-                <p class="placeholder-text" style="margin:4px 0 0 0;">Connetti OmniTrade AI con MetaTrader 5 ed esegui alert istantanei via Webhook da TradingView.</p>
+                <h2 style="border:none; margin:0; padding:0;">🔌 Integrazioni</h2>
+                <p class="placeholder-text" style="margin:4px 0 0 0;">Le integrazioni MT5 e TradingView Webhook non sono ancora operative. Questa sezione non invia ordini, segnali o dati a servizi esterni.</p>
             </div>
         </div>
 
         <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr; gap:20px;">
             <div class="panel">
-                <h2>📊 MetaTrader 5 (MT5 Bridge &amp; OHLCV Downloader)</h2>
-                <p class="placeholder-text" style="font-size:12.5px; line-height:1.5;">Importa ed esporta la cronologia delle operazioni dal tuo account Demo o Reale MT5 per la validazione statistica.</p>
+                <h2>📊 MetaTrader 5 — non operativo</h2>
+                <p class="placeholder-text" style="font-size:12.5px; line-height:1.5;">Il bridge e l’importazione dei report non sono implementati; nessun account MT5 è connesso.</p>
                 <div class="form-group">
-                    <label>Stato Connessione MT5 EA</label>
+                    <label>Stato connessione MT5 EA</label>
                     <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
-                        <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#00ffa3;"></span>
-                        <span style="font-weight:600; font-size:13px; color:#00ffa3;">Ponte Webhook Pronto</span>
+                        <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ffb020;"></span>
+                        <span style="font-weight:600; font-size:13px; color:#ffb020;">Non connesso</span>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Importa Report HTML/CSV da MT5</label>
-                    <input type="file" id="mt5FileInput" accept=".csv, .html" style="font-size:12px; padding:8px;">
+                    <label for="mt5FileInput">Importa report HTML/CSV da MT5</label>
+                    <input type="file" id="mt5FileInput" accept=".csv, .html" disabled style="font-size:12px; padding:8px;">
                 </div>
-                <button class="btn-sec" onclick="toast('Report MT5 caricato e analizzato dal motore quantitativo!', 'success')">📥 Analizza Storico MT5</button>
+                <button class="btn-sec" type="button" disabled>Importazione non disponibile</button>
             </div>
 
             <div class="panel">
-                <h2>🔔 TradingView Webhook Alerts Bridge</h2>
-                <p class="placeholder-text" style="font-size:12.5px; line-height:1.5;">Configura i tuoi alert su TradingView per inviare ordini o segnali direttamente ad OmniTrade AI tramite webhook JSON.</p>
-                <div class="form-group">
-                    <label>Webhook URL Generato</label>
-                    <input type="text" readonly value="https://qtwidsfqzfjapwiiuywq.supabase.co/functions/v1/chat-ai?webhook=tradingview" style="font-family:monospace; font-size:11.5px; background:rgba(0,0,0,0.3);">
-                </div>
-                <div class="form-group">
-                    <label>Payload Alert JSON Esempio</label>
-                    <textarea rows="3" readonly style="font-family:monospace; font-size:11.5px; background:rgba(0,0,0,0.3); resize:none;">{"action": "{{strategy.order.action}}", "ticker": "{{ticker}}", "price": {{close}}, "strategy": "OmniTrade VWAP"}</textarea>
-                </div>
-                <button class="btn-main" onclick="toast('Configurazione Webhook TradingView copiata negli appunti!', 'success')">📋 Copia Parametri Webhook</button>
+                <h2>🔔 TradingView Webhook — non operativo</h2>
+                <p class="placeholder-text" style="font-size:12.5px; line-height:1.5;">Ricezione webhook non implementata: non esiste un endpoint OmniTrade operativo. Non configurare alert per inviare ordini o segnali all’app.</p>
+                <div class="report-item warning" role="status">Stato: endpoint e gestione sicura dei payload non disponibili.</div>
             </div>
         </div>
     </div>
@@ -1962,9 +2039,7 @@ async function aggiornaAccountCenter() {
     const selector = document.getElementById('accountExperienceLevel');
     if (selector) selector.value = level;
     const hint = document.getElementById('accountLevelHint');
-    if (hint) hint.textContent = level === 'beginner'
-        ? 'Modalità Principiante: mostra Dashboard, Macro & News, Portfolio, Academy e impostazioni Account.'
-        : 'Le aree avanzate restano disponibili nei rispettivi workspace.';
+    if (hint) hint.textContent = 'Il livello guida i suggerimenti e il focus giornaliero; tutte le funzioni restano disponibili.';
 }
 
 async function salvaLivelloEsperienza() {
@@ -1979,11 +2054,10 @@ async function salvaLivelloEsperienza() {
         return;
     }
     localStorage.setItem('omnitrade_experience_level', level);
-    setWorkspace(workspaceCorrente);
+    const activeView = document.querySelector('.view-content.active')?.id.replace('view-', '');
+    setWorkspace(workspaceCorrente, activeView || null);
     const hint = document.getElementById('accountLevelHint');
-    if (hint) hint.textContent = level === 'beginner'
-        ? 'Modalità Principiante attiva: le funzioni avanzate sono nascoste ma non eliminate.'
-        : 'Livello aggiornato. Tutte le aree previste dal livello sono disponibili.';
+    if (hint) hint.textContent = 'Livello aggiornato: i suggerimenti si adatteranno al profilo. Tutte le funzioni restano disponibili.';
     toast('Livello di esperienza aggiornato.', 'success');
 }
 
@@ -2124,44 +2198,101 @@ function initParticles() {
 const WORKSPACE_DEFAULT_VIEW = {
     dashboard: 'dashboardHome',
     macro: 'news',
-    analysis: 'volumetrica',
-    backtest: 'dashboard',
-    performance: 'diario',
+    analysis: 'market-analysis',
+    backtest: 'builder',
+    performance: 'portafoglio',
     learning: 'glossario',
     account: 'account'
 };
+const DATA_SOURCE_DISCLOSURES = Object.freeze({
+    yahoo: 'Fonte: Yahoo Finance. Dati richiesti all’apertura/aggiornamento; i grafici VWAP si aggiornano ogni 60 secondi mentre la vista è aperta. Non è un feed streaming: ritardi, copertura e profondità storica variano per ticker e disponibilità del provider.',
+    tradingview: 'Fonte: widget TradingView. Copertura, simboli equivalenti e frequenza di aggiornamento sono controllati dal provider e non garantiti dall’app.',
+    'tradingview-calendar': 'Fonte: calendario TradingView. Orari, copertura e aggiornamento sono gestiti dal widget; verifica gli eventi presso la fonte prima di operare.',
+    'investing-rss': 'Fonte: RSS Investing.com. Polling ogni 60 secondi mentre Macro & News è aperto; mostra titolo e link, non il testo integrale. Disponibilità, copertura e timestamp dipendono dal feed.',
+    binance: 'Fonte: API pubblica Binance. Snapshot ogni 4 secondi su desktop / 8 secondi su mobile all’avvio del polling, solo per coppie crypto quotate su Binance; book limitato e specifico dell’exchange, non è un feed di esecuzione.',
+    'portfolio-prices': 'Prezzi indicativi (inserimento e P&L latente): Binance per coppie crypto riconosciute, Yahoo Finance per gli altri ticker; richiesti su azione o quando il portfolio viene ricalcolato, non in streaming. Copertura e ritardi dipendono dal provider.',
+    'manual-macro': 'Promemoria macro inseriti manualmente (se configurati; separati dal calendario TradingView): non sono verificati né aggiornati da TradingView o Investing.com. I promemoria ripetono i dati e l’orario salvati; verifica fonte primaria e fuso orario.'
+});
+const DAILY_FOCUS_ACTIONS = {
+    analyze: [
+        { title: 'Market Analysis', detail: 'Apri i dati di flusso e il contesto di mercato.', workspace: 'analysis', view: 'market-analysis' },
+        { title: 'Macro & News', detail: 'Controlla calendario e notizie disponibili.', workspace: 'macro', view: 'news' },
+        { title: 'Market Regime', detail: 'Rivedi le fonti e le variazioni macro.', workspace: 'macro', view: 'regime' }
+    ],
+    validate: [
+        { title: 'Strategy Builder', detail: 'Definisci le regole della tua ipotesi.', workspace: 'backtest', view: 'builder' },
+        { title: 'Backtest Lab', detail: 'Valida la strategia sui dati storici disponibili.', workspace: 'backtest', view: 'dashboard' },
+        { title: 'Paper Trading', detail: 'Esplora la simulazione, non l’esecuzione reale.', workspace: 'backtest', view: 'papertrading' }
+    ],
+    improve: [
+        { title: 'Portfolio', detail: 'Rivedi saldo e metriche registrate.', workspace: 'performance', view: 'portafoglio' },
+        { title: 'Journal & Trader Memory', detail: 'Registra contesto, disciplina e trade.', workspace: 'performance', view: 'diario' },
+        { title: 'AI Debrief', detail: 'Esamina i dati disponibili con l’AI.', workspace: 'performance', view: 'aicoach' }
+    ],
+    learn: [
+        { title: 'Academy & Glossario', detail: 'Approfondisci concetti, pattern e strategie.', workspace: 'learning', view: 'glossario' },
+        { title: 'Market Regime', detail: 'Impara a leggere il contesto macro disponibile.', workspace: 'macro', view: 'regime' },
+        { title: 'Strategy Builder', detail: 'Trasforma un’idea in regole verificabili.', workspace: 'backtest', view: 'builder' }
+    ]
+};
 let workspaceCorrente = 'dashboard';
 
-function vistaDisponibilePerPrincipiante(viewId) {
-    return ['dashboardHome', 'news', 'portafoglio', 'glossario', 'account', 'chat'].includes(viewId);
+function aggiornaDisclosureFonti() {
+    document.querySelectorAll('[data-source-disclosure]').forEach(element => {
+        const source = DATA_SOURCE_DISCLOSURES[element.dataset.sourceDisclosure];
+        if (source) element.textContent = source;
+    });
+}
+
+function aggiornaFocusGiornaliero(persist = false) {
+    const select = document.getElementById('homeFocusGoal');
+    const container = document.getElementById('homeFocusActions');
+    if (!select || !container) return;
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    if (persist) {
+        localStorage.setItem('omnitrade_focus_date', today);
+        localStorage.setItem('omnitrade_focus_goal', select.value);
+    } else if (localStorage.getItem('omnitrade_focus_date') === today) {
+        const savedGoal = localStorage.getItem('omnitrade_focus_goal');
+        if (Object.prototype.hasOwnProperty.call(DAILY_FOCUS_ACTIONS, savedGoal)) select.value = savedGoal;
+    } else {
+        select.value = 'analyze';
+    }
+
+    const actions = DAILY_FOCUS_ACTIONS[select.value] || DAILY_FOCUS_ACTIONS.analyze;
+    container.innerHTML = actions.map(action => `
+        <button class="home-action" type="button" onclick="apriWorkspace('${action.workspace}','${action.view}')">
+            <strong>${escapeHtml(action.title)}</strong>${escapeHtml(action.detail)}
+        </button>`).join('');
+    const level = localStorage.getItem('omnitrade_experience_level') || 'advanced';
+    const hints = {
+        beginner: 'Suggerimento: procedi per piccoli passi e verifica sempre le fonti. Tutte le funzioni restano disponibili.',
+        intermediate: 'Suggerimento: registra le ipotesi e confrontale con i dati. Tutte le funzioni restano disponibili.',
+        advanced: 'Suggerimento: controlla copertura, costi e limiti del campione. Tutte le funzioni restano disponibili.'
+    };
+    const hint = document.getElementById('homeFocusProfileHint');
+    if (hint) hint.textContent = hints[level] || hints.advanced;
 }
 
 function aggiornaNavigazioneWorkspace(workspaceId) {
     workspaceCorrente = workspaceId;
     localStorage.setItem('omnitrade_workspace', workspaceId);
-    const livello = localStorage.getItem('omnitrade_experience_level') || 'advanced';
     document.querySelectorAll('.workspace-tab').forEach(button => {
-        button.hidden = livello === 'beginner' && ['analysis', 'backtest'].includes(button.dataset.workspace);
         const selected = button.dataset.workspace === workspaceId;
         button.classList.toggle('active', selected);
         button.setAttribute('aria-pressed', String(selected));
     });
     document.querySelectorAll('.menu-item[data-workspaces]').forEach(item => {
         const inWorkspace = item.dataset.workspaces.split(/\s+/).includes(workspaceId);
-        const viewId = item.getAttribute('onclick')?.match(/switchView\('([^']+)'/)?.[1];
-        item.hidden = !inWorkspace || (livello === 'beginner' && !vistaDisponibilePerPrincipiante(viewId));
+        item.hidden = !inWorkspace;
     });
 }
 
 function setWorkspace(workspaceId, requestedView = null) {
     if (!Object.prototype.hasOwnProperty.call(WORKSPACE_DEFAULT_VIEW, workspaceId)) return;
     aggiornaNavigazioneWorkspace(workspaceId);
-    const livello = localStorage.getItem('omnitrade_experience_level') || 'advanced';
-    const defaultView = requestedView && (livello !== 'beginner' || vistaDisponibilePerPrincipiante(requestedView))
-        ? requestedView
-        : (livello === 'beginner' && workspaceId === 'performance'
-            ? 'portafoglio'
-            : WORKSPACE_DEFAULT_VIEW[workspaceId]);
+    const defaultView = requestedView || WORKSPACE_DEFAULT_VIEW[workspaceId];
     const defaultItem = Array.from(document.querySelectorAll('.menu-item')).find(item =>
         !item.hidden && item.getAttribute('onclick')?.includes(`switchView('${defaultView}'`)
     );
@@ -2170,6 +2301,17 @@ function setWorkspace(workspaceId, requestedView = null) {
 
 function apriWorkspace(workspaceId, viewId) {
     setWorkspace(workspaceId, viewId);
+}
+
+function apriSessionAnalysis(element = null) {
+    const sessionMenuItem = element || Array.from(document.querySelectorAll('.menu-item[data-workspaces]'))
+        .find(item => item.dataset.workspaces.split(/\s+/).includes('backtest') && item.textContent.includes('Session Analysis'));
+    if (sessionMenuItem) switchView('dashboard', sessionMenuItem);
+    else setWorkspace('backtest', 'dashboard');
+    window.setTimeout(() => {
+        const target = document.getElementById('sessionAnalysisResults') || document.getElementById('outputConsole');
+        target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
 }
 
 function switchView(viewId, element) {
@@ -2186,12 +2328,6 @@ function switchView(viewId, element) {
         if (workspace !== workspaceCorrente) {
             aggiornaNavigazioneWorkspace(workspace);
         }
-    }
-    if ((localStorage.getItem('omnitrade_experience_level') || 'advanced') === 'beginner'
-        && !vistaDisponibilePerPrincipiante(viewId)) {
-        toast('Questa funzione è nascosta in Modalità Principiante. Puoi cambiare livello da Account.', 'info');
-        setWorkspace('dashboard');
-        return;
     }
     // Sospende intervalli pesanti se si esce dalla rispettiva pagina
     if (viewId !== 'volumetrica' && typeof orderBookInterval !== 'undefined' && orderBookInterval) {
@@ -2221,11 +2357,11 @@ function switchView(viewId, element) {
     if (viewId === 'glossario') renderStrategieAcademy();
     if (viewId === 'portafoglio') ricalcolaPortafoglio();
     if (viewId === 'dashboard') avviaMonitorVWAP();
-    if (viewId === 'grafici') { caricaGraficoLive(); caricaWatchlist(); }
     if (viewId === 'volumetrica') caricaVolumetrica();
     if (viewId === 'news') { caricaNewsECalendario(); controllaStatoPushNotifiche(); }
     if (viewId === 'account') aggiornaAccountCenter();
     if (viewId === 'dashboardHome') {
+        aggiornaFocusGiornaliero();
         ricalcolaPortafoglio();
         calcolaMarketRegime(true);
         renderCalendarioEconomico('homeMacroCalendar');
@@ -3517,7 +3653,7 @@ function caricaGlossario() {
                         <div style="font-family:monospace; font-size:11.5px; color:#00d2ff; margin-top:2px;"><code>${escapeHtml(t.formula)}</code></div>
                     </div>` : ''}
             </div>
-            ${t.configBacktest && (localStorage.getItem('omnitrade_experience_level') || 'advanced') !== 'beginner' ? `
+            ${t.configBacktest ? `
                 <button class="btn-sec" style="width:100%; padding:9px 12px; font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="lanciaBacktestRapidoGlossario(${index})">
                     ⚡ Avvia Backtest Strategia (${t.configBacktest.ticker})
                 </button>` : ''}
@@ -4063,7 +4199,6 @@ function mostraTabAcademy(tabId, button) {
 function renderStrategieAcademy() {
     const container = document.getElementById('academyStrategiesGrid');
     if (!container) return;
-    const showAdvancedActions = (localStorage.getItem('omnitrade_experience_level') || 'advanced') !== 'beginner';
     container.innerHTML = STRATEGIE_ENCICLOPEDIA.map((strategy, index) => `
         <article class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
             <div>
@@ -4072,10 +4207,10 @@ function renderStrategieAcademy() {
                 <p class="card-def">${escapeHtml(strategy.descrizione)}</p>
                 <p class="placeholder-text">Esempio didattico · nessuna performance storica verificata.</p>
             </div>
-            ${showAdvancedActions ? `<div class="account-actions">
+            <div class="account-actions">
                 <button class="btn-sec" type="button" onclick="clonaStrategiaNelBuilder(${index})">Apri nel Builder</button>
                 <button class="btn-main" type="button" onclick="eseguiBacktestDaEnciclopedia(${index})">Prova un backtest</button>
-            </div>` : ''}
+            </div>
         </article>`).join('');
 }
 
@@ -4422,7 +4557,7 @@ async function inviaRichiestaAICopilot(promptText) {
 function costruisciContestoCopilot() {
     const activeView = document.querySelector('.view-content.active');
     const viewTitles = {
-        dashboardHome: 'Dashboard', portafoglio: 'Portfolio', grafici: 'Grafici',
+        dashboardHome: 'Dashboard', portafoglio: 'Portfolio', 'market-analysis': 'Analisi Mercato',
         volumetrica: 'Analisi volumetrica', news: 'Macro & News', regime: 'Market Regime',
         dashboard: 'VWAP / Backtest Lab', builder: 'Strategy Builder', diario: 'Trading Journal',
         marketplace: 'Marketplace', integrations: 'Integrazioni', aicoach: 'AI Debrief',
@@ -4430,7 +4565,7 @@ function costruisciContestoCopilot() {
     };
     const getValue = id => document.getElementById(id)?.value?.trim() || '';
     const getText = id => document.getElementById(id)?.innerText?.trim() || '';
-    const asset = getValue('ticker') || getValue('chartTicker') || getValue('volumeTicker');
+    const asset = getValue('ticker') || getValue('volTicker');
     const strategy = [getValue('stratNome'), getValue('stratAsset'), getValue('stratTimeframe')].filter(Boolean).join(' · ');
     const portfolio = window.omnitradePortfolioSnapshot || null;
     const regime = window.omnitradeRegimeSnapshot || null;
@@ -4448,11 +4583,58 @@ function costruisciContestoCopilot() {
     return context.join('\n');
 }
 
-function apriCopilot() {
-    switchView('chat');
+let copilotLastFocus = null;
+let copilotPreviousOverflow = '';
+function apriCopilot(promptPrefill = '') {
+    const dialog = document.getElementById('copilotDialog');
+    if (!dialog) return;
+    if (dialog.hidden) {
+        copilotLastFocus = document.activeElement;
+        copilotPreviousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+    }
+    dialog.hidden = false;
+    dialog.setAttribute('aria-hidden', 'false');
     const input = document.getElementById('chatInput');
-    if (input) input.focus();
+    if (input) {
+        if (promptPrefill && !input.value.trim()) input.value = promptPrefill;
+        window.requestAnimationFrame(() => input.focus());
+    }
 }
+
+function chiudiCopilot() {
+    const dialog = document.getElementById('copilotDialog');
+    if (!dialog || dialog.hidden) return;
+    dialog.hidden = true;
+    dialog.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = copilotPreviousOverflow;
+    copilotPreviousOverflow = '';
+    if (copilotLastFocus instanceof HTMLElement) copilotLastFocus.focus();
+    copilotLastFocus = null;
+}
+
+document.addEventListener('keydown', event => {
+    const dialog = document.getElementById('copilotDialog');
+    if (!dialog || dialog.hidden) return;
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        chiudiCopilot();
+        return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusable = Array.from(dialog.querySelectorAll('button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+        .filter(element => !element.hidden);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+    }
+});
 
 async function generaBriefingGiornaliero() {
     const button = document.getElementById('btnTodayBriefing');
@@ -4782,7 +4964,7 @@ async function ricalcolaPortafoglio() {
     }
 }
 
-/* ============ GRAFICI LIVE: TRADINGVIEW ============ */
+/* ============ WIDGET TRADINGVIEW ============ */
 function convertiTickerTradingView(tickerInput) {
     const t = tickerInput.trim().toUpperCase();
     if (t.endsWith('-USD')) return 'BINANCE:' + t.replace('-USD', '') + 'USDT';
@@ -4799,17 +4981,11 @@ function convertiTickerTradingView(tickerInput) {
     return t;
 }
 
-function intervalloTradingView(tf) {
-    const mappa = { "1m":"1","2m":"2","5m":"5","15m":"15","30m":"30","60m":"60","1h":"60","90m":"120","1d":"D","5d":"D","1wk":"W","1mo":"M","3mo":"M" };
-    return mappa[tf] || "60";
-}
-
 // Update these pins only after reviewing the upstream widget assets.
 const TRADINGVIEW_SCRIPT_INTEGRITY = {
     'embed-widget-advanced-chart.js': 'sha384-I2JQrkwUsaPH7iMpze79CX7/WP4C17JmEkP9tJycLTuxjUW5/8kFCyyXEXjxR2Hb',
     'embed-widget-technical-analysis.js': 'sha384-2CJECwj2KmxNnVad+hh2boQ1+XzDwOKz6ME+n0piRRQDT0q91iHAIGHMm9V9qM4H',
     'embed-widget-symbol-info.js': 'sha384-/ebsPFP3FqMDo3/dCelqf8NLdPuxoKxY5ZBOZgfT2/LRBKgjkjBDhWCOCEnIlLBE',
-    'embed-widget-symbol-overview.js': 'sha384-bH1hro15kdKrvfyhLD2Phgkc1QZNto7dn9eH9umPhIssdLtMzbmQxhDOPwZ5U6iz',
     'embed-widget-timeline.js': 'sha384-25J+3GDyLeePhAiOmgq6tncTngAlIbiSXx9xm0j4x5R1nhqQro57mwTKP4E9F/py',
     'embed-widget-events.js': 'sha384-gfVHIDk1xEMydiAweVWDubuJytV5PtNwi0g28ZUyyRovvX2Hx1MKhpCRt/bgeLcX',
     'embed-widget-ticker-tape.js': 'sha384-D4HqscDSx7aiWrajeydNX11rRPwq0EWxihBqudR/U+8uUNzDrdCVksegbjC4BfXu'
@@ -4821,27 +4997,6 @@ function proteggiScriptTradingView(script) {
     if (!integrity) throw new Error('Integrità TradingView non configurata per questo script.');
     script.integrity = integrity;
     script.crossOrigin = 'anonymous';
-}
-
-function caricaGraficoLive() {
-    const tickerInput = document.getElementById('chartTicker').value.trim() || 'BTC-USD';
-    const tf = document.getElementById('chartInterval').value;
-    const symbol = convertiTickerTradingView(tickerInput);
-    const interval = intervalloTradingView(tf);
-    const container = document.getElementById('tvAdvancedChart');
-    container.innerHTML = '<div class="tradingview-widget-container__widget"></div>';
-    const script = document.createElement('script');
-    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
-    proteggiScriptTradingView(script);
-    script.async = true;
-    script.innerHTML = JSON.stringify({
-        autosize: true, symbol: symbol, interval: interval, timezone: "Etc/UTC", theme: "dark", style: "1",
-        locale: "it", backgroundColor: "rgba(11, 14, 17, 1)", gridColor: "rgba(43, 47, 54, 0.5)",
-        hide_top_toolbar: false, allow_symbol_change: true, support_host: "https://www.tradingview.com",
-        studies: ["Volume@tv-basicstudies"]
-    });
-    container.appendChild(script);
-    toast('Grafico caricato per ' + symbol, 'success');
 }
 
 /* ============ VOLUMETRICA: pagina dedicata ============ */
@@ -4966,22 +5121,6 @@ async function aggiornaOrderBook(tickerInput) {
     // FIX 8: polling più lento su mobile per ridurre consumo batteria e lag
     const intervalloOB = window.innerWidth <= 768 ? 8000 : 4000;
     orderBookInterval = setInterval(() => { caricaSnapshot(); caricaStatistiche24h(); }, intervalloOB);
-}
-
-function caricaWatchlist() {
-    const container = document.getElementById('tvWatchlistInner');
-    container.innerHTML = '';
-    const script = document.createElement('script');
-    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js";
-    proteggiScriptTradingView(script);
-    script.async = true;
-    script.innerHTML = JSON.stringify({
-        symbols: [["BTC/USDT", "BINANCE:BTCUSDT|1D"], ["ETH/USDT", "BINANCE:ETHUSDT|1D"], ["S&P 500", "FOREXCOM:SPXUSD|1D"], ["Gold", "TVC:GOLD|1D"], ["EUR/USD", "FX:EURUSD|1D"]],
-        chartOnly: false, width: "100%", height: "100%", locale: "it", colorTheme: "dark", autosize: true,
-        showVolume: true, showMA: false, gridLineColor: "rgba(43,47,54,0.5)", fontColor: "#929aa5",
-        underLineColor: "rgba(0,255,163,0.3)", trendLineColor: "#00ffa3", backgroundColor: "rgba(11,14,17,1)"
-    });
-    container.appendChild(script);
 }
 
 /* ============ NEWS & CALENDARIO ECONOMICO ============ */
@@ -5132,7 +5271,7 @@ const PUSH_CATEGORIES = [
 ];
 const PUSH_VIEW_BY_RESOURCE = {
     news: 'news',
-    analysis: 'dashboard',
+    analysis: 'market-analysis',
     macro_event: 'news',
     strategy_alert: 'dashboard',
     trading_alerts: 'dashboard',
@@ -5604,8 +5743,11 @@ function applicaDeepLinkNotifica() {
     const params = new URLSearchParams(window.location.search);
     const resourceType = params.get('resourceType');
     const resourceId = params.get('resourceId');
-    const view = params.get('view') || PUSH_VIEW_BY_RESOURCE[resourceType];
-    if (!view || !/^(portafoglio|grafici|volumetrica|news|regime|dashboard|builder|papertrading|marketplace|integrations|aicoach|chat|diario|glossario)$/.test(view)) return;
+    const requestedView = params.get('view');
+    const view = resourceType === 'analysis'
+        ? 'market-analysis'
+        : (requestedView || PUSH_VIEW_BY_RESOURCE[resourceType]);
+    if (!view || !/^(portafoglio|market-analysis|volumetrica|news|regime|dashboard|builder|papertrading|marketplace|integrations|aicoach|diario|glossario)$/.test(view)) return;
 
     const menuItem = Array.from(document.querySelectorAll('.menu-item'))
         .find(item => item.getAttribute('onclick') === `switchView('${view}', this)`);
@@ -5776,6 +5918,8 @@ function avviaApp() {
     // Le chiavi devono risiedere SOLO nei segreti Supabase (server-side).
     ['ai_provider', 'ai_custom_key', 'ai_custom_model'].forEach(k => localStorage.removeItem(k));
 
+    aggiornaDisclosureFonti();
+    aggiornaFocusGiornaliero();
     setWorkspace('dashboard');
     initParticles();
     caricaTickerTapeGlobale();
